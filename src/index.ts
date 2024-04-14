@@ -12,6 +12,8 @@ import * as swaggerDocument from "./swagger.json";
 import { permawebRouter } from './controllers/PermawebUploadController';
 import { tiktokRouter } from './controllers/OAuthTikTokController';
 import { subgraphRouter } from './controllers/SubgraphController';
+import { stytchRouter } from './controllers/StytchController';
+import { AppDataSource } from './data-source';
 
 dotenv.config();
 
@@ -27,6 +29,7 @@ app.use("/oauth-twitter", twitterRouter);
 app.use("/permaweb", permawebRouter);
 app.use("/oauth-tiktok", tiktokRouter);
 app.use("/subgraph", subgraphRouter);
+app.use("/stytch", stytchRouter);
 
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
@@ -44,10 +47,11 @@ app.post('/post', async (req: Request, res: Response): Promise<Response> => {
   });
 });
 
-try {
-  app.listen(PORT, (): void => {
-    console.log(`Connected successfully on port ${PORT}`);
-  });
-} catch (error: any) {
-  console.error(`Error occurred: ${error.message}`);
-}
+
+AppDataSource.initialize()
+.then(async () => {
+    app.listen(PORT, (): void => {
+        console.log(`Connected successfully on port ${PORT}`);
+    });
+}).catch((error) => console.log(error));
+
