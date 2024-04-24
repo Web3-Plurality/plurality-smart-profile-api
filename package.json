@@ -5,7 +5,7 @@
   "main": "index.js",
   "license": "MIT",
   "scripts": {
-    "start": "ts-node-dev --respawn --pretty --transpile-only src/index.ts",
+    "start": "set HTTPS=true &&  ts-node-dev --respawn --pretty --transpile-only src/index.ts",
     "prod": "ts-node --pretty --transpile-only src/index.ts",
     "build": "tsc",
     "lint": "eslint src/**/*.ts",
@@ -66,6 +66,7 @@
     "mongoose": "^7.1.1",
     "passport": "^0.6.0",
     "pg": "^8.11.5",
+    "passport-oauth2": "^1.8.0",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^4.6.3",
     "ts-node": "^10.9.2",

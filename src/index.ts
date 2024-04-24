@@ -14,6 +14,10 @@ import { tiktokRouter } from './controllers/OAuthTikTokController';
 import { subgraphRouter } from './controllers/SubgraphController';
 import { stytchRouter } from './controllers/StytchController';
 import { AppDataSource } from './data-source';
+import https from "https"
+const fs = require('fs');
+
+
 
 dotenv.config();
 
@@ -24,6 +28,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(helmet());
 app.use(cors());
 app.use(passport.initialize());
+// app.use(passport.session());
 app.use(session({ secret: 'keyboard cat', resave: false, saveUninitialized: true }));
 app.use("/oauth-twitter", twitterRouter);
 app.use("/permaweb", permawebRouter);
@@ -32,6 +37,7 @@ app.use("/subgraph", subgraphRouter);
 app.use("/stytch", stytchRouter);
 
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+
 
 
 app.get('/', async (req: Request, res: Response): Promise<Response> => {
@@ -48,10 +54,30 @@ app.post('/post', async (req: Request, res: Response): Promise<Response> => {
 });
 
 
-AppDataSource.initialize()
-.then(async () => {
-    app.listen(PORT, (): void => {
-        console.log(`Connected successfully on port ${PORT}`);
-    });
-}).catch((error) => console.log(error));
+try {
 
+
+
+  // Only for development for HTTPS
+if (process.env.HTTPS) {
+
+  const options = {
+    key: fs.readFileSync('./local-certificates/key.pem'),
+    cert: fs.readFileSync('./local-certificates/cert.pem')
+  };
+
+  https.createServer(options, app).listen(PORT, () => {
+    console.log(`Server is running on https://app.plurality.local:${PORT}`);
+  });
+}
+else{
+
+  app.listen(PORT, (): void => {
+    console.log(`Connected successfully on port ${PORT}`);
+  });
+}
+
+
+} catch (error: any) {
+  console.error(`Error occurred: ${error.message}`);
+}
