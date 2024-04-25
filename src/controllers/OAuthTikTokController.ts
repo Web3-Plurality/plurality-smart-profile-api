@@ -10,6 +10,13 @@ import { parseQueryString } from "../utils";
 
 dotenv.config();
 
+
+interface reqRedireect  {
+  isWidget: string, 
+  origin: string, 
+  apps: string
+}
+
 // Serialization and deserialization
 passport.serializeUser(function (user, done) {
   done(null, user);
@@ -19,7 +26,6 @@ passport.deserializeUser(function (obj: any, done) {
 });
 
 
-// const btoa = (str:string) => Buffer.from(str, 'binary').toString('base64');
 
 passport.use("tiktok", new TikTokOAuth2Strategy(
   // Strategy initialization
@@ -59,11 +65,8 @@ tiktokRouter.get('/callback', passport.authenticate("tiktok"), async (req, res) 
   try {
 
 
-    console.log(parseQueryString(decodeURIComponent(req.query.state)) )
-    const { isWidget, origin, apps} = parseQueryString(decodeURIComponent(req.query.state))
-
-
-    const { accessToken, refreshToken } = req.user;
+    const { isWidget, origin, apps} : any =  parseQueryString(decodeURIComponent(req?.query?.state))
+    const { accessToken, refreshToken } : any = req?.user;
 
 
 
