@@ -29,8 +29,8 @@ passport.use(
     },
     // Verify callback
     (accessToken, refreshToken, profile, done) => {
-      console.log('Success!', { accessToken, refreshToken, profile });
-      return done(null, profile);
+      // console.log('Success!', { accessToken, refreshToken, profile });
+      return done(null, { accessToken, refreshToken, profile });
     }
   )
 );
@@ -67,22 +67,24 @@ twitterRouter.get('/callback', passport.authenticate('twitter'), async (req, res
 
   try {
 
-    const userData = JSON.stringify(req.user, undefined, 2);
-    console.log(`${userData}`);
-    const o: any = JSON.parse(userData);
-    console.log(o.username);
-    console.log(o.displayName);
-    console.log(o.photos[0].value);
+    // const userData = JSON.stringify(req.user, undefined, 2);
+    console.log(req.user);
+    // const o: any = JSON.parse(userData);
+    // console.log(o.username);
+    // console.log(o.displayName);
+    // console.log(o.photos[0].value);
     const isWidget = req.query.isWidget;
     const origin = req.query.origin;
     const apps = req.query.apps;
-    const profile_pic = o.photos[0].value;
+    // const profile_pic = o.photos[0].value;
 
+    // console.log(userTweet);
+    // res.send("hello world")
 
 
     const { accessToken, refreshToken }: any = req?.user;
     // request for user info
-
+    // console.log(accessToken)
     const tweetFields = [
       'attachments', 'author_id', 'context_annotations', 'conversation_id', 'created_at', 'edit_controls', 'entities', 'geo', 'id', 'in_reply_to_user_id', 'lang', 'non_public_metrics', 'public_metrics', 'organic_metrics', 'promoted_metrics', 'possibly_sensitive', 'referenced_tweets', 'reply_settings', 'source', 'text', 'withheld'
     ];
@@ -118,6 +120,7 @@ twitterRouter.get('/callback', passport.authenticate('twitter'), async (req, res
     //   );
     // }
 
+    console.log(userTweet?.data)
 
 
     let url: any;
