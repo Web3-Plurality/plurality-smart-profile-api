@@ -15,3 +15,5 @@ npm install
 ```
 npm run start
 ```
+
+ https://app.plurality.local:5000/oauth-twitter?isWidget=true&origin=false&apps=false

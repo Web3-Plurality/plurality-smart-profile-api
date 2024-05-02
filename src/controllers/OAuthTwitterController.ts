@@ -1,8 +1,10 @@
 import express, { Request, Response } from "express";
-import passport from "passport";
-import { Strategy } from '@superfaceai/passport-twitter-oauth2';
+import passport, { session } from "passport";
+// import { Strategy } from '@superfaceai/passport-twitter-oauth2';
+import OAuthTwitterStrategy from '../auth/OAuthTwitterStrategy';
 import * as dotenv from 'dotenv';
 import axios from "axios";
+import { isAuthenticated } from "../utils";
 
 
 export const twitterRouter = express.Router();
@@ -11,25 +13,40 @@ dotenv.config();
 
 // Serialization and deserialization
 passport.serializeUser(function (user, done) {
+  console.log("serialize")
+  console.log(user)
   done(null, user);
 });
 passport.deserializeUser(function (obj: any, done) {
+  console.log("deserialize")
+
   done(null, obj);
 });
 
 
+
+
 passport.use(
+  "twitter",
   // Strategy initialization
-  new Strategy(
+  new OAuthTwitterStrategy(
     {
-      clientID: process.env.TWITTER_CLIENT_ID!,
-      clientSecret: process.env.TWITTER_CLIENT_SECRET!,
-      clientType: 'confidential',
+      authorizationURL: 'https://twitter.com/i/oauth2/authorize',
+      tokenURL: 'https://api.twitter.com/2/oauth2/token',
+      clientID: process.env.TWITTER_CLIENT_ID,
+      clientSecret: process.env.TWITTER_CLIENT_SECRET,
       callbackURL: process.env.TWITTER_CALLBACK_URL,
+      scope: "tweet.read users.read offline.access", //space
+      state: true,
+      pkce: true,
+
+      // state:""
     },
     // Verify callback
-    (accessToken, refreshToken, profile, done) => {
+    (accessToken: any, refreshToken: any, profile: any, done: any) => {
       // console.log('Success!', { accessToken, refreshToken, profile });
+      console.log("Verify")
+
       return done(null, { accessToken, refreshToken, profile });
     }
   )
@@ -39,82 +56,37 @@ passport.use(
 // Start authentication flow
 twitterRouter.get(
   '/',
-   (req: Request, res: Response, next) => {
-    const isWidget = req.query.isWidget;
-    const origin = req.query.origin;
-    const apps = req.query.apps;
-    // console.log('isWidget: ' + isWidget);
-    // console.log('origin: ' + origin);
-    // console.log('apps: ' + apps);
-    let callback = `${process.env.TWITTER_CALLBACK_URL}?isWidget=${isWidget}&origin=${origin}&apps=${apps}`;
+  async (req: Request, res: Response, next) => {
 
+    req?.session?.redirectParams = {
+      isWidget: req?.query?.isWidget,
+      origin: req?.query?.origin,
+      apps: req?.query?.apps,
 
-    // Use the Twitter OAuth2 strategy within Passport
-    passport.authenticate('twitter',    
-    {
-      // Scopes
-      scope: ['tweet.read', 'users.read', 'offline.access'],
-    },
-     (req: Request, res: Response) => {
-      // Successful authentication
-      console.log(">>>>>>>>>>>>>>",callback)
-      res.redirect(callback);
+    };
+    req.session.save()
 
-    })(req, res, next)
-  }
-);
+    passport.authenticate('twitter')(req, res, next);
+
+  });
 
 // Callback handler
-twitterRouter.get('/callback', passport.authenticate('twitter'), async (req, res) => {
+twitterRouter.get('/callback', passport.authenticate('twitter', { session: false }), async (req, res) => {
 
 
   try {
 
-    // const userData = JSON.stringify(req.user, undefined, 2);
-    console.log(req.user);
-    // const o: any = JSON.parse(userData);
-    // console.log(o.username);
-    // console.log(o.displayName);
-    // console.log(o.photos[0].value);
-    const isWidget = req.query.isWidget;
-    const origin = req.query.origin;
-    const apps = req.query.apps;
-    console.log(isWidget)
-    console.log(origin)
-    // const profile_pic = o.photos[0].value;
-
-    // console.log(userTweet);
-    // res.send("hello world")
-
-
-    const { accessToken, refreshToken }: any = req?.user;
+    console.log("id", req.sessionID);
+    console.log(">>>>>>>>>>>>>>", req.session);
     // request for user info
-    // console.log(accessToken)
-    const tweetFields = [
-      'attachments', 'author_id', 'context_annotations', 'conversation_id', 'created_at', 'edit_controls', 'entities', 'geo', 'id', 'in_reply_to_user_id', 'lang', 'non_public_metrics', 'public_metrics', 'organic_metrics', 'promoted_metrics', 'possibly_sensitive', 'referenced_tweets', 'reply_settings', 'source', 'text', 'withheld'
-    ];
-
-    const userFields = [
-      'created_at', 'description', 'entities', 'id', 'location', 'most_recent_tweet_id', 'name', 'pinned_tweet_id', 'profile_image_url', 'protected', 'public_metrics', 'url', 'username', 'verified', 'verified_type', 'withheld'
-    ]
-    const userTweet = await axios.get(
-      `https://api.twitter.com/2/users/me?expansions=pinned_tweet_id&tweet.fields=${tweetFields.join(",")}&user.fields=${userFields.join(",")}`,
-
-      {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
+    console.log(">>>>>>>>>>>>>", req.user);
+    req.session.user = {
+      accessToken: req.user.accessToken,
+      refreshToken: req.user.refreshToken
+    }
 
 
-
-
-
-    console.log(userTweet?.data)
-
-
+    const { isWidget, origin, apps } = req.session.redirectParams;
     let url: any;
 
     if (isWidget == 'true')
@@ -127,18 +99,89 @@ twitterRouter.get('/callback', passport.authenticate('twitter'), async (req, res
     }
 
 
-    tweetFields.forEach(field => {
-      url += `&${field}=${userTweet?.data?.data[field]}`;
-    });
+
+
+    // res.redirect(url);
+    res.send(url);
+  } catch (error: any) {
+    console.error("Error during callback:", error.message);
+    res.status(500).send("An error occurred while fetching data");
+  }
+
+}
+);
 
 
 
-    userFields.forEach(field => {
-      url += `&${field}=${userTweet?.data?.data[field]}`;
-    });
 
 
-    res.send(url)
+
+// Callback handler
+twitterRouter.get('/info', isAuthenticated, async (req, res) => {
+
+
+  try {
+
+
+    console.log("id", req.sessionID)
+    console.log(">>>>>>>>>>>>>>", req.session)
+
+
+    // console.log(isWidget, origin, apps)
+    const { accessToken, refreshToken }: any = req?.session?.user;
+
+    // request for user info
+    console.log(accessToken)
+    if (accessToken) {
+
+
+      const tweetFields = [
+        'attachments', 'author_id', 'context_annotations', 'conversation_id', 'created_at', 'edit_controls', 'entities', 'geo', 'id', 'in_reply_to_user_id', 'lang', 'non_public_metrics', 'public_metrics', 'organic_metrics', 'promoted_metrics', 'possibly_sensitive', 'referenced_tweets', 'reply_settings', 'source', 'text', 'withheld'
+      ];
+
+      const userFields = [
+        'created_at', 'description', 'entities', 'id', 'location', 'most_recent_tweet_id', 'name', 'pinned_tweet_id', 'profile_image_url', 'protected', 'public_metrics', 'url', 'username', 'verified', 'verified_type', 'withheld'
+      ]
+      const userTweet = await axios.get(
+        `https://api.twitter.com/2/users/me?expansions=pinned_tweet_id&tweet.fields=${tweetFields.join(",")}&user.fields=${userFields.join(",")}`,
+
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+
+
+
+
+      console.log(userTweet?.data)
+
+      const data: any = {
+        ...userTweet?.data?.data
+      }
+
+      const public_metrics = data?.public_metrics;
+
+      delete data?.public_metrics;
+
+      // Destroy the session data
+      req.session.destroy(err => {
+        if (err) {
+          return res.status(500).json({ app: "X", message: "internal server error", error: err });
+        }
+        // Redirect to the home page after logging out
+        return res.status(200).json({ app: "X", message: "success", data: { ...public_metrics, ...data } })
+      });
+
+      // Todo: Need to loook other properties which can be come for proper structuring of json
+     
+
+    } else {
+      res.status(500).send("access token expires");
+    }
   } catch (error: any) {
     console.error("Error during callback:", error.message);
     res.status(500).send("An error occurred during the login process.");

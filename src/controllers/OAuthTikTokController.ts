@@ -4,18 +4,13 @@ import TikTokOAuth2Strategy from "../auth/OAuthTikTokStrategy"
 export const tiktokRouter = express.Router();
 import passport from "passport";
 import axios from "axios";
-import { parseQueryString } from "../utils";
+import { isAuthenticated } from "../utils";
 
 
 
 dotenv.config();
 
 
-interface reqRedireect  {
-  isWidget: string, 
-  origin: string, 
-  apps: string
-}
 
 // Serialization and deserialization
 passport.serializeUser(function (user, done) {
@@ -29,44 +24,94 @@ passport.deserializeUser(function (obj: any, done) {
 
 passport.use("tiktok", new TikTokOAuth2Strategy(
   // Strategy initialization
-     {
-       authorizationURL: 'https://www.tiktok.com/v2/auth/authorize/',
-       tokenURL: 'https://open.tiktokapis.com/v2/oauth/token/',
-       clientKey: process.env.TIKTOK_CLIENT_ID,
-       clientSecret: process.env.TIKTOK_CLIENT_SECRET,
-       callbackURL: `https://app.plurality.local:5000/oauth-tiktok/callback`,
-       scope: "user.info.basic,user.info.profile,user.info.stats,video.list",
-       state: false
-     },
-     // Verify callback
-     (accessToken: any, refreshToken: any, profile: any, done: any) => {
-       return done(null, { accessToken: accessToken, refreshToken: refreshToken });
-     }
- 
-   ));
+  {
+    authorizationURL: 'https://www.tiktok.com/v2/auth/authorize/',
+    tokenURL: 'https://open.tiktokapis.com/v2/oauth/token/',
+    clientKey: process.env.TIKTOK_CLIENT_ID,
+    clientSecret: process.env.TIKTOK_CLIENT_SECRET,
+    callbackURL: `https://app.plurality.local:5000/oauth-tiktok/callback`,
+    scope: "user.info.basic,user.info.profile,user.info.stats,video.list",
+    state: false
+  },
+  // Verify callback
+  (accessToken: any, refreshToken: any, profile: any, done: any) => {
+    return done(null, { accessToken: accessToken, refreshToken: refreshToken });
+  }
+
+));
 
 
 tiktokRouter.get('/',
 
-async (req: Request, res: Response, next) => {
-  
-  const isWidget = req.query.isWidget;
-  const origin = req.query.origin;
-  const apps = req.query.apps;
-
-  const state = encodeURIComponent(`?isWidget=${isWidget}&origin=${origin}&apps=${apps}`)
-  
-  passport.authenticate('tiktok', { state })(req, res, next);
-})
+  async (req: Request, res: Response, next) => {
 
 
 
-tiktokRouter.get('/callback', passport.authenticate("tiktok"), async (req, res) => {
+    req?.session?.redirectParams = {
+      isWidget: req?.query?.isWidget,
+      origin: req?.query?.origin,
+      apps: req?.query?.apps,
+
+    };
+    req.session.save()
+
+    const csrfState = Math.random().toString(36).substring(2);
+
+    passport.authenticate('tiktok', { state: csrfState })(req, res, next);
+  })
+
+
+
+tiktokRouter.get('/callback', passport.authenticate("tiktok", { session: false }), async (req, res) => {
   try {
 
 
-    const { isWidget, origin, apps} : any =  parseQueryString(decodeURIComponent(req?.query?.state))
-    const { accessToken, refreshToken } : any = req?.user;
+    console.log("id", req.sessionID);
+    console.log(">>>>>>>>>>>>>>", req.session);
+    console.log(">>>>>>>>>>>>>", req.user);
+
+
+    req.session.user = {
+      accessToken: req.user.accessToken,
+      refreshToken: req.user.refreshToken
+    }
+
+
+    const { isWidget, origin, apps } = req.session.redirectParams;
+    let url: any;
+
+    if (isWidget == 'true')
+      url = `${process.env.WIDGET_UI_URL}?isWidget=${isWidget}&origin=${origin}&apps=${apps}`
+    else if (isWidget == 'false')
+      url = `${process.env.DASHBOARD_UI_URL}?isWidget=${isWidget}&origin=${origin}&apps=${apps}`
+    else {
+      console.log('Did not find the isWidget parameter in callback. Redirecting to default dashboard');
+      url = `${process.env.DASHBOARD_UI_URL}?isWidget=${isWidget}&origin=${origin}&apps=${apps}`
+    }
+
+
+
+
+    // res.redirect(url);
+    res.send(url);
+
+  } catch (error: any) {
+    console.error("Error during callback:", error.message);
+    res.status(500).send("An error occurred during the login process.");
+  }
+
+
+});
+
+
+
+tiktokRouter.get('/info', isAuthenticated, async (req, res) => {
+  try {
+
+
+    console.log("id", req.sessionID)
+    console.log(">>>>>>>>>>>>>>", req.session)
+    const { accessToken, refreshToken }: any = req?.session?.user;
 
 
 
@@ -140,46 +185,25 @@ tiktokRouter.get('/callback', passport.authenticate("tiktok"), async (req, res) 
 
 
       console.log("##########UserInfo#####\n\n")
-      console.log(userData.data);//Lists all videos of user along with other details
+      console.log(userData.data);
       console.log("##########VideoInfo#####\n\n")
-      console.log(videoList?.data?.data?.videos);//Lists all videos of user along with other details
+      console.log(videoList?.data?.data?.videos);
 
 
 
 
-      let url: any;
-
-      if (isWidget == 'true')
-        url = `${process.env.WIDGET_UI_URL}?isWidget=${isWidget}&origin=${origin}&apps=${apps}`
-      else if (isWidget == 'false')
-        url = `${process.env.DASHBOARD_UI_URL}?isWidget=${isWidget}&origin=${origin}&apps=${apps}`
-      else {
-        console.log('Did not find the isWidget parameter in callback. Redirecting to default dashboard');
-        url = `${process.env.DASHBOARD_UI_URL}?isWidget=${isWidget}&origin=${origin}&apps=${apps}`
-      }
-
-
-      // user info 
-      userObjField.forEach(field => {
-        url += `&${field}=${userData?.data?.data?.user[field]}`;
+      // Destroy the session data
+      req.session.destroy(err => {
+        if (err) {
+          return res.status(500).json({ app: "TikTok", message: "internal server error", error: err });
+        }
+        // Redirect to the home page after logging out
+        return res.status(200).json({ app: "TiTok", message: "success", data: { ...userData.data, ...videoList?.data?.data?.videos } })
       });
 
 
-      //video info
-      for (let index = 0; index < videoList?.data?.data?.videos?.length; index++) {
-        videoObjFields.forEach(field => {
-          //v${index} this will help to to identify same variable of separate video
-          url += `&v${index}${field}=${videoList?.data?.data?.videos[index]?.[field]}`;
-        });
-
-      }
-
-
-
-      // res.redirect(url);
-      res.send(url);
-
-
+    } else {
+      res.status(500).send("access token expires");
     }
 
 
@@ -192,3 +216,8 @@ tiktokRouter.get('/callback', passport.authenticate("tiktok"), async (req, res) 
 }
 
 );
+
+
+
+
+

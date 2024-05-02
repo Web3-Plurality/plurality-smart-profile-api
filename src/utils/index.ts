@@ -1,3 +1,5 @@
+import  { Request, Response } from "express";
+
 export function parseQueryString(query: string) {
     let params : any = {};
     // Remove the leading question mark if present
@@ -10,3 +12,14 @@ export function parseQueryString(query: string) {
     });
     return params;
 }
+
+
+
+export function isAuthenticated(req: Request, res: Response, next) {
+    if (req.sessionID && req?.session?.user?.accessToken) {
+      // User is authenticated
+      return next();
+    }
+    // User is not authenticated
+    res.status(401).send("You need to log in.");
+  }
