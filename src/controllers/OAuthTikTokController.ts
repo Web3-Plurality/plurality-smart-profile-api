@@ -28,13 +28,13 @@ passport.use("tiktok", new TikTokOAuth2Strategy(
     clientSecret: process.env.TIKTOK_CLIENT_SECRET,
     callbackURL: `https://app.plurality.local:5000/oauth-tiktok/callback`,
     scope: "user.info.basic,user.info.profile,user.info.stats,video.list",
+    state: false
   },
   // Verify callback
   (accessToken: any, refreshToken: any, profile: any, done: any) => {
     return done(null, { accessToken: accessToken, refreshToken: refreshToken });
   }
 ));
-
 
 tiktokRouter.get('/', async (req: Request, res: Response, next) => {
    
@@ -45,26 +45,21 @@ tiktokRouter.get('/', async (req: Request, res: Response, next) => {
     };
 
     req.session.save()
-    // const csrfState = Math.random().toString(36).substring(2);
-    passport.authenticate('tiktok')(req, res, next);
+    const csrfState = Math.random().toString(36).substring(2);
+    passport.authenticate('tiktok',{state: csrfState})(req, res, next);
   })
-
-
 
 tiktokRouter.get('/callback', passport.authenticate("tiktok", { session: false }), async (req, res) => {
   try {
-
 
     console.log("id", req.sessionID);
     console.log(">>>>>>>>>>>>>>", req.session);
     console.log(">>>>>>>>>>>>>", req.user);
 
-
     req.session.user = {
       accessToken: req.user.accessToken,
       refreshToken: req.user.refreshToken
     }
-
 
     const { isWidget, origin, apps } = req.session.redirectParams;
     let url: any;
@@ -78,34 +73,21 @@ tiktokRouter.get('/callback', passport.authenticate("tiktok", { session: false }
       url = `${process.env.DASHBOARD_UI_URL}?isWidget=${isWidget}&origin=${origin}&apps=${apps}`
     }
 
-
-
-
     // res.redirect(url);
     res.send(url);
-
   } catch (error: any) {
     console.error("Error during callback:", error.message);
     res.status(500).send("An error occurred during the login process.");
   }
-
-
 });
-
-
 
 tiktokRouter.get('/info', isAuthenticated, async (req, res) => {
   try {
-
-
     console.log("id", req.sessionID)
     console.log(">>>>>>>>>>>>>>", req.session)
-    const { accessToken, refreshToken }: any = req?.session?.user;
-
-
+    const { accessToken }: any = req?.session?.user;
 
     if (accessToken) {
-
       const userObjField = [
         "open_id",
         "union_id",
@@ -120,7 +102,6 @@ tiktokRouter.get('/info', isAuthenticated, async (req, res) => {
         "likes_count",
         "video_count"
       ];
-
       const videoObjFields = [
         "id",
         "create_time",
@@ -139,8 +120,6 @@ tiktokRouter.get('/info', isAuthenticated, async (req, res) => {
         "view_count"
       ]
 
-
-
       // request for user info
       const userData = await axios.get(
         `https://open.tiktokapis.com/v2/user/info/?fields=${userObjField.join(",")}`,
@@ -152,8 +131,6 @@ tiktokRouter.get('/info', isAuthenticated, async (req, res) => {
           },
         }
       );
-
-
 
       //request for videoObj list of user
       const videoList = await axios.post(
@@ -170,16 +147,10 @@ tiktokRouter.get('/info', isAuthenticated, async (req, res) => {
         }
       );
 
-
-
-
       console.log("##########UserInfo#####\n\n")
       console.log(userData.data);
       console.log("##########VideoInfo#####\n\n")
       console.log(videoList?.data?.data?.videos);
-
-
-
 
       // Destroy the session data
       req.session.destroy(err => {
@@ -187,26 +158,14 @@ tiktokRouter.get('/info', isAuthenticated, async (req, res) => {
           return res.status(500).json({ app: "TikTok", message: "internal server error", error: err });
         }
         // Redirect to the home page after logging out
-        return res.status(200).json({ app: "TiTok", message: "success", data: { ...userData.data, ...videoList?.data?.data?.videos } })
+        return res.status(200).json({ app: "TiTok", message: "success", data: { ...userData?.data?.data, video : videoList?.data?.data?.videos } })
       });
-
 
     } else {
       res.status(500).send("access token expires");
     }
-
-
   } catch (error: any) {
     console.error("Error during callback:", error.message);
     res.status(500).send("An error occurred during the login process.");
   }
-
-
-}
-
-);
-
-
-
-
-
+});
