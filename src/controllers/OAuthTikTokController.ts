@@ -9,9 +9,6 @@ import { isAuthenticated } from "../utils";
 
 
 dotenv.config();
-
-
-
 // Serialization and deserialization
 passport.serializeUser(function (user, done) {
   done(null, user);
@@ -31,33 +28,25 @@ passport.use("tiktok", new TikTokOAuth2Strategy(
     clientSecret: process.env.TIKTOK_CLIENT_SECRET,
     callbackURL: `https://app.plurality.local:5000/oauth-tiktok/callback`,
     scope: "user.info.basic,user.info.profile,user.info.stats,video.list",
-    state: false
   },
   // Verify callback
   (accessToken: any, refreshToken: any, profile: any, done: any) => {
     return done(null, { accessToken: accessToken, refreshToken: refreshToken });
   }
-
 ));
 
 
-tiktokRouter.get('/',
-
-  async (req: Request, res: Response, next) => {
-
-
-
-    req?.session?.redirectParams = {
+tiktokRouter.get('/', async (req: Request, res: Response, next) => {
+   
+  req?.session?.redirectParams = {
       isWidget: req?.query?.isWidget,
       origin: req?.query?.origin,
       apps: req?.query?.apps,
-
     };
+
     req.session.save()
-
-    const csrfState = Math.random().toString(36).substring(2);
-
-    passport.authenticate('tiktok', { state: csrfState })(req, res, next);
+    // const csrfState = Math.random().toString(36).substring(2);
+    passport.authenticate('tiktok')(req, res, next);
   })
 
 

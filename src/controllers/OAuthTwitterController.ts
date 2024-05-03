@@ -39,14 +39,10 @@ passport.use(
       scope: "tweet.read users.read offline.access", //space
       state: true,
       pkce: true,
-
-      // state:""
     },
     // Verify callback
     (accessToken: any, refreshToken: any, profile: any, done: any) => {
-      // console.log('Success!', { accessToken, refreshToken, profile });
       console.log("Verify")
-
       return done(null, { accessToken, refreshToken, profile });
     }
   )
@@ -57,25 +53,19 @@ passport.use(
 twitterRouter.get(
   '/',
   async (req: Request, res: Response, next) => {
-
     req?.session?.redirectParams = {
       isWidget: req?.query?.isWidget,
       origin: req?.query?.origin,
       apps: req?.query?.apps,
-
     };
+
     req.session.save()
-
     passport.authenticate('twitter')(req, res, next);
-
   });
 
 // Callback handler
 twitterRouter.get('/callback', passport.authenticate('twitter', { session: false }), async (req, res) => {
-
-
   try {
-
     console.log("id", req.sessionID);
     console.log(">>>>>>>>>>>>>>", req.session);
     // request for user info
@@ -84,8 +74,6 @@ twitterRouter.get('/callback', passport.authenticate('twitter', { session: false
       accessToken: req.user.accessToken,
       refreshToken: req.user.refreshToken
     }
-
-
     const { isWidget, origin, apps } = req.session.redirectParams;
     let url: any;
 
@@ -98,9 +86,6 @@ twitterRouter.get('/callback', passport.authenticate('twitter', { session: false
       url = `${process.env.DASHBOARD_UI_URL}?isWidget=${isWidget}&origin=${origin}&apps=${apps}`
     }
 
-
-
-
     // res.redirect(url);
     res.send(url);
   } catch (error: any) {
@@ -112,33 +97,22 @@ twitterRouter.get('/callback', passport.authenticate('twitter', { session: false
 );
 
 
-
-
-
-
 // Callback handler
 twitterRouter.get('/info', isAuthenticated, async (req, res) => {
-
-
   try {
-
 
     console.log("id", req.sessionID)
     console.log(">>>>>>>>>>>>>>", req.session)
 
-
     // console.log(isWidget, origin, apps)
-    const { accessToken, refreshToken }: any = req?.session?.user;
+    const { accessToken }: any = req?.session?.user;
 
     // request for user info
     console.log(accessToken)
     if (accessToken) {
-
-
       const tweetFields = [
         'attachments', 'author_id', 'context_annotations', 'conversation_id', 'created_at', 'edit_controls', 'entities', 'geo', 'id', 'in_reply_to_user_id', 'lang', 'non_public_metrics', 'public_metrics', 'organic_metrics', 'promoted_metrics', 'possibly_sensitive', 'referenced_tweets', 'reply_settings', 'source', 'text', 'withheld'
       ];
-
       const userFields = [
         'created_at', 'description', 'entities', 'id', 'location', 'most_recent_tweet_id', 'name', 'pinned_tweet_id', 'profile_image_url', 'protected', 'public_metrics', 'url', 'username', 'verified', 'verified_type', 'withheld'
       ]
@@ -153,18 +127,12 @@ twitterRouter.get('/info', isAuthenticated, async (req, res) => {
         }
       );
 
-
-
-
-
       console.log(userTweet?.data)
-
       const data: any = {
         ...userTweet?.data?.data
       }
 
       const public_metrics = data?.public_metrics;
-
       delete data?.public_metrics;
 
       // Destroy the session data
@@ -175,10 +143,7 @@ twitterRouter.get('/info', isAuthenticated, async (req, res) => {
         // Redirect to the home page after logging out
         return res.status(200).json({ app: "X", message: "success", data: { ...public_metrics, ...data } })
       });
-
       // Todo: Need to loook other properties which can be come for proper structuring of json
-     
-
     } else {
       res.status(500).send("access token expires");
     }
@@ -186,6 +151,4 @@ twitterRouter.get('/info', isAuthenticated, async (req, res) => {
     console.error("Error during callback:", error.message);
     res.status(500).send("An error occurred during the login process.");
   }
-
-}
-);
+});
