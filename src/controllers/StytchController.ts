@@ -127,40 +127,40 @@ stytchRouter.get("/check-address", [
     });
 
 
-// GET endpoint to check if a user exists by email 
-stytchRouter.get("/check-email", [
-    check('email').trim().custom(validateEmail), // Validate the email
-], async (req: Request, res: Response) => {  
-    try {
-        Logger.info(`Receiving check email request: ${JSON.stringify(req.query)}`); 
-        // Check for validation errors
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            Logger.error(`Fatal error due to inproper request parameters to route GET /check-email: ${JSON.stringify(errors)}`);
-            return res.status(400).json({ errors: errors.array() });
-        }
+// // GET endpoint to check if a user exists by email 
+// stytchRouter.get("/check-email", [
+//     check('email').trim().custom(validateEmail), // Validate the email
+// ], async (req: Request, res: Response) => {  
+//     try {
+//         Logger.info(`Receiving check email request: ${JSON.stringify(req.query)}`); 
+//         // Check for validation errors
+//         const errors = validationResult(req);
+//         if (!errors.isEmpty()) {
+//             Logger.error(`Fatal error due to inproper request parameters to route GET /check-email: ${JSON.stringify(errors)}`);
+//             return res.status(400).json({ errors: errors.array() });
+//         }
 
-        // Extract the email from the sanitized query parameters  
-        const { email } = req.query;
+//         // Extract the email from the sanitized query parameters  
+//         const { email } = req.query;
 
-        // Query the database to check if the user exists and if the address is registered
-        const existingUser = await userRepository.findOne({
-            where: {
-                email: email as string,
-            },
-          }); 
+//         // Query the database to check if the user exists and if the address is registered
+//         const existingUser = await userRepository.findOne({
+//             where: {
+//                 email: email as string,
+//             },
+//           }); 
 
-        if (existingUser) {  
-            Logger.info(`This user already exists! email: ${existingUser.email}, address: ${existingUser.address}, subscribe: ${existingUser.subscribe} `); 
-            return res.json({ exists: true });
-        } else {  
-            // User does not exist
-            Logger.info(`This user does not exist!`); 
-            return res.json({ exists: false });  
-        }  
-    } catch (e) {  
-        // If an error occurs during the database query, return an error response  
-        Logger.error(`Fatal error due to unknown reason: ${JSON.stringify(e)}`);
-        return res.status(500).json({ error: "An error occurred while processing your request" });  
-    }  
-});
+//         if (existingUser) {  
+//             Logger.info(`This user already exists! email: ${existingUser.email}, address: ${existingUser.address}, subscribe: ${existingUser.subscribe} `); 
+//             return res.json({ exists: true });
+//         } else {  
+//             // User does not exist
+//             Logger.info(`This user does not exist!`); 
+//             return res.json({ exists: false });  
+//         }  
+//     } catch (e) {  
+//         // If an error occurs during the database query, return an error response  
+//         Logger.error(`Fatal error due to unknown reason: ${JSON.stringify(e)}`);
+//         return res.status(500).json({ error: "An error occurred while processing your request" });  
+//     }  
+// });
