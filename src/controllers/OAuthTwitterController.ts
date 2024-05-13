@@ -5,6 +5,8 @@ import OAuthTwitterStrategy from '../auth/OAuthTwitterStrategy';
 import * as dotenv from 'dotenv';
 import axios from "axios";
 import { isAuthenticated } from "../utils";
+import { scrape } from "../utils/scrape";
+import { PinnedTweet, TwitterProfile } from "../classes/twitter";
 
 
 export const twitterRouter = express.Router();
@@ -135,13 +137,46 @@ twitterRouter.get('/info', isAuthenticated, async (req, res) => {
       const public_metrics = data?.public_metrics;
       delete data?.public_metrics;
 
+      const tweetUrl = `https://twitter.com/${data['username']}/status/${data['pinned_tweet_id']}`
+
+      const pinnedTweet = await scrape(tweetUrl);
+
+      const pt = new PinnedTweet(pinnedTweet?.username,
+        pinnedTweet?.Views,
+        pinnedTweet?.date,
+        pinnedTweet?.Reposts,
+        pinnedTweet?.Quotes,
+        pinnedTweet?.Likes,
+        pinnedTweet?.Bookmarks,
+        pinnedTweet?.tweetText,
+        pinnedTweet?.insights);   
+
+        const twitterProfile = new TwitterProfile(
+          public_metrics?.followers_count,
+          public_metrics?.following_count,
+          public_metrics?.tweet_count,
+          public_metrics?.listed_count,
+          public_metrics?.like_count,
+          data?.pinned_tweet_id,
+          data?.verified_type,
+          data?.protected,
+          data?.username,
+          data?.most_recent_tweet_id,
+          data?.verified,
+          data?.description,
+          data?.created_at,
+          data?.name,
+          data?.profile_image_url,
+          data?.id
+        )
+
       // Destroy the session data
       req.session.destroy(err => {
         if (err) {
           return res.status(500).json({ app: "X", message: "internal server error", error: err });
         }
         // Redirect to the home page after logging out
-        return res.status(200).json({ app: "X", message: "success", data: { ...public_metrics, ...data } })
+        return res.status(200).json({ app: "X", message: "success", data: { twitterProfile : twitterProfile, pinnedTweet : pt } })
       });
       // Todo: Need to loook other properties which can be come for proper structuring of json
     } else {
