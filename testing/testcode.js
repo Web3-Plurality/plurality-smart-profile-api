@@ -13,6 +13,7 @@ export const twitterRouter = express.Router();
 
 dotenv.config();
 
+const activeConnections = new Map();
 
 // Serialization and deserialization
 passport.serializeUser(function (user, done) {
@@ -55,11 +56,71 @@ passport.use(
 
 
 
+
+function initSSE(req:Request, res: Response) {
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive',
+  });
+
+  // const id = new Date().toISOString();
+  // res.write(`id: ${id}\n`);
+  res.write(`data: {"message":"Connection established"}\n\n`);
+
+  // console.log("res>>>>>",res)
+  // Store the response object in session for later use to push events
+
+  
+  // req.session.save();
+
+    // Store the connection using session ID
+    activeConnections.set(req.sessionID,  res );
+
+  // Keep the connection alive with comments
+  // const keepAlive = setInterval(() => {
+  //   res.write(`data: {"message":"keep-alive"}\n\n`);
+  // }, 20000);
+
+  req.on('close', () => {
+    // clearInterval(keepAlive);
+    activeConnections.delete(req.sessionID);
+    res.end();
+});
+
+}
+
+
+twitterRouter.get('/register', (req:Request, res:Response) => {
+  const connection = activeConnections.get(req.sessionId);
+  if (!connection) {
+    req.session.save();
+    res.status(200).json({"message":"session has been created."})
+  } else {
+    res.status(400).send("session already created.");
+  }
+});
+
+
+
+twitterRouter.get('/register-event', (req:Request, res:Response) => {
+  const connection = activeConnections.get(req.sessionId);
+  if (!connection) {
+    initSSE(req, res);
+  } else {
+    res.status(400).send("Event stream already open for this session");
+  }
+});
+
+
 // Start authentication flow
 twitterRouter.get(
   '/',
   async (req: Request, res: Response, next) => {
-
+    const connection = activeConnections.get(req.sessionId);
+    if (!connection) {
+      res.status(400).send("Register Event first");
+  } 
 
     req?.session?.redirectParams = {
       isWidget: req?.query?.isWidget,
@@ -67,7 +128,7 @@ twitterRouter.get(
       apps: req?.query?.apps,
     };
 
-    req.session.save()
+    // req.session.save()
     passport.authenticate('twitter')(req, res, next);
   });
 
@@ -79,7 +140,13 @@ twitterRouter.get('/callback', passport.authenticate('twitter', { session: false
     // request for user info
     console.log(">>>>>>>>>>>>>", req.user);
     
-
+  //  console.log(">>>>>>>>sssss",req.session.sseConnection) 
+    // if (req.user.accessToken) {
+    //   if (req.session.sseConnection) {
+    //     const sseRes = req.session.sseConnection;
+    //     sseRes.write(`data: ${JSON.stringify({ message: 'Callback received', data: req.user })}\n\n`);
+    //   }
+    // }
     
     req.session.user = {
       accessToken: req.user.accessToken,

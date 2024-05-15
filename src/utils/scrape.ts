@@ -1,6 +1,6 @@
 import puppeteer from 'puppeteer';
 import { analyzeTweet } from './groq';
-import { Insights } from '../classes/twitter/index';
+
 
 
 
@@ -65,10 +65,10 @@ export async function scrape(url: string) {
 
   await browser.close();
 
-  const insights = tweetObj?.tweetText ? await analyzeTweet(tweetObj?.tweetText) : {}
+  const interests = tweetObj?.tweetText ? await analyzeTweet(tweetObj?.tweetText) : {}
+  console.log("scrape", tweetObj?.tweetText)
+ 
 
-  const insight = new Insights(insights?.Interests ? insights?.Interests : [], insights?.Hashtags ? insights?.Hashtags : [], insights?.ExtraTags ? insights?.ExtraTags : []);
-
-  return { ...tweetObj, "url": url, "insights": insight }
+  return { ...tweetObj,  "interests": interests?.Interests ? interests?.Interests : []  }
 
 }

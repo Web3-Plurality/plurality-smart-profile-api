@@ -33,21 +33,32 @@ export async function analyzeTweet(tweet : string) {
 async function getGroqChatCompletion(tweet: string ) {
     return groq.chat.completions.create({
         messages: [
+          {
+            "role": "system",
+            "content": "You are helpful asistant which extract insights from Tweet and output it in JSON. The JSON object must use the schema: {Interests: [string]}."
+          },
             {
                 role: "user",
-                content: `Fetch interests and tags from this tweet and make json of it. The json schema should contain the following Objects: Interests (also include other related topic to this text), hashtags (also extra tags that are related, Note: dont give me any text except json, it solud be exact like this 
-                  '{
-                  "Interests": [],
-                  "Hashtags": [],
-                  "ExtraTags": []
-                }'
-               )
+                content: `Fetch interests and tags from this tweet and make JSON of it.
+                The JSON schema should contain the following Object: 
+                Interests (also include other related topic and tags).
+                Put everything in the Interests array.
+                if you did not find any thing still you have to follow schema out.
+                The JSON object must use the schema: {Interests: [string]}.
                 Text:
                 "${tweet}"
                 `
             } 
         ],
-        model: "llama3-8b-8192"
+        model: "llama3-8b-8192",
+        temperature: 0.5,
+        // // max_tokens: 1024,
+        // top_p: 1,
+        stream: false,
+        response_format: {
+          type: "json_object"
+        },
+        stop: null
     });
 }
 

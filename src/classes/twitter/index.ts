@@ -1,48 +1,51 @@
 // Define TypeScript classes
-export class Insights {
-    Interests: string[];
-    Hashtags: string[];
-    ExtraTags: string[];
+// export class Insights {
+//     Interests: string[];
+//     Hashtags: string[];
+//     ExtraTags: string[];
   
-    constructor(interests: string[] = [], hashtags: string[] = [], extraTags: string[] = []) {
-      this.Interests = interests;
-      this.Hashtags = hashtags;
-      this.ExtraTags = extraTags;
-    }
-  }
+//     constructor(interests: string[] = [], hashtags: string[] = [], extraTags: string[] = []) {
+//       this.Interests = interests;
+//       this.Hashtags = hashtags;
+//       this.ExtraTags = extraTags;
+//     }
+//   }
   
   
   export class PinnedTweet {
+    url: string;
     username: string;
-    Views: string;
+    views: string;
     date: string;
-    Reposts: string;
-    Quotes: string;
-    Likes: string;
-    Bookmarks: string;
+    reposts: string;
+    quotes: string;
+    likes: string;
+    bookmarks: string;
     tweetText: string;
-    insights: Insights;
+    interests: string[];
   
     constructor(
+      url: string = "",
       username: string = "@defaultUser",
-      Views: string = "0",
+      views: string = "0",
       date: string = "Not specified",
-      Reposts: string = "0",
-      Quotes: string = "0",
-      Likes: string = "0",
-      Bookmarks: string = "0",
-      tweetText: string = "No text",
-      insights: Insights = new Insights()
+      reposts: string = "0",
+      quotes: string = "0",
+      likes: string = "0",
+      bookmarks: string = "0",
+      tweetText: string = "",
+      interests: string[] = []
     ) {
+      this.url = url,
       this.username = username;
-      this.Views = Views;
+      this.views = views;
       this.date = date;
-      this.Reposts = Reposts;
-      this.Quotes = Quotes;
-      this.Likes = Likes;
-      this.Bookmarks = Bookmarks;
+      this.reposts = reposts;
+      this.quotes = quotes;
+      this.likes = likes;
+      this.bookmarks = bookmarks;
       this.tweetText = tweetText;
-      this.insights = insights;
+      this.interests = interests;
     }
   }
     
