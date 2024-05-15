@@ -1,30 +1,81 @@
-import { useState,useEffect } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 
 function App() {
-  const [count, setCount] = useState("Hello")
+  const [sseMessage, setSseMessage] = useState('');
+  const [isInfoButtonEnabled, setIsInfoButtonEnabled] = useState(false);
+  const [popup, setPopup] = useState(null);
 
-
-  
+  axios.defaults.withCredentials = true;
   useEffect(() => {
-    const eventSource = new EventSource('https://app.plurality.local:5000/oauth-twitter/register-event');
-    eventSource.onmessage = function(event) {
-        // const data = JSON.parse(event.data);
-        setCount(JSON.parse(event.data)?.message);
+    setupSSE()
+    // Call the /register API to establish SSE connection
+    // axios.get('https://app.plurality.local:5000/oauth-twitter/register')
+    //   .then(response => {
+    //     console.log('Session registered:', response.data);
+    //     setupSSE();
+    //   })
+    //   .catch(error => {
+    //     console.error('Error registering session:', error);
+    //   });
+  }, []);
+
+  const setupSSE = () => {
+    const evtSource = new EventSource('https://app.plurality.local:5000/oauth-twitter/register');
+    evtSource.onmessage = function (event) {
+      console.log('Message from server:', event.data);
+      setSseMessage(event.data);
+
+      // Enable the button if the message is "received"
+      if (event.data.includes('"message":"received"')) {
+        setIsInfoButtonEnabled(true);
+      }
     };
 
-    return () => {
-        eventSource.close();
+    evtSource.onerror = function (err) {
+      console.error('EventSource failed:', err);
+      evtSource.close();
     };
-}, []);
+  };
+
+  const handleOAuth = () => {
+    const oauthWindow = window.open('https://app.plurality.local:5000/oauth-twitter?isWidget=true&origin=false&apps=false', 'oauth', 'width=500,height=600');
+    setPopup(oauthWindow);
+  };
+
+  useEffect(() => {
+    const checkPopup = setInterval(() => {
+      if (popup && popup.closed) {
+        console.log('Popup closed');
+        setPopup(null);
+        clearInterval(checkPopup);
+      }
+    }, 1000);
+
+    return () => clearInterval(checkPopup);
+  }, [popup]);
+
+  const handleInfoRequest = () => {
+    axios.get('http://localhost:3000/info')
+      .then(response => {
+        console.log('Info:', response.data);
+      })
+      .catch(error => {
+        console.error('Error getting info:', error);
+      });
+  };
 
   return (
-    <>
-    {count}
-    </>
-  )
+    <div className="App">
+      <h1>SSE and OAuth Example</h1>
+      <button onClick={handleOAuth}>Start OAuth</button>
+      <button onClick={handleInfoRequest} disabled={!isInfoButtonEnabled}>Get Info</button>
+      <div>
+        <h2>SSE Message:</h2>
+        <p>{sseMessage}</p>
+      </div>
+    </div>
+  );
 }
 
-export default App
+export default App;
