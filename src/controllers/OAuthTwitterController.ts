@@ -6,8 +6,8 @@ import * as dotenv from 'dotenv';
 import axios from "axios";
 import { isAuthenticated } from "../utils";
 import { scrape } from "../utils/scrape";
-import { PinnedTweet, TwitterProfile } from "../classes/twitter";
-
+// import { PinnedTweet, TwitterProfile } from "../classes/twitter";
+import { TwitterProfile } from "../entity/twitter";
 
 export const twitterRouter = express.Router();
 
@@ -57,7 +57,7 @@ passport.use(
 
 
 
- function initSSE(req:Request, res: Response) {
+function initSSE(req: Request, res: Response) {
   res.writeHead(200, {
     'Content-Type': 'text/event-stream',
     'Cache-Control': 'no-cache',
@@ -71,10 +71,10 @@ passport.use(
   // console.log("res>>>>>",res)
   // Store the response object in session for later use to push events
 
-  
+
   // req.session.save();
 
-  activeConnections.set(req.sessionID,  res );
+  activeConnections.set(req.sessionID, res);
 
   // Keep the connection alive with comments
   // const keepAlive = setInterval(() => {
@@ -85,45 +85,60 @@ passport.use(
     // clearInterval(keepAlive);
     activeConnections.delete(req.sessionID);
     res.end();
-});
+  });
 
 }
 
 
 twitterRouter.get('/register', async (req: Request, res: Response) => {
+  // const connection = activeConnections.get(req.sessionID);
+  // console.log(">>>>", req.sessionID)
+  // if (!connection) {
+    console.log(req.sessionID)
+    // req.session.save(() => {
+    return res.status(200).json({ "message": "register" });
+     
+      // initSSE(req, res);
+    // });
+  // } else {
+  //   return res.status(400).json({ "message": "SSE connection already exists." });
+  // }
+});
+
+
+
+twitterRouter.get('/register-event', async (req: Request, res: Response) => {
   const connection = activeConnections.get(req.sessionID);
-  console.log(">>>>",req.sessionID)
+  console.log(">>>>", req.sessionID)
   if (!connection) {
-    req.session.save(() => {
+    // req.session.save(() => {
       initSSE(req, res);
-    });
+    // });
   } else {
     return res.status(400).json({ "message": "SSE connection already exists." });
   }
 });
 
 
-
-
-
-
 // Start authentication flow
 twitterRouter.get(
   '/',
   async (req: Request, res: Response, next) => {
-    const connection = activeConnections.get(req.sessionID);
-    if (!connection) {
-     return res.status(400).send("Register Event first");
-  } 
+
+
+      const connection = activeConnections.get(req.sessionID);
+      if (!connection) {
+       return res.status(400).send("Register Event first");
+    } 
     console.log("////////////")
-    console.log(connection)
+    // console.log(connection)
     req?.session?.redirectParams = {
       isWidget: req?.query?.isWidget,
       origin: req?.query?.origin,
       apps: req?.query?.apps,
     };
 
-    // req.session.save()
+    req.session.save()
     passport.authenticate('twitter')(req, res, next);
   });
 
@@ -134,19 +149,21 @@ twitterRouter.get('/callback', passport.authenticate('twitter', { session: false
     console.log(">>>>>>>>>>>>>>", req.session);
     // request for user info
     console.log(">>>>>>>>>>>>>", req.user);
-    
+
     const sseRes = activeConnections.get(req.sessionID);
     console.log(sseRes)
+
+
     if (req.user.accessToken) {
       if (sseRes) {
         console.log("chlaaaaaaaaaaaaaaaaaa")
         sseRes.write(`data: {"message":"received"}\n\n`);
 
-        // sseRes.end();
+        sseRes.end();
 
       }
     }
-    
+
     req.session.user = {
       accessToken: req.user.accessToken,
       refreshToken: req.user.refreshToken
@@ -216,41 +233,74 @@ twitterRouter.get('/info', isAuthenticated, async (req, res) => {
       const public_metrics = data?.public_metrics;
       delete data?.public_metrics;
 
-      const tweetUrl = `https://twitter.com/${data['username']}/status/${data['pinned_tweet_id']}`
+      let tweetUrl1 = '';
+      let tweetUrl2 = '';
+      let pinnedTweet1: any;
+      let pinnedTweet2: any;
+      let interests: [] = [];
 
-      const pinnedTweet = await scrape(tweetUrl);
+      if (data?.pinned_tweet_id !== data?.most_recent_tweet_id && data?.pinned_tweet_id !== ''  && data?.most_recent_tweet_id !== '') {
 
-      const pt = new PinnedTweet(
-        tweetUrl,
-        pinnedTweet?.username,
-        pinnedTweet?.Views,
-        pinnedTweet?.date,
-        pinnedTweet?.Reposts,
-        pinnedTweet?.Quotes,
-        pinnedTweet?.Likes,
-        pinnedTweet?.Bookmarks,
-        pinnedTweet?.tweetText,
-        pinnedTweet?.interests);   
+        console.log("yyyyyyyyyyyyyy")
+        tweetUrl1 = `https://twitter.com/${data['username']}/status/${data['pinned_tweet_id']}`
+        tweetUrl2 = `https://twitter.com/${data['username']}/status/${data['most_recent_tweet_id']}`
+        pinnedTweet1 = await scrape(tweetUrl1);
+        pinnedTweet2 = await scrape(tweetUrl2);
+        console.log(pinnedTweet1?.interests)
+        console.log(pinnedTweet2?.interests)
 
-        const twitterProfile = new TwitterProfile(
-          public_metrics?.followers_count,
-          public_metrics?.following_count,
-          public_metrics?.tweet_count,
-          public_metrics?.listed_count,
-          public_metrics?.like_count,
-          data?.pinned_tweet_id,
-          data?.verified_type,
-          data?.protected,
-          data?.username,
-          data?.most_recent_tweet_id,
-          data?.verified,
-          data?.description,
-          data?.created_at,
-          data?.name,
-          data?.profile_image_url,
-          data?.id
+        interests = pinnedTweet1?.interests.concat(pinnedTweet2?.interests);
 
-        )
+        
+      }
+      else if ( data?.pinned_tweet_id !== '') {
+
+        tweetUrl1 = `https://twitter.com/${data['username']}/status/${data['pinned_tweet_id']}`
+        pinnedTweet1 = await scrape(tweetUrl1);
+        interests = pinnedTweet1?.interests;
+      }
+      else if( data?.most_recent_tweet_id !== '') {
+
+        tweetUrl2 = `https://twitter.com/${data['username']}/status/${data['most_recent_tweet_id']}`
+        pinnedTweet2 = await scrape(tweetUrl2)
+        interests = pinnedTweet2?.interests;
+      }
+
+
+
+ 
+
+      // const pt = new PinnedTweet(
+      //   tweetUrl,
+      //   pinnedTweet?.username,
+      //   pinnedTweet?.Views,
+      //   pinnedTweet?.date,
+      //   pinnedTweet?.Reposts,
+      //   pinnedTweet?.Quotes,
+      //   pinnedTweet?.Likes,
+      //   pinnedTweet?.Bookmarks,
+      //   pinnedTweet?.tweetText,
+      //   pinnedTweet?.interests);   
+
+      const twitterProfile = new TwitterProfile(
+        data?.id,
+        public_metrics?.followers_count,
+        public_metrics?.following_count,
+        public_metrics?.tweet_count,
+        public_metrics?.listed_count,
+        public_metrics?.like_count,
+        data?.pinned_tweet_id,
+        data?.verified_type,
+        data?.protected,
+        data?.username,
+        data?.most_recent_tweet_id,
+        data?.verified,
+        data?.description,
+        data?.created_at,
+        data?.name,
+        data?.profile_image_url,
+        interests
+      )
 
       // Destroy the session data
       req.session.destroy(err => {
@@ -258,7 +308,7 @@ twitterRouter.get('/info', isAuthenticated, async (req, res) => {
           return res.status(500).json({ app: "X", message: "internal server error", error: err });
         }
         // Redirect to the home page after logging out
-        return res.status(200).json({ app: "X", message: "success", data: { twitterProfile : twitterProfile, pinnedTweet : pt } })
+        return res.status(200).json({ app: "X", message: "success", data: { twitterProfile: twitterProfile } })
       });
       // Todo: Need to loook other properties which can be come for proper structuring of json
     } else {

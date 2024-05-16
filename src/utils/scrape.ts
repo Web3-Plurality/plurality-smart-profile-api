@@ -5,6 +5,10 @@ import { analyzeTweet } from './groq';
 
 
 export async function scrape(url: string) {
+
+  try {
+    
+ 
   // Launch Puppeteer browser
   const browser = await puppeteer.launch({
     headless: true,
@@ -70,5 +74,11 @@ export async function scrape(url: string) {
  
 
   return { ...tweetObj,  "interests": interests?.Interests ? interests?.Interests : []  }
+
+
+} catch (error) {
+    console.log(error)
+    return { }
+}
 
 }

@@ -1,7 +1,10 @@
 "use strict";
 const Groq = require("groq-sdk");
+import * as dotenv from 'dotenv';
+dotenv.config();
+
 const groq = new Groq({
-    apiKey: "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"
+    apiKey: process.env.GROQ_API
 });
 
 
@@ -46,11 +49,11 @@ async function getGroqChatCompletion(tweet: string ) {
                 if you did not find any thing still you have to follow schema out.
                 The JSON object must use the schema: {Interests: [string]}.
                 Text:
-                "${tweet}"
+                ${tweet}
                 `
             } 
         ],
-        model: "llama3-8b-8192",
+        model: "llama3-70b-8192",
         temperature: 0.5,
         // // max_tokens: 1024,
         // top_p: 1,
