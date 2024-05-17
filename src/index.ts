@@ -32,13 +32,13 @@ origin: 'http://172.31.37.52:3000', // Set this to match the requesting origin e
 credentials: true, // This allows cookies and credentials to be sent with the request
 methods : ['GET','POST']
 }));
-// app.use(passport.initialize());
+app.use(passport.initialize());
 
 
 
 
-app.use(session({ secret: 'keyboard cat', resave: false, saveUninitialized: true,cookie: { secure: "auto", maxAge:1000*60*60*24, httpOnly:false} }));
-// app.use(passport.session());
+app.use(session({ secret: 'keyboard cat', resave: false, saveUninitialized: true,cookie: { secure: "auto", maxAge:1000*60*60*24} }));
+app.use(passport.session());
 app.use("/oauth-twitter", twitterRouter);
 app.use("/permaweb", permawebRouter);
 app.use("/oauth-tiktok", tiktokRouter);

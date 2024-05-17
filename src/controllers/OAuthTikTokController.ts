@@ -5,6 +5,7 @@ export const tiktokRouter = express.Router();
 import passport from "passport";
 import axios from "axios";
 import { isAuthenticated } from "../utils";
+import { TikTokProfile } from "../entity/Tiktok";
 
 
 
@@ -152,13 +153,15 @@ tiktokRouter.get('/info', isAuthenticated, async (req, res) => {
       console.log("##########VideoInfo#####\n\n")
       console.log(videoList?.data?.data?.videos);
 
+      const tiktokProfile = new TikTokProfile({user : userData?.data?.data?.user, video : videoList?.data?.data?.videos});
+
       // Destroy the session data
       req.session.destroy(err => {
         if (err) {
           return res.status(500).json({ app: "TikTok", message: "internal server error", error: err });
         }
         // Redirect to the home page after logging out
-        return res.status(200).json({ app: "TiTok", message: "success", data: { ...userData?.data?.data, video : videoList?.data?.data?.videos } })
+        return res.status(200).json({ app: "TiTok", message: "success", data: { tiktokProfile} })
       });
 
     } else {
