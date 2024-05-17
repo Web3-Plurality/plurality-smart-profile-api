@@ -4,7 +4,7 @@ import TikTokOAuth2Strategy from "../auth/OAuthTikTokStrategy"
 export const tiktokRouter = express.Router();
 import passport from "passport";
 import axios from "axios";
-import { isAuthenticated } from "../utils";
+import { activeConnections, isAuthenticated } from "../utils";
 import { TikTokProfile } from "../entity/Tiktok";
 
 
@@ -17,6 +17,7 @@ passport.serializeUser(function (user, done) {
 passport.deserializeUser(function (obj: any, done) {
   done(null, obj);
 });
+
 
 
 
@@ -37,18 +38,29 @@ passport.use("tiktok", new TikTokOAuth2Strategy(
   }
 ));
 
-tiktokRouter.get('/', async (req: Request, res: Response, next) => {
-   
-  req?.session?.redirectParams = {
-      isWidget: req?.query?.isWidget,
-      origin: req?.query?.origin,
-      apps: req?.query?.apps,
-    };
 
-    req.session.save()
-    const csrfState = Math.random().toString(36).substring(2);
-    passport.authenticate('tiktok',{state: csrfState})(req, res, next);
-  })
+
+
+
+
+
+
+
+tiktokRouter.get('/', async (req: Request, res: Response, next) => {
+
+
+  const connection = activeConnections.get(req.sessionID);
+  if (!connection) {
+    return res.status(400).send("Register Event first");
+  }
+  req?.session?.redirectParams = {
+    isWidget: req?.query?.isWidget,
+    origin: req?.query?.origin,
+    apps: req?.query?.apps,
+  };
+  const csrfState = Math.random().toString(36).substring(2);
+  passport.authenticate('tiktok', { state: csrfState })(req, res, next);
+})
 
 tiktokRouter.get('/callback', passport.authenticate("tiktok", { session: false }), async (req, res) => {
   try {
@@ -56,14 +68,14 @@ tiktokRouter.get('/callback', passport.authenticate("tiktok", { session: false }
     console.log("id", req.sessionID);
     console.log(">>>>>>>>>>>>>>", req.session);
     console.log(">>>>>>>>>>>>>", req.user);
+    let url: any;
+    const sseRes = activeConnections.get(req.sessionID);
+    const { isWidget, origin, apps } = req.session.redirectParams;
 
     req.session.user = {
       accessToken: req.user.accessToken,
       refreshToken: req.user.refreshToken
     }
-
-    const { isWidget, origin, apps } = req.session.redirectParams;
-    let url: any;
 
     if (isWidget == 'true')
       url = `${process.env.WIDGET_UI_URL}?isWidget=${isWidget}&origin=${origin}&apps=${apps}`
@@ -73,6 +85,15 @@ tiktokRouter.get('/callback', passport.authenticate("tiktok", { session: false }
       console.log('Did not find the isWidget parameter in callback. Redirecting to default dashboard');
       url = `${process.env.DASHBOARD_UI_URL}?isWidget=${isWidget}&origin=${origin}&apps=${apps}`
     }
+
+    
+    if (req.user.accessToken && sseRes) {
+      sseRes.write(`data: {"message":"received"}\n\n`)
+  }
+  else{
+    res.status(500).send("An error occurred while accessing session");
+  }
+  
 
     // res.redirect(url);
     res.send(url);
@@ -153,15 +174,16 @@ tiktokRouter.get('/info', isAuthenticated, async (req, res) => {
       console.log("##########VideoInfo#####\n\n")
       console.log(videoList?.data?.data?.videos);
 
-      const tiktokProfile = new TikTokProfile({user : userData?.data?.data?.user, video : videoList?.data?.data?.videos});
+      const tiktokProfile = new TikTokProfile({ user: userData?.data?.data?.user, video: videoList?.data?.data?.videos });
 
       // Destroy the session data
       req.session.destroy(err => {
+        activeConnections.delete(req.sessionID);
         if (err) {
           return res.status(500).json({ app: "TikTok", message: "internal server error", error: err });
         }
         // Redirect to the home page after logging out
-        return res.status(200).json({ app: "TiTok", message: "success", data: { tiktokProfile} })
+        return res.status(200).json({ app: "TiTok", message: "success", data: { tiktokProfile } })
       });
 
     } else {

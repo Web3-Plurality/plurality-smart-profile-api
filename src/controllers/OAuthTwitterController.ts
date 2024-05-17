@@ -1,19 +1,16 @@
 import express, { Request, Response } from "express";
-import passport, { session } from "passport";
+import passport from "passport";
 // import { Strategy } from '@superfaceai/passport-twitter-oauth2';
 import OAuthTwitterStrategy from '../auth/OAuthTwitterStrategy';
 import * as dotenv from 'dotenv';
 import axios from "axios";
-import { isAuthenticated } from "../utils";
+import { activeConnections, isAuthenticated } from "../utils";
 import { scrape } from "../utils/scrape";
-// import { PinnedTweet, TwitterProfile } from "../classes/twitter";
 import { TwitterProfile } from "../entity/twitter";
 
 export const twitterRouter = express.Router();
 
 dotenv.config();
-
-const activeConnections = new Map();
 
 // Serialization and deserialization
 passport.serializeUser(function (user, done) {
@@ -26,9 +23,6 @@ passport.deserializeUser(function (obj: any, done) {
 
   done(null, obj);
 });
-
-
-
 
 
 passport.use(
@@ -55,90 +49,22 @@ passport.use(
 
 
 
-
-
-function initSSE(req: Request, res: Response) {
-  res.writeHead(200, {
-    'Content-Type': 'text/event-stream',
-    'Cache-Control': 'no-cache',
-    'Connection': 'keep-alive',
-  });
-
-  // const id = new Date().toISOString();
-  // res.write(`id: ${id}\n`);
-  res.write(`data: {"message":"Connection established"}\n\n`);
-
-  // console.log("res>>>>>",res)
-  // Store the response object in session for later use to push events
-
-
-  // req.session.save();
-
-  activeConnections.set(req.sessionID, res);
-
-  // Keep the connection alive with comments
-  // const keepAlive = setInterval(() => {
-  //   res.write(`data: {"message":"keep-alive"}\n\n`);
-  // }, 20000);
-
-  req.on('close', () => {
-    // clearInterval(keepAlive);
-    activeConnections.delete(req.sessionID);
-    res.end();
-  });
-
-}
-
-
-twitterRouter.get('/register', async (req: Request, res: Response) => {
-  // const connection = activeConnections.get(req.sessionID);
-  // console.log(">>>>", req.sessionID)
-  // if (!connection) {
-    console.log(req.sessionID)
-    // req.session.save(() => {
-    return res.status(200).json({ "message": "register" });
-     
-      // initSSE(req, res);
-    // });
-  // } else {
-  //   return res.status(400).json({ "message": "SSE connection already exists." });
-  // }
-});
-
-
-
-twitterRouter.get('/register-event', async (req: Request, res: Response) => {
-  const connection = activeConnections.get(req.sessionID);
-  console.log(">>>>", req.sessionID)
-  if (!connection) {
-    // req.session.save(() => {
-      initSSE(req, res);
-    // });
-  } else {
-    return res.status(400).json({ "message": "SSE connection already exists." });
-  }
-});
-
-
 // Start authentication flow
 twitterRouter.get(
   '/',
   async (req: Request, res: Response, next) => {
 
+    const connection = activeConnections.get(req.sessionID);
+    if (!connection) {
+      return res.status(400).send("Register Event first");
+    }
 
-      const connection = activeConnections.get(req.sessionID);
-      if (!connection) {
-       return res.status(400).send("Register Event first");
-    } 
-    console.log("////////////")
-    // console.log(connection)
     req?.session?.redirectParams = {
       isWidget: req?.query?.isWidget,
       origin: req?.query?.origin,
       apps: req?.query?.apps,
     };
 
-    req.session.save()
     passport.authenticate('twitter')(req, res, next);
   });
 
@@ -154,14 +80,11 @@ twitterRouter.get('/callback', passport.authenticate('twitter', { session: false
     console.log(sseRes)
 
 
-    if (req.user.accessToken) {
-      if (sseRes) {
-        console.log("chlaaaaaaaaaaaaaaaaaa")
-        sseRes.write(`data: {"message":"received"}\n\n`);
-
-        sseRes.end();
-
-      }
+    if (req.user.accessToken && sseRes) {
+        sseRes.write(`data: {"message":"received"}\n\n`)
+    }
+    else{
+      res.status(500).send("An error occurred while accessing session");
     }
 
     req.session.user = {
@@ -239,48 +162,28 @@ twitterRouter.get('/info', isAuthenticated, async (req, res) => {
       let pinnedTweet2: any;
       let interests: [] = [];
 
-      if (data?.pinned_tweet_id !== data?.most_recent_tweet_id && data?.pinned_tweet_id !== ''  && data?.most_recent_tweet_id !== '') {
+      if (data?.pinned_tweet_id !== data?.most_recent_tweet_id && data?.pinned_tweet_id !== '' && data?.most_recent_tweet_id !== '') {
 
         console.log("yyyyyyyyyyyyyy")
         tweetUrl1 = `https://twitter.com/${data['username']}/status/${data['pinned_tweet_id']}`
         tweetUrl2 = `https://twitter.com/${data['username']}/status/${data['most_recent_tweet_id']}`
         pinnedTweet1 = await scrape(tweetUrl1);
         pinnedTweet2 = await scrape(tweetUrl2);
-        console.log(pinnedTweet1?.interests)
-        console.log(pinnedTweet2?.interests)
-
         interests = pinnedTweet1?.interests.concat(pinnedTweet2?.interests);
-
-        
       }
-      else if ( data?.pinned_tweet_id !== '') {
+      else if (data?.pinned_tweet_id !== '') {
 
         tweetUrl1 = `https://twitter.com/${data['username']}/status/${data['pinned_tweet_id']}`
         pinnedTweet1 = await scrape(tweetUrl1);
         interests = pinnedTweet1?.interests;
       }
-      else if( data?.most_recent_tweet_id !== '') {
+      else if (data?.most_recent_tweet_id !== '') {
 
         tweetUrl2 = `https://twitter.com/${data['username']}/status/${data['most_recent_tweet_id']}`
         pinnedTweet2 = await scrape(tweetUrl2)
         interests = pinnedTweet2?.interests;
       }
 
-
-
- 
-
-      // const pt = new PinnedTweet(
-      //   tweetUrl,
-      //   pinnedTweet?.username,
-      //   pinnedTweet?.Views,
-      //   pinnedTweet?.date,
-      //   pinnedTweet?.Reposts,
-      //   pinnedTweet?.Quotes,
-      //   pinnedTweet?.Likes,
-      //   pinnedTweet?.Bookmarks,
-      //   pinnedTweet?.tweetText,
-      //   pinnedTweet?.interests);   
 
       const twitterProfile = new TwitterProfile(
         data?.id,
@@ -304,6 +207,7 @@ twitterRouter.get('/info', isAuthenticated, async (req, res) => {
 
       // Destroy the session data
       req.session.destroy(err => {
+        activeConnections.delete(req.sessionID);
         if (err) {
           return res.status(500).json({ app: "X", message: "internal server error", error: err });
         }

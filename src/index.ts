@@ -15,6 +15,7 @@ import { subgraphRouter } from './controllers/SubgraphController';
 import { stytchRouter } from './controllers/StytchController';
 import { AppDataSource } from './data-source';
 import https from "https"
+import { activeConnections, initSSE } from './utils';
 const fs = require('fs');
 
 
@@ -28,33 +29,22 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(helmet());
 // for to store coockie
 app.use(cors({  
-origin: 'http://172.31.37.52:3000', // Set this to match the requesting origin exactly
+origin: 'http://app.plurality.local:3000', // Set this to match the requesting origin exactly
 credentials: true, // This allows cookies and credentials to be sent with the request
-methods : ['GET','POST']
 }));
+
 app.use(passport.initialize());
-
-
-
-
-app.use(session({ secret: 'keyboard cat', resave: false, saveUninitialized: true,cookie: { secure: "auto", maxAge:1000*60*60*24} }));
+app.use(session({ secret: 'keyboard cat', resave: false, saveUninitialized: true, cookie: { secure: true,sameSite:'none',httpOnly:true} }));
 app.use(passport.session());
 app.use("/oauth-twitter", twitterRouter);
 app.use("/permaweb", permawebRouter);
 app.use("/oauth-tiktok", tiktokRouter);
 app.use("/subgraph", subgraphRouter);
+
 app.use("/stytch", stytchRouter);
 
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
-// for to store cookie to react
-// app.use(function (req, res, next) {
-//   res.setHeader('Cache-Control', 'no-cache');
-//   res.header("Access-Control-Allow-Origin", 'http://172.31.37.52:5173'); // update to match the domain you will make the request from
-//   res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-//   res.header("Access-Control-Allow-Credentials", true); // allows cookie to be sent
-//   res.header("Access-Control-Allow-Methods", "GET, POST, PUT, HEAD, DELETE"); // you must specify the methods used with credentials. "*" will not work. 
-//   next();
-// });
+
 
 
 app.get('/', async (req: Request, res: Response): Promise<Response> => {
@@ -71,9 +61,29 @@ app.post('/post', async (req: Request, res: Response): Promise<Response> => {
 });
 
 
+
+app.get('/register', async (req: Request, res: Response) => {
+  console.log(req.sessionID)
+  req.session.save(() => {
+  return res.status(200).json({ "message": "register" });
+  });
+
+});
+
+
+app.get('/register-event', async (req: Request, res: Response) => {
+  const connection = activeConnections.get(req.sessionID);
+  console.log(">>>>", req.sessionID)
+  if (!connection) {
+    initSSE(req, res);
+  } else {
+    return res.status(400).json({ "message": "SSE connection already exists." });
+  }
+});
+
+
+
 try {
-
-
 
   // Only for development for HTTPS
 if (process.env.HTTPS) {

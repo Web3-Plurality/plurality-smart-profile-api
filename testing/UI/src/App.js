@@ -3,10 +3,7 @@ import axios from 'axios';
 
 axios.defaults.withCredentials = true;
 
-// const Axios = axios.create({
-//   baseURL: "https://app.plurality.local:5000/",
-//   withCredentials: true,
-// });
+
 
 function App() {
   const [sseMessage, setSseMessage] = useState('');
@@ -32,20 +29,35 @@ function App() {
   }, []);
 
 const handle = ()=>{
-  axios.get('https://app.plurality.local:5000/oauth-twitter/register').then((res)=>{
+  axios.get('https://app.plurality.local:5000/register').then((res)=>{
+    // console.log(res)
 console.log("register")
-  // setupSSE()
+ 
 })
 }
 
+const handleAPI = ()=>{
+  setupSSE()
+}
+
   const setupSSE = () => {
-    const evtSource = new EventSource('https://app.plurality.local:5000/oauth-twitter/register-event');
+    const evtSource = new EventSource('https://app.plurality.local:5000/register-event', { withCredentials: true });
     evtSource.onmessage = function (event) {
-      console.log('Message from server:', event.data);
+      console.log('Message from server:', JSON.parse(event?.data)?.message);
       setSseMessage(event.data);
 
       // Enable the button if the message is "received"
-      if (event.data.includes('"message":"received"')) {
+      if (JSON.parse(event?.data)?.message ==="received") {
+        console.log("Innnnnnn received")
+       
+        if (popup) {
+          popup.close();
+          setPopup(null);
+          console.log('Window closed.');
+        } else {
+          console.log('No window to close or window already closed.');
+        }
+
         setIsInfoButtonEnabled(true);
       }
     };
@@ -57,38 +69,46 @@ console.log("register")
   };
 
   const handleOAuth = () => {
-    const oauthWindow = window.open('https://app.plurality.local:5000/oauth-twitter?isWidget=true&origin=false&apps=false', 'oauth', 'width=500,height=600');
-    setPopup(oauthWindow);
+    const oauthWindow = window.open('https://app.plurality.local:5000/oauth-tiktok?isWidget=true&origin=false&apps=false', 'oauth', 'width=500,height=600');
+    if (oauthWindow) {
+      setPopup(oauthWindow);
+      console.log('Window opened:', oauthWindow);
+    } else {
+      console.error('Failed to open window. It might be blocked by a popup blocker.');
+    }
+   
+   
   };
 
-  useEffect(() => {
-    const checkPopup = setInterval(() => {
-      if (popup && popup.closed) {
-        console.log('Popup closed');
-        setPopup(null);
-        clearInterval(checkPopup);
-      }
-    }, 1000);
+  // useEffect(() => {
+  //   const checkPopup = setInterval(() => {
+  //     if (popup && popup.closed) {
+  //       console.log('Popup closed');
+  //       setPopup(null);
+  //       clearInterval(checkPopup);
+  //     }
+  //   }, 1000);
 
-    return () => clearInterval(checkPopup);
-  }, [popup]);
+  //   return () => clearInterval(checkPopup);
+  // }, [popup]);
 
-  // const handleInfoRequest = () => {
-  //   axios.get('http://localhost:3000/info')
-  //     .then(response => {
-  //       console.log('Info:', response.data);
-  //     })
-  //     .catch(error => {
-  //       console.error('Error getting info:', error);
-  //     });
-  // };
+  const handleInfoRequest = () => {
+    axios.get('https://app.plurality.local:5000/oauth-tiktok/info')
+      .then(response => {
+        console.log('Info:', response.data);
+      })
+      .catch(error => {
+        console.error('Error getting info:', error);
+      });
+  };
 
   return (
     <div className="App">
       <h1>SSE and OAuth Example</h1>
       <button onClick={handleOAuth}>Start OAuth</button>
-      {/* <button onClick={handleInfoRequest} disabled={!isInfoButtonEnabled}>Get Info</button> */}
-      <button onClick={handle} >Get Info</button>
+      <button onClick={handleInfoRequest} disabled={!isInfoButtonEnabled}>Get Info</button>
+      <button onClick={handle} >register</button>
+      <button onClick={handleAPI} >register event</button>
       <div>
         <h2>SSE Message:</h2>
         <p>{sseMessage}</p>

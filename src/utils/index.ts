@@ -1,5 +1,8 @@
 import  { Request, Response } from "express";
 
+
+export const activeConnections = new Map();
+
 export function parseQueryString(query: string) {
     let params : any = {};
     // Remove the leading question mark if present
@@ -23,3 +26,14 @@ export function isAuthenticated(req: Request, res: Response, next) {
     // User is not authenticated
     res.status(401).send("You need to log in.");
   }
+
+
+export function initSSE(req: Request, res: Response) {
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive',
+  });
+  res.write(`data: {"message":"Connection established"}\n\n`);
+  activeConnections.set(req.sessionID, res);
+}
