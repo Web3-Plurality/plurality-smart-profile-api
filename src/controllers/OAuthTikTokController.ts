@@ -8,7 +8,6 @@ import { activeConnections, isAuthenticated } from "../utils";
 import { TikTokProfile } from "../entity/Tiktok";
 
 
-
 dotenv.config();
 // Serialization and deserialization
 passport.serializeUser(function (user, done) {
@@ -17,8 +16,6 @@ passport.serializeUser(function (user, done) {
 passport.deserializeUser(function (obj: any, done) {
   done(null, obj);
 });
-
-
 
 
 passport.use("tiktok", new TikTokOAuth2Strategy(
@@ -39,16 +36,7 @@ passport.use("tiktok", new TikTokOAuth2Strategy(
 ));
 
 
-
-
-
-
-
-
-
 tiktokRouter.get('/', async (req: Request, res: Response, next) => {
-
-
   const connection = activeConnections.get(req.sessionID);
   if (!connection) {
     return res.status(400).send("Register Event first");
@@ -93,8 +81,6 @@ tiktokRouter.get('/callback', passport.authenticate("tiktok", { session: false }
   else{
     res.status(500).send("An error occurred while accessing session");
   }
-  
-
     // res.redirect(url);
     res.send(url);
   } catch (error: any) {

@@ -7,6 +7,7 @@ import axios from "axios";
 import { activeConnections, isAuthenticated } from "../utils";
 import { scrape } from "../utils/scrape";
 import { TwitterProfile } from "../entity/twitter";
+import { calculateReputation } from "../utils/twitter";
 
 export const twitterRouter = express.Router();
 
@@ -48,7 +49,6 @@ passport.use(
 );
 
 
-
 // Start authentication flow
 twitterRouter.get(
   '/',
@@ -76,14 +76,15 @@ twitterRouter.get('/callback', passport.authenticate('twitter', { session: false
     // request for user info
     console.log(">>>>>>>>>>>>>", req.user);
 
+    let url: any;
+    const { isWidget, origin, apps } = req.session.redirectParams;
     const sseRes = activeConnections.get(req.sessionID);
-    console.log(sseRes)
 
 
     if (req.user.accessToken && sseRes) {
-        sseRes.write(`data: {"message":"received"}\n\n`)
+      sseRes.write(`data: {"message":"received"}\n\n`)
     }
-    else{
+    else {
       res.status(500).send("An error occurred while accessing session");
     }
 
@@ -91,12 +92,6 @@ twitterRouter.get('/callback', passport.authenticate('twitter', { session: false
       accessToken: req.user.accessToken,
       refreshToken: req.user.refreshToken
     }
-
-
-
-
-    const { isWidget, origin, apps } = req.session.redirectParams;
-    let url: any;
 
     if (isWidget == 'true')
       url = `${process.env.WIDGET_UI_URL}?isWidget=${isWidget}&origin=${origin}&apps=${apps}`
@@ -106,16 +101,13 @@ twitterRouter.get('/callback', passport.authenticate('twitter', { session: false
       console.log('Did not find the isWidget parameter in callback. Redirecting to default dashboard');
       url = `${process.env.DASHBOARD_UI_URL}?isWidget=${isWidget}&origin=${origin}&apps=${apps}`
     }
-
     // res.redirect(url);
     res.send(url);
   } catch (error: any) {
     console.error("Error during callback:", error.message);
     res.status(500).send("An error occurred while fetching data");
   }
-
-}
-);
+});
 
 
 // Callback handler
@@ -125,11 +117,8 @@ twitterRouter.get('/info', isAuthenticated, async (req, res) => {
     console.log("id", req.sessionID)
     console.log(">>>>>>>>>>>>>>", req.session)
 
-    // console.log(isWidget, origin, apps)
     const { accessToken }: any = req?.session?.user;
 
-    // request for user info
-    console.log(accessToken)
     if (accessToken) {
       const tweetFields = [
         'attachments', 'author_id', 'context_annotations', 'conversation_id', 'created_at', 'edit_controls', 'entities', 'geo', 'id', 'in_reply_to_user_id', 'lang', 'non_public_metrics', 'public_metrics', 'organic_metrics', 'promoted_metrics', 'possibly_sensitive', 'referenced_tweets', 'reply_settings', 'source', 'text', 'withheld'
@@ -204,6 +193,10 @@ twitterRouter.get('/info', isAuthenticated, async (req, res) => {
         data?.profile_image_url,
         interests
       )
+
+      // Calculate reputation score
+      const reputationScore = calculateReputation(twitterProfile);
+      twitterProfile.reputationScore = reputationScore;
 
       // Destroy the session data
       req.session.destroy(err => {
