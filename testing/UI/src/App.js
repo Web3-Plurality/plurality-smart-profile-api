@@ -30,9 +30,7 @@ function App() {
 
 const handle = ()=>{
   axios.get('https://app.plurality.local:5000/register').then((res)=>{
-    // console.log(res)
 console.log("register")
- 
 })
 }
 

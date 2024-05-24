@@ -1,8 +1,6 @@
 import moment from 'moment';
 import { TwitterProfile } from '../entity/twitter';
 
-
-
 export function calculateReputation(data: TwitterProfile): number {
     let reputationScore: number = 0;
 
@@ -50,8 +48,7 @@ export function calculateReputation(data: TwitterProfile): number {
     }
 
     // Calculate reputation based on account creation date
-    if (createdAt) {
-        
+    if (createdAt) {       
         const accountAgeInYears = moment().diff(moment(createdAt), 'years');
         reputationScore += accountAgeInYears * createdAtWeight;
     }

@@ -4,14 +4,16 @@ import passport from "passport";
 import OAuthTwitterStrategy from '../auth/OAuthTwitterStrategy';
 import * as dotenv from 'dotenv';
 import axios from "axios";
-import { activeConnections, isAuthenticated } from "../utils";
 import { scrape } from "../utils/scrape";
 import { TwitterProfile } from "../entity/twitter";
 import { calculateReputation } from "../utils/twitter";
-
-export const twitterRouter = express.Router();
+import { isAuthenticated, isConnected } from "../middlewares/authMiddleware";
+import Logger from "../lib/logger";
+import { TWITTER_APP, activeConnections } from "../utils/global";
 
 dotenv.config();
+
+export const twitterRouter = express.Router();
 
 // Serialization and deserialization
 passport.serializeUser(function (user, done) {
@@ -24,7 +26,6 @@ passport.deserializeUser(function (obj: any, done) {
 
   done(null, obj);
 });
-
 
 passport.use(
   "twitter",
@@ -48,76 +49,72 @@ passport.use(
   )
 );
 
-
 // Start authentication flow
 twitterRouter.get(
   '/',
+  isConnected,
   async (req: Request, res: Response, next) => {
-
-    const connection = activeConnections.get(req.sessionID);
-    if (!connection) {
-      return res.status(400).send("Register Event first");
-    }
-
+    Logger.info(`${TWITTER_APP}: Request for Twitter Oauth has been received successfully on session Id${req.sessionID}`)
     req?.session?.redirectParams = {
       isWidget: req?.query?.isWidget,
       origin: req?.query?.origin,
       apps: req?.query?.apps,
     };
-
     passport.authenticate('twitter')(req, res, next);
   });
 
 // Callback handler
 twitterRouter.get('/callback', passport.authenticate('twitter', { session: false }), async (req, res) => {
   try {
-    console.log("id", req.sessionID);
-    console.log(">>>>>>>>>>>>>>", req.session);
-    // request for user info
-    console.log(">>>>>>>>>>>>>", req.user);
-
+    
+    Logger.info(`${TWITTER_APP}: Callback from Twitter has been received successfully on session Id${req.sessionID}`);
     let url: any;
     const { isWidget, origin, apps } = req.session.redirectParams;
-    const sseRes = activeConnections.get(req.sessionID);
-
-
-    if (req.user.accessToken && sseRes) {
-      sseRes.write(`data: {"message":"received"}\n\n`)
-    }
-    else {
-      res.status(500).send("An error occurred while accessing session");
-    }
-
+    const serverSentEventResponse = activeConnections.get(req.sessionID);
     req.session.user = {
       accessToken: req.user.accessToken,
       refreshToken: req.user.refreshToken
     }
 
     if (isWidget == 'true')
-      url = `${process.env.WIDGET_UI_URL}?isWidget=${isWidget}&origin=${origin}&apps=${apps}`
+      url = `${process.env.WIDGET_UI_URL}?isWidget=${isWidget}&origin=${origin}&apps=${apps}&id_platform=twitter`
     else if (isWidget == 'false')
-      url = `${process.env.DASHBOARD_UI_URL}?isWidget=${isWidget}&origin=${origin}&apps=${apps}`
+      url = `${process.env.DASHBOARD_UI_URL}?isWidget=${isWidget}&origin=${origin}&apps=${apps}&id_platform=twitter`
     else {
-      console.log('Did not find the isWidget parameter in callback. Redirecting to default dashboard');
-      url = `${process.env.DASHBOARD_UI_URL}?isWidget=${isWidget}&origin=${origin}&apps=${apps}`
+      Logger.info(`${TWITTER_APP}: Did not find the isWidget parameter in callback. Redirecting to default dashboard`);
+      url = `${process.env.DASHBOARD_UI_URL}?isWidget=${isWidget}&origin=${origin}&apps=${apps}&id_platform=twitter`
     }
-    // res.redirect(url);
-    res.send(url);
+
+    Logger.info(`${TWITTER_APP}: Redirecting to ${url}`);
+    // it will redirect to the dashboard or widget
+    res.redirect(url);
+    // it will send the url to the client, and it is for testing purpose
+    // res.send(url);
+
+
+
+    // Send a message to the client that the token has been received
+    if (req?.user?.accessToken && serverSentEventResponse) {
+      serverSentEventResponse.write(`data: {"message":"received", "app":"${TWITTER_APP}"}\n\n`)
+      Logger.info(`${TWITTER_APP}: Access token of Twitter received successfully`);
+    }
+    else {
+      Logger.error("An error occurred while accessing session"); 
+      return res.status(401).json({ app: TWITTER_APP, error: 'Unauthorized', message: 'Event source connection not found. Register Event' });
+    }
+
   } catch (error: any) {
-    console.error("Error during callback:", error.message);
-    res.status(500).send("An error occurred while fetching data");
+    Logger.error(`${TWITTER_APP}: Error during callback: ${error.message}`);
+    res.status(401).json({ app: TWITTER_APP, error: 'Unauthorized', message: 'Error during callback' });
   }
 });
-
 
 // Callback handler
 twitterRouter.get('/info', isAuthenticated, async (req, res) => {
   try {
-
-    console.log("id", req.sessionID)
-    console.log(">>>>>>>>>>>>>>", req.session)
-
+    Logger.info(`${TWITTER_APP}: Request for information has been received successfully on session Id ${req.sessionID}`);
     const { accessToken }: any = req?.session?.user;
+    let userTweet = { data: { data: {  } } }
 
     if (accessToken) {
       const tweetFields = [
@@ -126,25 +123,31 @@ twitterRouter.get('/info', isAuthenticated, async (req, res) => {
       const userFields = [
         'created_at', 'description', 'entities', 'id', 'location', 'most_recent_tweet_id', 'name', 'pinned_tweet_id', 'profile_image_url', 'protected', 'public_metrics', 'url', 'username', 'verified', 'verified_type', 'withheld'
       ]
-      const userTweet = await axios.get(
-        `https://api.twitter.com/2/users/me?expansions=pinned_tweet_id&tweet.fields=${tweetFields.join(",")}&user.fields=${userFields.join(",")}`,
 
+      try { 
+        userTweet = await axios.get(
+        `https://api.twitter.com/2/users/me?expansions=pinned_tweet_id&tweet.fields=${tweetFields.join(",")}&user.fields=${userFields.join(",")}`,
         {
           headers: {
             Authorization: `Bearer ${accessToken}`,
             "Content-Type": "application/json",
           },
+          timeout: 20000,
         }
       );
+    } catch (error) {
+      if (error.code === 'ECONNABORTED') {
+        Logger.error(`${TWITTER_APP}: Request timeout error in fetching userinfo: ${error.message}`);
+      } else {
+        Logger.error(`${TWITTER_APP}: An error occurred: ${error.message}`);
+      }
+    }
 
-      console.log(userTweet?.data)
       const data: any = {
         ...userTweet?.data?.data
       }
-
       const public_metrics = data?.public_metrics;
       delete data?.public_metrics;
-
       let tweetUrl1 = '';
       let tweetUrl2 = '';
       let pinnedTweet1: any;
@@ -152,8 +155,6 @@ twitterRouter.get('/info', isAuthenticated, async (req, res) => {
       let interests: [] = [];
 
       if (data?.pinned_tweet_id !== data?.most_recent_tweet_id && data?.pinned_tweet_id !== '' && data?.most_recent_tweet_id !== '') {
-
-        console.log("yyyyyyyyyyyyyy")
         tweetUrl1 = `https://twitter.com/${data['username']}/status/${data['pinned_tweet_id']}`
         tweetUrl2 = `https://twitter.com/${data['username']}/status/${data['most_recent_tweet_id']}`
         pinnedTweet1 = await scrape(tweetUrl1);
@@ -161,18 +162,15 @@ twitterRouter.get('/info', isAuthenticated, async (req, res) => {
         interests = pinnedTweet1?.interests.concat(pinnedTweet2?.interests);
       }
       else if (data?.pinned_tweet_id !== '') {
-
         tweetUrl1 = `https://twitter.com/${data['username']}/status/${data['pinned_tweet_id']}`
         pinnedTweet1 = await scrape(tweetUrl1);
         interests = pinnedTweet1?.interests;
       }
       else if (data?.most_recent_tweet_id !== '') {
-
         tweetUrl2 = `https://twitter.com/${data['username']}/status/${data['most_recent_tweet_id']}`
         pinnedTweet2 = await scrape(tweetUrl2)
         interests = pinnedTweet2?.interests;
       }
-
 
       const twitterProfile = new TwitterProfile(
         data?.id,
@@ -193,26 +191,32 @@ twitterRouter.get('/info', isAuthenticated, async (req, res) => {
         data?.profile_image_url,
         interests
       )
-
       // Calculate reputation score
       const reputationScore = calculateReputation(twitterProfile);
       twitterProfile.reputationScore = reputationScore;
-
       // Destroy the session data
       req.session.destroy(err => {
         activeConnections.delete(req.sessionID);
         if (err) {
-          return res.status(500).json({ app: "X", message: "internal server error", error: err });
+          Logger.error(`${TWITTER_APP}: Error during session destroy: ${err.message}`);
+          return res.status(500).json({ app: TWITTER_APP, message: "Error during session destroy", error: err });
         }
-        // Redirect to the home page after logging out
-        return res.status(200).json({ app: "X", message: "success", data: { twitterProfile: twitterProfile } })
+        Logger.info(`${TWITTER_APP}: Session destroyed successfully`);
+        Logger.info(`${TWITTER_APP}: User information of TikTok has been delivered successfully`);
+        return res.status(200).json({ app: TWITTER_APP, message: "success", twitterProfile: twitterProfile  })
       });
-      // Todo: Need to loook other properties which can be come for proper structuring of json
     } else {
-      res.status(500).send("access token expires");
+      Logger.error(`${TWITTER_APP}: Token has been expired.`);
+      return res.status(401).json({ app: TWITTER_APP, error: 'Unauthorized', message: 'Token has been expired or not found. Please log in again.' });
     }
   } catch (error: any) {
-    console.error("Error during callback:", error.message);
-    res.status(500).send("An error occurred during the login process.");
+    if (error.code === 'ECONNABORTED') {
+      Logger.error(`${TWITTER_APP}: Request timeout error in fetching userinfo: ${error.message}`);
+      return res.status(408).json({ app: TWITTER_APP, error: 'Request Timeout', message: 'Session has expired. Please log in again.' });
+  }
+  else{
+    Logger.error(`${TWITTER_APP}: Error occurred in fetching user informantion: ${error.message}`);
+    return res.status(401).json({ app: TWITTER_APP, error: 'Unauthorized', message: 'Session has expired. Please log in again.' });
+  }
   }
 });
