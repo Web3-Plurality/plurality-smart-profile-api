@@ -21,20 +21,3 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-
-# artifacts
-/artifacts
-
-# cache
-/cache
-
-/logs
-
-# env
-.env
-
-yarn.lock
-
-dist
-
-testing/node_modules
