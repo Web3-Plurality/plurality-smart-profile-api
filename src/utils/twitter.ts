@@ -1,5 +1,5 @@
 import moment from 'moment';
-import { TwitterProfile } from '../entity/twitter';
+import { TwitterProfile } from '../entity/Twitter';
 
 export function calculateReputation(data: TwitterProfile): number {
     let reputationScore: number = 0;

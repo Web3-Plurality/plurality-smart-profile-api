@@ -5,7 +5,7 @@ import OAuthTwitterStrategy from '../auth/OAuthTwitterStrategy';
 import * as dotenv from 'dotenv';
 import axios from "axios";
 import { scrape } from "../utils/scrape";
-import { TwitterProfile } from "../entity/twitter";
+import { TwitterProfile } from "../entity/Twitter";
 import { calculateReputation } from "../utils/twitter";
 import { isAuthenticated, isConnected } from "../middlewares/authMiddleware";
 import Logger from "../lib/logger";
