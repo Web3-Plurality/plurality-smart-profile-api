@@ -151,6 +151,7 @@ twitterRouter.get('/info', isAuthenticated, async (req, res) => {
       let pinnedTweet1: any;
       let pinnedTweet2: any;
       let interests: [] = [];
+      let introTags:[] = [];
 
       if (data?.pinned_tweet_id !== data?.most_recent_tweet_id && data?.pinned_tweet_id  && data?.most_recent_tweet_id) {
         tweetUrl1 = `https://twitter.com/${data['username']}/status/${data['pinned_tweet_id']}`
@@ -158,21 +159,27 @@ twitterRouter.get('/info', isAuthenticated, async (req, res) => {
         pinnedTweet1 = await scrape(tweetUrl1);
         pinnedTweet2 = await scrape(tweetUrl2);
         interests = pinnedTweet1?.interests.concat(pinnedTweet2?.interests);
+        introTags = pinnedTweet1?.introTags.concat(pinnedTweet2?.introTags);
+
       }
       else if (data?.pinned_tweet_id === data?.most_recent_tweet_id && data?.pinned_tweet_id  && data?.most_recent_tweet_id) {
         tweetUrl2 = `https://twitter.com/${data['username']}/status/${data['most_recent_tweet_id']}`
         pinnedTweet2 = await scrape(tweetUrl2);
         interests = pinnedTweet2?.interests;
+        introTags = pinnedTweet2?.introTags;
+
       }
       else if (data?.pinned_tweet_id) {
         tweetUrl1 = `https://twitter.com/${data['username']}/status/${data['pinned_tweet_id']}`
         pinnedTweet1 = await scrape(tweetUrl1);
         interests = pinnedTweet1?.interests;
+        introTags = pinnedTweet1?.introTags;
       }
       else if (data?.most_recent_tweet_id) {
         tweetUrl2 = `https://twitter.com/${data['username']}/status/${data['most_recent_tweet_id']}`
         pinnedTweet2 = await scrape(tweetUrl2)
         interests = pinnedTweet2?.interests;
+        introTags = pinnedTweet2?.introTags;
       }
 
       const twitterProfile = new TwitterProfile(
@@ -192,7 +199,9 @@ twitterRouter.get('/info', isAuthenticated, async (req, res) => {
         data?.created_at,
         data?.name,
         data?.profile_image_url,
-        interests
+        interests,
+        0,
+        introTags
       )
       // Calculate reputation score
       const reputationScore = calculateReputation(twitterProfile);

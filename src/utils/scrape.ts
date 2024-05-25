@@ -48,20 +48,20 @@ export async function scrape(url: string) {
         }
       }
       else {
-        return {"interests":[]}
+        return {"interests":[],"introTags":[]}
       }
     });
 
     await browser.close();
 
-    const interests = tweetObj?.tweetText ? await analyzeTweet(tweetObj?.tweetText) : {}
+    const semanticObj = tweetObj?.tweetText ? await analyzeTweet(tweetObj?.tweetText) : {}
 
-    return { ...tweetObj, "interests": interests?.Interests ? interests?.Interests : [] }
+    return { ...tweetObj, "interests": semanticObj?.Interests ? semanticObj?.Interests : [], "introTags": semanticObj?.IntroTags ? semanticObj?.IntroTags : [] }
 
   } catch (error) {
     console.log(error)
     Logger.error(`Error during scraping:, ${error.message}`);
-    return {"interests":[]}
+    return {"interests":[],"introTags":[]}
   }
 
 }
