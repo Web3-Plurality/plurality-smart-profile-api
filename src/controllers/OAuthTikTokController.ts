@@ -181,9 +181,11 @@ tiktokRouter.get('/info', isAuthenticated, async (req, res) => {
 
       const tiktokProfile = new TikTokProfile({ user: userData?.data?.data?.user, video: videoList?.data?.data?.videos });
       const vidDescription = tiktokProfile?.video?.length ? tiktokProfile?.video.map((vid: any) => vid?.title + " " + vid?.videoDescription).join(' ') : ""
-      const interests = tiktokProfile?.user?.bioDescription ? await analyzeTweet(tiktokProfile?.user?.bioDescription + vidDescription) : {}
+      const semanticObj = tiktokProfile?.user?.bioDescription ? await analyzeTweet(tiktokProfile?.user?.bioDescription + vidDescription) : {}
       const reputationScore = calculateReputation(tiktokProfile);
-      tiktokProfile.interests = interests?.Interests || [];
+      tiktokProfile.interests = semanticObj?.Interests || [];
+      tiktokProfile.introTags = semanticObj?.IntroTags || [];
+
       tiktokProfile.reputationScore = reputationScore;
 
       // Destroy the session data
@@ -195,7 +197,7 @@ tiktokRouter.get('/info', isAuthenticated, async (req, res) => {
         }
         Logger.info(`${TIKTOK_APP}: Session destroyed successfully`);
         Logger.info(`${TIKTOK_APP}: User information has been delivered successfully`);
-        return res.status(200).json({ app: TIKTOK_APP, message: "success", data: { tiktokProfile } })
+        return res.status(200).json({ app: TIKTOK_APP, message: "success",tiktokProfile: tiktokProfile })
       });
     } else {
       Logger.error(`${TIKTOK_APP}: Token has been expired.`);
