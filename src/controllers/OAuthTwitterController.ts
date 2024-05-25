@@ -91,8 +91,6 @@ twitterRouter.get('/callback', passport.authenticate('twitter', { session: false
     // it will send the url to the client, and it is for testing purpose
     // res.send(url);
 
-
-
     // Send a message to the client that the token has been received
     if (req?.user?.accessToken && serverSentEventResponse) {
       serverSentEventResponse.write(`data: {"message":"received", "app":"${TWITTER_APP}"}\n\n`)
@@ -154,19 +152,24 @@ twitterRouter.get('/info', isAuthenticated, async (req, res) => {
       let pinnedTweet2: any;
       let interests: [] = [];
 
-      if (data?.pinned_tweet_id !== data?.most_recent_tweet_id && data?.pinned_tweet_id !== '' && data?.most_recent_tweet_id !== '') {
+      if (data?.pinned_tweet_id !== data?.most_recent_tweet_id && data?.pinned_tweet_id  && data?.most_recent_tweet_id) {
         tweetUrl1 = `https://twitter.com/${data['username']}/status/${data['pinned_tweet_id']}`
         tweetUrl2 = `https://twitter.com/${data['username']}/status/${data['most_recent_tweet_id']}`
         pinnedTweet1 = await scrape(tweetUrl1);
         pinnedTweet2 = await scrape(tweetUrl2);
         interests = pinnedTweet1?.interests.concat(pinnedTweet2?.interests);
       }
-      else if (data?.pinned_tweet_id !== '') {
+      else if (data?.pinned_tweet_id === data?.most_recent_tweet_id && data?.pinned_tweet_id  && data?.most_recent_tweet_id) {
+        tweetUrl2 = `https://twitter.com/${data['username']}/status/${data['most_recent_tweet_id']}`
+        pinnedTweet2 = await scrape(tweetUrl2);
+        interests = pinnedTweet2?.interests;
+      }
+      else if (data?.pinned_tweet_id) {
         tweetUrl1 = `https://twitter.com/${data['username']}/status/${data['pinned_tweet_id']}`
         pinnedTweet1 = await scrape(tweetUrl1);
         interests = pinnedTweet1?.interests;
       }
-      else if (data?.most_recent_tweet_id !== '') {
+      else if (data?.most_recent_tweet_id) {
         tweetUrl2 = `https://twitter.com/${data['username']}/status/${data['most_recent_tweet_id']}`
         pinnedTweet2 = await scrape(tweetUrl2)
         interests = pinnedTweet2?.interests;
@@ -202,7 +205,7 @@ twitterRouter.get('/info', isAuthenticated, async (req, res) => {
           return res.status(500).json({ app: TWITTER_APP, message: "Error during session destroy", error: err });
         }
         Logger.info(`${TWITTER_APP}: Session destroyed successfully`);
-        Logger.info(`${TWITTER_APP}: User information of TikTok has been delivered successfully`);
+        Logger.info(`${TWITTER_APP}: User information has been delivered successfully`);
         return res.status(200).json({ app: TWITTER_APP, message: "success", twitterProfile: twitterProfile  })
       });
     } else {

@@ -4,7 +4,7 @@ import TikTokOAuth2Strategy from "../auth/OAuthTikTokStrategy"
 import passport from "passport";
 import axios from "axios";
 import { TikTokProfile } from "../entity/Tiktok";
-import { TIKTOK_APP, TWITTER_APP, activeConnections } from "../utils/global";
+import { TIKTOK_APP, activeConnections } from "../utils/global";
 import { isAuthenticated, isConnected } from "../middlewares/authMiddleware";
 import { analyzeTweet } from "../utils/groq";
 import { calculateReputation } from "../utils/tiktok";
@@ -58,15 +58,6 @@ tiktokRouter.get('/callback', passport.authenticate("tiktok", { session: false }
     const serverSentEventResponse = activeConnections.get(req.sessionID);
     const { isWidget, origin, apps } = req.session.redirectParams;
 
-    // Send a message to the client that the token has been received
-    if (req.user.accessToken && serverSentEventResponse) {
-      serverSentEventResponse.write(`data: {"message":"received", "app":"${TIKTOK_APP}"}\n\n`)
-      Logger.info(`${TIKTOK_APP}: Access token of Tiktok received successfully`);
-    } else {
-      Logger.error(`${TIKTOK_APP}: Event source connection not found.`);
-      return res.status(401).json({ app: TIKTOK_APP, error: 'Unauthorized', message: 'Event source connection not found. Register Event' });
-    }
-
     req.session.user = {
       accessToken: req.user.accessToken,
       refreshToken: req.user.refreshToken
@@ -87,6 +78,16 @@ tiktokRouter.get('/callback', passport.authenticate("tiktok", { session: false }
     res.redirect(url);
     // it will send the url to the client, and it is for testing purpose
     // res.send(url);
+
+    // Send a message to the client that the token has been received
+    if (req.user.accessToken && serverSentEventResponse) {
+      serverSentEventResponse.write(`data: {"message":"received", "app":"${TIKTOK_APP}"}\n\n`)
+      Logger.info(`${TIKTOK_APP}: Access token of Tiktok received successfully`);
+    } else {
+      Logger.error(`${TIKTOK_APP}: Event source connection not found.`);
+      return res.status(401).json({ app: TIKTOK_APP, error: 'Unauthorized', message: 'Event source connection not found. Register Event' });
+    }
+
   } catch (error: any) {
     Logger.error(`${TIKTOK_APP}: Error during callback:, ${error.message}`);
     res.status(401).json({ app: TIKTOK_APP, error: 'Unauthorized', message: 'Error during callback' });
@@ -193,7 +194,7 @@ tiktokRouter.get('/info', isAuthenticated, async (req, res) => {
           return res.status(500).json({ app: TIKTOK_APP, message: "Error during session destroy", error: err });
         }
         Logger.info(`${TIKTOK_APP}: Session destroyed successfully`);
-        Logger.info(`${TIKTOK_APP}: User information of TikTok has been delivered successfully`);
+        Logger.info(`${TIKTOK_APP}: User information has been delivered successfully`);
         return res.status(200).json({ app: TIKTOK_APP, message: "success", data: { tiktokProfile } })
       });
     } else {
