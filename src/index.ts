@@ -27,11 +27,6 @@ const PORT = process.env.PORT;
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(helmet());
-// for to store coockie
-app.use(cors({
-  origin: ['http://app.plurality.local:3001','http://app.plurality.local:3000', 'http://localhost:3000'], // Set this to match the requesting origin exactly
-  credentials: true, // This allows cookies and credentials to be sent with the request
-}));
 app.use(passport.initialize());
 app.use(session({ secret: 'keyboard cat', resave: false, saveUninitialized: true, cookie: { secure: true, sameSite: 'none', httpOnly: true } }));
 app.use(passport.session());
@@ -76,7 +71,11 @@ app.get('/register-event', async (req: Request, res: Response) => {
 
 try {
   // Only for development for HTTPS
-  if (process.env.HTTPS) {
+  if (process.env.NODE_ENV==='development') {
+    app.use(cors({
+      origin: 'http://localhost:3000',
+      credentials: true
+     }));
     const options = {
       key: fs.readFileSync('./local-certificates/key.pem'),
       cert: fs.readFileSync('./local-certificates/cert.pem')
@@ -88,6 +87,10 @@ try {
     }).catch((error) => console.log(error));
   }
   else {
+    app.use(cors({
+      origin: process.env.PLURALITY_DOMAIN,
+      credentials: true
+     }));
     AppDataSource.initialize()
     .then(async () => {
         app.listen(PORT, (): void => {
