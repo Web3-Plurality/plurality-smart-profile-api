@@ -28,7 +28,7 @@ passport.use("tiktok", new TikTokOAuth2Strategy(
     tokenURL: 'https://open.tiktokapis.com/v2/oauth/token/',
     clientKey: process.env.TIKTOK_CLIENT_ID,
     clientSecret: process.env.TIKTOK_CLIENT_SECRET,
-    callbackURL: `https://app.plurality.local:5000/oauth-tiktok/callback`,
+    callbackURL: process.env.TIKTOK_CALLBACK_URL,
     scope: "user.info.basic,user.info.profile,user.info.stats,video.list",
     state: false
   },
