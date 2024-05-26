@@ -76,14 +76,11 @@ app.get('/register-event', async (req: Request, res: Response) => {
 
 try {
   // Only for development for HTTPS
-  if (process.env.HTTPS==="true") {
-
+  if (process.env.HTTPS) {
     const options = {
       key: fs.readFileSync('./local-certificates/key.pem'),
       cert: fs.readFileSync('./local-certificates/cert.pem')
     };
-
-   
     AppDataSource.initialize().then(async () => {
       https.createServer(options, app).listen(PORT, () => {
         console.log(`Server is running on https://app.plurality.local:${PORT}`);
