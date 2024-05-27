@@ -27,6 +27,7 @@ const PORT = process.env.PORT;
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(helmet());
+app.use(cors({ origin: true, credentials: true }));
 app.use(passport.initialize());
 app.use(session({ secret: 'keyboard cat', resave: false, saveUninitialized: true, cookie: { secure: true, sameSite: 'none', httpOnly: true } }));
 app.use(passport.session());
@@ -51,14 +52,14 @@ app.post('/post', async (req: Request, res: Response): Promise<Response> => {
 });
 
 // app.get('/register', async (req: Request, res: Response) => {
-//   console.log(req.sessionID)
+//   console.log("register endpoint", req.sessionID)
 //   req.session.save(() => {
 //     return res.status(200).json({ "message": "register" });
 //   });
 // });
 
 app.get('/register-event', async (req: Request, res: Response) => {
-  const connection = activeConnections.get(req.sessionID);
+  //const connection = activeConnections.get(req.sessionID);
   console.log(">>>>", req.sessionID)
   // if (!connection) {
     req.session.save(() => {
@@ -70,12 +71,8 @@ app.get('/register-event', async (req: Request, res: Response) => {
 });
 
 try {
-  // Only for development for HTTPS
+  // Only for development 
   if (process.env.NODE_ENV==='development') {
-    app.use(cors({
-      origin: 'http://localhost:3000',
-      credentials: true
-     }));
     const options = {
       key: fs.readFileSync('./local-certificates/key.pem'),
       cert: fs.readFileSync('./local-certificates/cert.pem')
@@ -86,15 +83,13 @@ try {
       });
     }).catch((error) => console.log(error));
   }
+  // Only for production 
   else {
-    app.use(cors({
-      origin: process.env.PLURALITY_DOMAIN,
-      credentials: true
-     }));
-    AppDataSource.initialize()
-    .then(async () => {
-        app.listen(PORT, (): void => {
-            console.log(`Connected successfully on http port ${PORT}`);
+    console.log(process.env.VERIFIER_UI_URL);
+    app.set('trust proxy', 1);
+    AppDataSource.initialize().then(async () => {  
+      app.listen(PORT, (): void => {
+        console.log(`Connected successfully on http port ${PORT}`);
         });
     }).catch((error) => console.log(error));
   }
