@@ -7,7 +7,7 @@ export async function scrape(url: string) {
     // Launch Puppeteer browser
     const browser = await puppeteer.launch({
       headless: true,
-      args: ['--window-size=1280,800']
+      args:['--no-sandbox']
     });
     const page = await browser.newPage();
     // Set the viewport size
