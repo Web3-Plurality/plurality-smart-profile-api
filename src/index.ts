@@ -3,7 +3,9 @@ import bodyParser from 'body-parser';
 import cors from "cors";
 import helmet from "helmet";
 import * as dotenv from 'dotenv';
+import { robloxRouter } from './controllers/OAuthRobloxController';
 import { twitterRouter } from './controllers/OAuthTwitterController';
+
 import session from 'express-session';
 import passport from "passport";
 import swaggerUi from "swagger-ui-express";
@@ -29,10 +31,11 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(helmet());
 app.use(cors({ origin: true, credentials: true }));
 app.use(passport.initialize());
-app.use(session({ secret: 'keyboard cat', resave: false, saveUninitialized: true, cookie: { secure: true, sameSite: 'none', httpOnly: true } }));
+app.use(session({ secret: 'keyboard cat', resave: false, saveUninitialized: true }));//cookie: { secure: true, sameSite: 'none', httpOnly: true }
 app.use(passport.session());
 app.use("/oauth-twitter", twitterRouter);
 app.use("/oauth-snapchat", snapchatRouter);
+app.use("/oauth-roblox", robloxRouter);
 app.use("/permaweb", permawebRouter);
 app.use("/oauth-tiktok", tiktokRouter);
 app.use("/subgraph", subgraphRouter);
@@ -83,6 +86,12 @@ try {
         console.log(`Server is running on https://app.plurality.local:${PORT}`);
       });
     }).catch((error) => console.log(error));
+  }
+  else if (process.env.NODE_ENV==='test') {
+    
+      app.listen(PORT, (): void => {
+        console.log(`Connected successfully on http port ${PORT}`);
+    });
   }
   // Only for production 
   else {

@@ -29,7 +29,7 @@ function App() {
   }, []);
 
 const handle = ()=>{
-  axios.get('https://app.plurality.local:5000/register').then((res)=>{
+  axios.get('http://localhost:5000/register').then((res)=>{
 console.log("register")
 })
 }
@@ -39,7 +39,7 @@ const handleAPI = ()=>{
 }
 
   const setupSSE = () => {
-    const evtSource = new EventSource('https://app.plurality.local:5000/register-event', { withCredentials: true });
+    const evtSource = new EventSource('http://localhost:5000/register-event', { withCredentials: true });
     evtSource.onmessage = function (event) {
       console.log('Message from server:', JSON.parse(event?.data)?.message);
       setSseMessage(event.data);
@@ -67,7 +67,7 @@ const handleAPI = ()=>{
   };
 
   const handleOAuth = () => {
-    const oauthWindow = window.open('https://app.plurality.local:5000/oauth-snapchat?isWidget=true&origin=false&apps=false', 'oauth', 'width=500,height=600');
+    const oauthWindow = window.open('http://localhost:5000/oauth-roblox?isWidget=true&origin=false&apps=false', 'oauth', 'width=500,height=600');
     if (oauthWindow) {
       setPopup(oauthWindow);
       console.log('Window opened:', oauthWindow);
@@ -91,7 +91,7 @@ const handleAPI = ()=>{
   // }, [popup]);
 
   const handleInfoRequest = () => {
-    axios.get('https://app.plurality.local:5000/oauth-snapchat/info')
+    axios.get('http://localhost:5000/oauth-roblox/info')
       .then(response => {
         console.log('Info:', response.data);
       })

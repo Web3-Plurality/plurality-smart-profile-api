@@ -1,6 +1,5 @@
 import express, { Request, Response } from "express";
 import passport from "passport";
-// import { Strategy } from '@superfaceai/passport-twitter-oauth2';
 import OAuthTwitterStrategy from '../auth/OAuthTwitterStrategy';
 import * as dotenv from 'dotenv';
 import axios from "axios";
