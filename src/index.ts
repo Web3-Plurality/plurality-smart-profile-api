@@ -15,8 +15,8 @@ import https from "https"
 import { stytchRouter } from './controllers/StytchController';
 import { AppDataSource } from './data-source';
 import fs from "fs";
-import { activeConnections } from './utils/global';
 import { initSSE } from './middlewares/authMiddleware';
+import { snapchatRouter } from './controllers/OAuthSnapChatController';
 
 
 dotenv.config();
@@ -32,6 +32,7 @@ app.use(passport.initialize());
 app.use(session({ secret: 'keyboard cat', resave: false, saveUninitialized: true, cookie: { secure: true, sameSite: 'none', httpOnly: true } }));
 app.use(passport.session());
 app.use("/oauth-twitter", twitterRouter);
+app.use("/oauth-snapchat", snapchatRouter);
 app.use("/permaweb", permawebRouter);
 app.use("/oauth-tiktok", tiktokRouter);
 app.use("/subgraph", subgraphRouter);
