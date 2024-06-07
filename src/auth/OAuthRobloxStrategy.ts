@@ -10,20 +10,9 @@ class OAuthRobloxStrategy extends OAuth2Strategy {
       scope: options.scope,
       state: options.state,
       pkce: options.pkce,
-      // if client_type is confidential then we need to encode it otherwise it gives an error "TokenError: Missing valid authorization header"
-    //   customHeaders: Object.assign({
-    //     Authorization: 'Basic ' +
-    //       Buffer.from(`${options?.clientID}:${options?.clientSecret}`).toString('base64'),
-    //   })
     }, verify);
   }
 
-//   authorizationParams(options: any): any {
-//     return {
-//       ...options,
-//       clientType: 'confidential',
-//     }
-//   }
 }
 
 export default OAuthRobloxStrategy;

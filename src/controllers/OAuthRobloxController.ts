@@ -2,13 +2,11 @@ import express, { Request, Response } from "express";
 import passport from "passport";
 import * as dotenv from 'dotenv';
 import axios from "axios";
-import { scrape } from "../utils/scrape";
-import { TwitterProfile } from "../entity/Twitter";
-import { calculateReputation } from "../utils/twitter";
 import { isAuthenticated, isConnected } from "../middlewares/authMiddleware";
 import Logger from "../lib/logger";
 import { ROBLOX_APP, activeConnections } from "../utils/global";
 import OAuthRobloxStrategy from "../auth/OAuthRobloxStrategy";
+import { RobloxProfile } from "../entity/Roblox";
 
 dotenv.config();
 
@@ -16,13 +14,9 @@ export const robloxRouter = express.Router();
 
 // Serialization and deserialization
 passport.serializeUser(function (user, done) {
-  console.log("serialize")
-  console.log(user)
   done(null, user);
 });
 passport.deserializeUser(function (obj: any, done) {
-  console.log("deserialize")
-
   done(null, obj);
 });
 
@@ -36,13 +30,12 @@ passport.use(
       clientID: process.env.ROBLOX_CLIENT_ID,
       clientSecret: process.env.ROBLOX_CLIENT_SECRET,
       callbackURL: process.env.ROBLOX_CALLBACK_URL,
-      scope: "openid profile user.social.read",// spaces
+      scope: "openid profile",// spaces
       state: true,
       pkce: true,
     },
     // Verify callback
     (accessToken: any, refreshToken: any, profile: any, done: any) => {
-      console.log("Verify")
       return done(null, { accessToken, refreshToken, profile });
     }
   )
@@ -112,16 +105,9 @@ robloxRouter.get('/info', isAuthenticated, async (req, res) => {
   try {
     Logger.info(`${ROBLOX_APP}: Request for information has been received successfully on session Id ${req.sessionID}`);
     const { accessToken }: any = req?.session?.user;
-    let userRoblox = { data: { data: {  } } }
+    let userRoblox = { data: { } }
 
     if (accessToken) {
-      // const tweetFields = [
-      //   'attachments', 'author_id', 'context_annotations', 'conversation_id', 'created_at', 'edit_controls', 'entities', 'geo', 'id', 'in_reply_to_user_id', 'lang', 'non_public_metrics', 'public_metrics', 'organic_metrics', 'promoted_metrics', 'possibly_sensitive', 'referenced_tweets', 'reply_settings', 'source', 'text', 'withheld'
-      // ];
-      // const userFields = [
-      //   'created_at', 'description', 'entities', 'id', 'location', 'most_recent_tweet_id', 'name', 'pinned_tweet_id', 'profile_image_url', 'protected', 'public_metrics', 'url', 'username', 'verified', 'verified_type', 'withheld'
-      // ]
-
       try { 
         userRoblox = await axios.get(
         `https://apis.roblox.com/oauth/v1/userinfo`,
@@ -141,74 +127,8 @@ robloxRouter.get('/info', isAuthenticated, async (req, res) => {
       }
     }
 
-      // const data: any = {
-      //   ...userTweet?.data?.data
-      // }
-      // const public_metrics = data?.public_metrics;
-      // delete data?.public_metrics;
-      // let tweetUrl1 = '';
-      // let tweetUrl2 = '';
-      // let pinnedTweet1: any;
-      // let pinnedTweet2: any;
-      // let interests: [] = [];
-      // let introTags:[] = [];
+    const robloxProfile  = new RobloxProfile(userRoblox?.data);
 
-      // if (data?.pinned_tweet_id !== data?.most_recent_tweet_id && data?.pinned_tweet_id  && data?.most_recent_tweet_id) {
-      //   tweetUrl1 = `https://twitter.com/${data['username']}/status/${data['pinned_tweet_id']}`
-      //   tweetUrl2 = `https://twitter.com/${data['username']}/status/${data['most_recent_tweet_id']}`
-      //   pinnedTweet1 = await scrape(tweetUrl1);
-      //   pinnedTweet2 = await scrape(tweetUrl2);
-      //   interests = pinnedTweet1?.interests.concat(pinnedTweet2?.interests);
-      //   introTags = pinnedTweet1?.introTags.concat(pinnedTweet2?.introTags);
-
-      // }
-      // else if (data?.pinned_tweet_id === data?.most_recent_tweet_id && data?.pinned_tweet_id  && data?.most_recent_tweet_id) {
-      //   tweetUrl2 = `https://twitter.com/${data['username']}/status/${data['most_recent_tweet_id']}`
-      //   pinnedTweet2 = await scrape(tweetUrl2);
-      //   interests = pinnedTweet2?.interests;
-      //   introTags = pinnedTweet2?.introTags;
-
-      // }
-      // else if (data?.pinned_tweet_id) {
-      //   tweetUrl1 = `https://twitter.com/${data['username']}/status/${data['pinned_tweet_id']}`
-      //   pinnedTweet1 = await scrape(tweetUrl1);
-      //   interests = pinnedTweet1?.interests;
-      //   introTags = pinnedTweet1?.introTags;
-      // }
-      // else if (data?.most_recent_tweet_id) {
-      //   tweetUrl2 = `https://twitter.com/${data['username']}/status/${data['most_recent_tweet_id']}`
-      //   pinnedTweet2 = await scrape(tweetUrl2)
-      //   interests = pinnedTweet2?.interests;
-      //   introTags = pinnedTweet2?.introTags;
-      // }
-
-      // const twitterProfile = new TwitterProfile(
-      //   data?.id,
-      //   public_metrics?.followers_count,
-      //   public_metrics?.following_count,
-      //   public_metrics?.tweet_count,
-      //   public_metrics?.listed_count,
-      //   public_metrics?.like_count,
-      //   data?.pinned_tweet_id,
-      //   data?.verified_type,
-      //   data?.protected,
-      //   data?.username,
-      //   data?.most_recent_tweet_id,
-      //   data?.verified,
-      //   data?.description,
-      //   data?.created_at,
-      //   data?.name,
-      //   data?.profile_image_url,
-      //   interests,
-      //   0,
-      //   introTags
-      // )
-      // Calculate reputation score
-      // const reputationScore = calculateReputation(twitterProfile);
-      // twitterProfile.reputationScore = reputationScore;
-      // Destroy the session data
-
-      // console.log(userRoblox)
       req.session.destroy(err => {
         activeConnections.delete(req.sessionID);
         if (err) {
@@ -217,7 +137,7 @@ robloxRouter.get('/info', isAuthenticated, async (req, res) => {
         }
         Logger.info(`${ROBLOX_APP}: Session destroyed successfully`);
         Logger.info(`${ROBLOX_APP}: User information has been delivered successfully`);
-        return res.status(200).json({ app: ROBLOX_APP, message: "success", robloxProfile: userRoblox?.data  })
+        return res.status(200).json({ app: ROBLOX_APP, message: "success", robloxProfile: robloxProfile  })
       });
     } else {
       Logger.error(`${ROBLOX_APP}: Token has been expired.`);

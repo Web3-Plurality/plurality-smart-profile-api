@@ -31,7 +31,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(helmet());
 app.use(cors({ origin: true, credentials: true }));
 app.use(passport.initialize());
-app.use(session({ secret: 'keyboard cat', resave: false, saveUninitialized: true }));//cookie: { secure: true, sameSite: 'none', httpOnly: true }
+app.use(session({ secret: 'keyboard cat', resave: false, saveUninitialized: true })); // cookie: { secure: true, sameSite: 'none', httpOnly: true }
 app.use(passport.session());
 app.use("/oauth-twitter", twitterRouter);
 app.use("/oauth-snapchat", snapchatRouter);
