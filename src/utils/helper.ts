@@ -10,3 +10,15 @@ export function parseQueryString(query: string) {
   });
   return params;
 }
+
+export function createPrompt(prompt: any, content: any) {
+  if (typeof content === 'object') {
+    const concatenatedCaptions = content.map(item => item.caption).join(' ');
+    prompt[1].content += '\n' + concatenatedCaptions;
+    return prompt;
+  }
+  else {
+    prompt[1].content += '\n' + content;
+    return prompt;
+  }
+}

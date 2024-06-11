@@ -4,9 +4,11 @@ import * as dotenv from 'dotenv';
 import axios from "axios";
 import { isAuthenticated, isConnected } from "../middlewares/authMiddleware";
 import Logger from "../lib/logger";
-import { INSTAGRAM_APP, activeConnections } from "../utils/global";
+import { INSTAGRAM_APP, INSTA_FETCH_INTEREST_PROMPT, activeConnections } from "../utils/global";
 import OAuthInstagramStrategy from "../auth/OAuthInstagramStrategy";
 import { InstaProfile } from "../entity/Instagram";
+import { createPrompt } from "../utils/helper";
+import { analyze } from "../utils/groq";
 
 dotenv.config();
 
@@ -47,7 +49,7 @@ instagramRouter.get(
     '/',
     isConnected,
     async (req: Request, res: Response, next) => {
-        Logger.info(`${INSTAGRAM_APP}: Request for Oauth has been received successfully on session Id${req.sessionID}`)
+        Logger.info(`${INSTAGRAM_APP}: Request for Oauth has been received successfully on session Id ${req.sessionID}`)
         req?.session?.redirectParams = {
             isWidget: req?.query?.isWidget,
             origin: req?.query?.origin,
@@ -106,6 +108,7 @@ instagramRouter.get('/info', isAuthenticated, async (req, res) => {
         Logger.info(`${INSTAGRAM_APP}: Request for information has been received successfully on session Id ${req.sessionID}`);
         const { accessToken }: any = req?.session?.user;
         let instaUser = { data: { data: {} } }
+        let instaMedia = { data: { data: [] } }
 
         if (accessToken) {
             //   const tweetFields = [
@@ -120,7 +123,7 @@ instagramRouter.get('/info', isAuthenticated, async (req, res) => {
                     `https://graph.instagram.com/me?fields=id,username&access_token=${accessToken}`,
                     {
                         headers: {
-                            // Authorization: `Bearer ${accessToken}`,
+
                             "Content-Type": "application/json",
                         },
                         timeout: 20000,
@@ -136,8 +139,31 @@ instagramRouter.get('/info', isAuthenticated, async (req, res) => {
             }
 
 
-            const instaProfile = new InstaProfile(instaUser?.data);
+            try {
+                instaMedia = await axios.get(
+                    `https://graph.instagram.com/me/media?fields=id,caption&access_token=${accessToken}`,
+                    {
+                        headers: {
 
+                            "Content-Type": "application/json",
+                        },
+                        timeout: 20000,
+                    }
+                );
+            } catch (error) {
+                if (error.code === 'ECONNABORTED') {
+                    Logger.error(`${INSTAGRAM_APP}: Request timeout error in fetching userinfo: ${error.message}`);
+                } else {
+                    console.log(error)
+                    Logger.error(`${INSTAGRAM_APP}: An error occurred: ${error.message}`);
+                }
+            }
+
+            const prompt = createPrompt(INSTA_FETCH_INTEREST_PROMPT, instaMedia?.data?.data )
+            const interests = await analyze(prompt)
+            const instaProfile = new InstaProfile(instaUser?.data);
+            instaProfile.interests = interests.Interests;
+            
             req.session.destroy(err => {
                 activeConnections.delete(req.sessionID);
                 if (err) {

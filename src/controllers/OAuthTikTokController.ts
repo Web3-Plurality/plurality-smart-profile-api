@@ -4,11 +4,12 @@ import TikTokOAuth2Strategy from "../auth/OAuthTikTokStrategy"
 import passport from "passport";
 import axios from "axios";
 import { TikTokProfile } from "../entity/Tiktok";
-import { TIKTOK_APP, activeConnections } from "../utils/global";
+import { TIKTOK_APP, TIKTOK_FETCH_INTEREST_PROMPT, activeConnections } from "../utils/global";
 import { isAuthenticated, isConnected } from "../middlewares/authMiddleware";
-import { analyzeTweet } from "../utils/groq";
+import { analyze } from "../utils/groq";
 import { calculateReputation } from "../utils/tiktok";
 import Logger from "../lib/logger";
+import { createPrompt } from "../utils/helper";
 
 dotenv.config();
 
@@ -181,7 +182,8 @@ tiktokRouter.get('/info', isAuthenticated, async (req, res) => {
 
       const tiktokProfile = new TikTokProfile({ user: userData?.data?.data?.user, video: videoList?.data?.data?.videos });
       const vidDescription = tiktokProfile?.video?.length ? tiktokProfile?.video.map((vid: any) => vid?.title + " " + vid?.videoDescription).join(' ') : ""
-      const semanticObj = tiktokProfile?.user?.bioDescription ? await analyzeTweet(tiktokProfile?.user?.bioDescription + vidDescription) : {}
+      const prompt = createPrompt(TIKTOK_FETCH_INTEREST_PROMPT, tiktokProfile?.user?.bioDescription + vidDescription)
+      const semanticObj = tiktokProfile?.user?.bioDescription ? await analyze(prompt) : {}
       const reputationScore = calculateReputation(tiktokProfile);
       tiktokProfile.interests = semanticObj?.Interests || [];
       tiktokProfile.introTags = semanticObj?.IntroTags || [];

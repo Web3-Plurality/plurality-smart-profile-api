@@ -1,6 +1,8 @@
 import puppeteer from 'puppeteer';
-import { analyzeTweet } from './groq';
+import { analyze } from './groq';
 import Logger from '../lib/logger';
+import { createPrompt } from './helper';
+import { TWITTER_FETCH_INTEREST_PROMPT } from './global';
 
 export async function scrape(url: string) {
   try {
@@ -54,7 +56,8 @@ export async function scrape(url: string) {
 
     await browser.close();
 
-    const semanticObj = tweetObj?.tweetText ? await analyzeTweet(tweetObj?.tweetText) : {}
+    const prompt = createPrompt(TWITTER_FETCH_INTEREST_PROMPT,tweetObj?.tweetText)
+    const semanticObj = tweetObj?.tweetText ? await analyze(prompt) : {}
 
     return { ...tweetObj, "interests": semanticObj?.Interests ? semanticObj?.Interests : [], "introTags": semanticObj?.IntroTags ? semanticObj?.IntroTags : [] }
 

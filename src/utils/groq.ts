@@ -7,9 +7,10 @@ dotenv.config();
 const groq = new Groq({
   apiKey: process.env.GROQ_API
 });
-export async function analyzeTweet(tweet: string) {
-  const chatCompletion = await getGroqChatCompletion(tweet);
+export async function analyze(prompt: any) {
+  const chatCompletion = await getGroqChatCompletion(prompt);
   const text = chatCompletion.choices[0]?.message?.content
+  console.log(text)
   try {
     // Parse the JSON
     const jsonData = JSON.parse(text);
@@ -20,27 +21,9 @@ export async function analyzeTweet(tweet: string) {
     return {}
   }
 }
-async function getGroqChatCompletion(tweet: string) {
+async function getGroqChatCompletion(prompt: any) {
   return groq.chat.completions.create({
-    messages: [
-      {
-        "role": "system",
-        "content": "You are helpful asistant which extract insights from Tweet and output it in JSON. The JSON object must use the schema: {Interests: [string], IntroTags: [string]}."
-      },
-      {
-        role: "user",
-        content: `Fetch interests and tags from this tweet and make JSON of it.
-                The JSON schema should contain the following Object: 
-                Interests (also include other related topic and tags).
-                Put everything in the Interests array.
-                The second thing you have to do is Extract all introductory tags such as professions, roles, and notable titles from the following description and output them as a list of IntroTags.",
-                if you did not find any thing still you have to follow schema out.
-                The output JSON object must use the schema: {Interests: [string], IntroTags: [string]}.
-                Text:
-                ${tweet}
-                `
-      }
-    ],
+    messages: prompt,
     model: "llama3-70b-8192",
     temperature: 0.5,
     stream: false,
