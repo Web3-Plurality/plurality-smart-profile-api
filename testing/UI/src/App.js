@@ -67,7 +67,7 @@ const handleAPI = ()=>{
   };
 
   const handleOAuth = () => {
-    const oauthWindow = window.open('https://app.plurality.local:5000/oauth-tiktok?isWidget=true&origin=false&apps=false', 'oauth', 'width=500,height=600');
+    const oauthWindow = window.open('https://app.plurality.local:5000/oauth-facebook?isWidget=true&origin=false&apps=false', 'oauth', 'width=500,height=600');
     if (oauthWindow) {
       setPopup(oauthWindow);
       console.log('Window opened:', oauthWindow);
@@ -91,7 +91,7 @@ const handleAPI = ()=>{
   // }, [popup]);
 
   const handleInfoRequest = () => {
-    axios.get('https://app.plurality.local:5000/oauth-tiktok/info')
+    axios.get('https://app.plurality.local:5000/oauth-facebook/info')
       .then(response => {
         console.log('Info:', response.data);
       })

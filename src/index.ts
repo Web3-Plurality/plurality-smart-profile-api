@@ -20,6 +20,7 @@ import fs from "fs";
 import { initSSE } from './middlewares/authMiddleware';
 import { snapchatRouter } from './controllers/OAuthSnapChatController';
 import { instagramRouter } from './controllers/OAuthInstagramController';
+import { facebookRouter } from './controllers/OAuthFacebookController';
 
 
 dotenv.config();
@@ -37,6 +38,7 @@ app.use(passport.session());
 app.use("/oauth-twitter", twitterRouter);
 app.use("/oauth-snapchat", snapchatRouter);
 app.use("/oauth-roblox", robloxRouter);
+app.use("/oauth-facebook", facebookRouter);
 app.use("/oauth-instagram", instagramRouter);
 app.use("/permaweb", permawebRouter);
 app.use("/oauth-tiktok", tiktokRouter);
