@@ -32,7 +32,7 @@ passport.use(
             clientID: process.env.FACEBOOK_CLIENT_ID,
             clientSecret: process.env.FACEBOOK_CLIENT_SECRET,
             callbackURL: process.env.FACEBOOK_CALLBACK_URL,
-            scope: "public_profile,email",
+            scope: "public_profile,email,user_likes,user_location,user_posts",
             state: true,
             pkce: true,
         },
@@ -115,7 +115,7 @@ facebookRouter.get('/info', isAuthenticated, async (req, res) => {
             
             try {
                 fbUser = await axios.get(
-                    `https://graph.facebook.com/v20.0/me?fields=name,email,picture,hometown,location,first_name,last_name,age_range,gender,birthday&access_token=${accessToken}`,
+                    `https://graph.facebook.com/v20.0/me?fields=id,email,gender,favorite_athletes,favorite_teams,inspirational_people,location,languages,meeting_for,name,quotes,sports,likes,posts,music,feed&access_token=${accessToken}`,
                     {
                         headers: {
 
@@ -156,7 +156,7 @@ facebookRouter.get('/info', isAuthenticated, async (req, res) => {
             //     }
             // }
 
-            console.log(User.data)
+            console.log(fbUser.data)
             // const prompt = createPrompt(INSTA_FETCH_INTEREST_PROMPT, instaMedia?.data?.data )
             // const interests = await analyze(prompt)
             // const instaProfile = new InstaProfile(instaUser?.data);

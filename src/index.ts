@@ -59,23 +59,13 @@ app.post('/post', async (req: Request, res: Response): Promise<Response> => {
   });
 });
 
-// app.get('/register', async (req: Request, res: Response) => {
-//   console.log("register endpoint", req.sessionID)
-//   req.session.save(() => {
-//     return res.status(200).json({ "message": "register" });
-//   });
-// });
 
 app.get('/register-event', async (req: Request, res: Response) => {
-  //const connection = activeConnections.get(req.sessionID);
   console.log(">>>>", req.sessionID)
-  // if (!connection) {
     req.session.save(() => {
     initSSE(req, res);
   });
-  // } else {
-  //   return res.status(400).json({ "message": "SSE connection already exists." });
-  // }
+
 });
 
 try {

@@ -162,7 +162,7 @@ tiktokRouter.get('/info', isAuthenticated, async (req, res) => {
         videoList = await axios.post(
           `https://open.tiktokapis.com/v2/video/list/?fields=${videoObjFields.join(",")}`,
           {
-            max_count: 5, // env variable put
+            max_count: 20, // env variable put
           },
           {
             headers: {
