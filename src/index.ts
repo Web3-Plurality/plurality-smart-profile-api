@@ -31,12 +31,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(helmet());
 app.use(cors({ origin: true, credentials: true }));
 app.use(passport.initialize());
-if (process.env.NODE_ENV==='roblox') {
-  app.use(session({ secret: 'keyboard cat', resave: false, saveUninitialized: true })); // cookie: { secure: true, sameSite: 'none', httpOnly: true }
-}
-else{
-  app.use(session({ secret: 'keyboard cat', resave: false, saveUninitialized: true, cookie: { secure: true, sameSite: 'none', httpOnly: true } }));
-}
+app.use(session({ secret: 'keyboard cat', resave: false, saveUninitialized: true, cookie: { secure: true, sameSite: 'none', httpOnly: true } }));
 app.use(passport.session());
 app.use("/oauth-twitter", twitterRouter);
 app.use("/oauth-snapchat", snapchatRouter);
@@ -92,12 +87,6 @@ try {
       });
     }).catch((error) => console.log(error));
   }
-  else if (process.env.NODE_ENV==='test') {
-    
-      app.listen(PORT, (): void => {
-        console.log(`Connected successfully on http port ${PORT}`);
-    });
-  }
   // Only for production 
   else {
     console.log(process.env.VERIFIER_UI_URL);
@@ -111,4 +100,3 @@ try {
 } catch (error: any) {
   console.error(`Error occurred: ${error.message}`);
 }
-
