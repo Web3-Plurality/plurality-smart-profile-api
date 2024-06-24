@@ -4,11 +4,12 @@ import * as dotenv from 'dotenv';
 import axios from "axios";
 import { isAuthenticated, isConnected } from "../middlewares/authMiddleware";
 import Logger from "../lib/logger";
-import { FACEBOOK_APP, INSTA_FETCH_INTEREST_PROMPT, activeConnections } from "../utils/global";
+import { FACEBOOK_APP, FACEBOOK_FETCH_INTEREST_FROM_NAMES_PROMPT, FACEBOOK_FETCH_INTEREST_PROMPT, INSTA_FETCH_INTEREST_PROMPT, activeConnections } from "../utils/global";
 import OAuthInstagramStrategy from "../auth/OAuthInstagramStrategy";
 import { InstaProfile } from "../entity/Instagram";
-import { createPrompt } from "../utils/helper";
+import { createPrompt, extractContent } from "../utils/helper";
 import { analyze } from "../utils/groq";
+import { FacebookProfile } from "../entity/Facebook";
 
 dotenv.config();
 
@@ -43,6 +44,46 @@ passport.use(
         }
     )
 );
+
+
+const getPagingData = async (nextUrl:string) => {
+    let data = [];
+    let url  = nextUrl;
+    for (let index = 0; index < 3; index++) {
+        if (url) {
+            
+            try {
+                const moreFeed = await axios.get(
+                    url,
+                    {
+                        headers: {
+
+                            "Content-Type": "application/json",
+                        },
+                        timeout: 20000,
+                    }
+                );
+
+                data = data?.concat(moreFeed.data?.data)
+                url = moreFeed.data?.paging?.next || "";
+            } catch (error) {
+                if (error.code === 'ECONNABORTED') {
+                    Logger.error(`${FACEBOOK_APP}: Request timeout error in fetching userinfo: ${error.message}`);
+                } else {
+                    console.log(error)
+                    Logger.error(`${FACEBOOK_APP}: An error occurred: ${error.message}`);
+                }
+                url = "";
+            }
+
+            
+        }
+        
+    }
+
+    return data;
+
+}
 
 // Start authentication flow
 facebookRouter.get(
@@ -109,13 +150,13 @@ facebookRouter.get('/info', isAuthenticated, async (req, res) => {
         Logger.info(`${FACEBOOK_APP}: Request for information has been received successfully on session Id ${req.sessionID}`);
         const { accessToken }: any = req?.session?.user;
         let fbUser = { data: { data: {} } }
-        let User = { data: { data: [] } }
+
 
         if (accessToken) {
             
             try {
                 fbUser = await axios.get(
-                    `https://graph.facebook.com/v20.0/me?fields=id,email,gender,favorite_athletes,favorite_teams,inspirational_people,location,languages,meeting_for,name,quotes,sports,likes,posts,music,feed&access_token=${accessToken}`,
+                    `https://graph.facebook.com/v20.0/me?fields=id,name,email,languages,location,feed{description,message},likes{about,bio,category},music{about,bio,category,name},posts{caption,description,message},favorite_athletes,favorite_teams&access_token=${accessToken}`,
                     {
                         headers: {
 
@@ -133,34 +174,40 @@ facebookRouter.get('/info', isAuthenticated, async (req, res) => {
                 }
             }
 
-            // console.log("id",fbUser.data.id)
 
-            // try {
-            //     User = await axios.get(
-            //         `https://graph.facebook.com/v20.0/${fbUser?.data?.id}`,
-            //         {
-            //             headers: {
+            const moreFeedData = await getPagingData(fbUser?.data?.feed?.paging?.next);
+            const morePostsData = await getPagingData(fbUser?.data?.posts?.paging?.next);
+            const moreLikesData = await getPagingData(fbUser?.data?.likes?.paging?.next);
+            const moreMusicData = await getPagingData(fbUser?.data?.music?.paging?.next);
 
-            //                 "Content-Type": "application/json",
-            //                 access_token: accessToken
-            //             },
-            //             timeout: 20000,
-            //         }
-            //     );
-            // } catch (error) {
-            //     if (error.code === 'ECONNABORTED') {
-            //         Logger.error(`${FACEBOOK_APP}: Request timeout error in fetching userinfo: ${error.message}`);
-            //     } else {
-            //         console.log(error)
-            //         Logger.error(`${FACEBOOK_APP}: An error occurred: ${error.message}`);
-            //     }
-            // }
+         
 
-            console.log(fbUser.data)
-            // const prompt = createPrompt(INSTA_FETCH_INTEREST_PROMPT, instaMedia?.data?.data )
-            // const interests = await analyze(prompt)
-            // const instaProfile = new InstaProfile(instaUser?.data);
-            // instaProfile.interests = interests.Interests;
+
+            
+            console.log("moreFeedData>>>>",moreMusicData)
+            fbUser.data.likes.data = fbUser?.data?.likes?.data?.concat(moreLikesData)
+            fbUser?.data?.feed?.data =  fbUser?.data?.feed?.data?.concat(moreFeedData)
+            fbUser?.data?.posts?.data = fbUser?.data?.posts?.data?.concat(morePostsData)
+            fbUser?.data?.music?.data = fbUser?.data?.music?.data?.concat(moreMusicData)
+            const facebookProfile = new FacebookProfile(fbUser?.data);
+            const feedContent = extractContent(fbUser?.data?.feed?.data);
+            const postContent = extractContent(fbUser?.data?.posts?.data);
+            const favoriteAthletesContent = extractContent(fbUser?.data?.favorite_athletes);
+            const favoriteTeamsContent = extractContent(fbUser?.data?.favorite_teams);
+            const favoriteMusicContent = extractContent(fbUser?.data?.music?.data);
+
+            
+
+            const prompt1 = createPrompt(FACEBOOK_FETCH_INTEREST_PROMPT, feedContent +"\n"+ postContent);
+            const prompt2 = createPrompt(FACEBOOK_FETCH_INTEREST_FROM_NAMES_PROMPT, favoriteAthletesContent +"\n"+ favoriteTeamsContent + "\n" + favoriteMusicContent);
+
+            const interests1 = await analyze(prompt1);
+            const interests2 = await analyze(prompt2);
+            facebookProfile.interests = interests1?.Interests.concat(interests2?.Interests);
+
+            // console.log(interests1);
+            // console.log(interests2);
+
             
             req.session.destroy(err => {
                 activeConnections.delete(req.sessionID);
@@ -170,7 +217,7 @@ facebookRouter.get('/info', isAuthenticated, async (req, res) => {
                 }
                 Logger.info(`${FACEBOOK_APP}: Session destroyed successfully`);
                 Logger.info(`${FACEBOOK_APP}: User information has been delivered successfully`);
-                return res.status(200).json({ app: FACEBOOK_APP, message: "success", facebookProfile: fbUser?.data })
+                return res.status(200).json({ app: FACEBOOK_APP, message: "success", facebookProfile: facebookProfile })
             });
         } else {
             Logger.error(`${FACEBOOK_APP}: Token has been expired.`);

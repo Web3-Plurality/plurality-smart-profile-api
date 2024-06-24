@@ -1,3 +1,5 @@
+import e from "express";
+
 export function parseQueryString(query: string) {
   let params: any = {};
   // Remove the leading question mark if present
@@ -21,4 +23,33 @@ export function createPrompt(prompt: any, content: any) {
     prompt[1].content += '\n' + content;
     return prompt;
   }
+}
+
+
+
+export function extractContent(data:any) {
+    let content = '';
+    for (let index = 0; index < data.length; index++) {
+      if (data[index]?.message && data[index]?.description) {
+        content += data[index]?.message 
+        content += "\n"
+        content += data[index]?.description;
+        content += "\n"
+      }
+      else if (data[index]?.message) {
+        content += data[index]?.message;
+        content += "\n"
+      }
+      else if (data[index]?.description) {
+        content += data[index]?.description;
+        content += "\n"
+      }
+      else if (data[index]?.name) {
+        content += data[index]?.name;
+        content += "\n"
+      }
+      
+    }
+  return content;
+
 }

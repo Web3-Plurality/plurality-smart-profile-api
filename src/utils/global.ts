@@ -25,6 +25,41 @@ export const INSTA_FETCH_INTEREST_PROMPT = [
     }
   ]
 
+  export const FACEBOOK_FETCH_INTEREST_PROMPT = [
+    {
+      role: "system",
+      content: "You are helpful asistant which extract insights from text and output it in JSON. The JSON object must use the schema: {Interests: [string]}."
+    },
+    {
+      role: "user",
+      content: `Fetch interests and tags from these text and make JSON of it.
+              The JSON schema should contain the following Object: 
+              Interests (also include other related topic and tags).
+              Put everything in the Interests array.
+              if you did not find any thing still you have to follow schema out.
+              The output JSON object must use the schema: {Interests: [string]}.
+              Text:`
+    }
+  ]
+
+
+  export const FACEBOOK_FETCH_INTEREST_FROM_NAMES_PROMPT = [
+    {
+      role: "system",
+      content: "You are helpful asistant which extract insights from text and output it in JSON. The JSON object must use the schema: {Interests: [string]}."
+    },
+    {
+      role: "user",
+      content: `Fetch interests, tags, type of music and sports user likes by looking the names of athletes, teams and musician, and make JSON of it.
+              The JSON schema should contain the following Object: 
+              Interests (also include other related topic and tags).
+              Put everything in the Interests array.
+              if you did not find any thing still you have to follow schema out.
+              The output JSON object must use the schema: {Interests: [string]}.
+              Text:`
+    }
+  ]
+
   export const TWITTER_FETCH_INTEREST_PROMPT = [
     {
       "role": "system",
