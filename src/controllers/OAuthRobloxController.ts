@@ -52,14 +52,14 @@ robloxRouter.get(
       origin: req?.query?.origin,
       apps: req?.query?.apps,
     };
-    
+
     passport.authenticate('roblox')(req, res, next);
   });
 
 // Callback handler
 robloxRouter.get('/callback', passport.authenticate('roblox', { session: false }), async (req, res) => {
   try {
-    
+
     Logger.info(`${ROBLOX_APP}: Callback from Twitter has been received successfully on session Id${req.sessionID}`);
     let url: any;
     const { isWidget, origin, apps } = req.session.redirectParams;
@@ -90,7 +90,7 @@ robloxRouter.get('/callback', passport.authenticate('roblox', { session: false }
       Logger.info(`${ROBLOX_APP}: Access token of Twitter received successfully`);
     }
     else {
-      Logger.error("An error occurred while accessing session"); 
+      Logger.error("An error occurred while accessing session");
       return res.status(401).json({ app: ROBLOX_APP, error: 'Unauthorized', message: 'Event source connection not found. Register Event' });
     }
 
@@ -105,29 +105,82 @@ robloxRouter.get('/info', isAuthenticated, async (req, res) => {
   try {
     Logger.info(`${ROBLOX_APP}: Request for information has been received successfully on session Id ${req.sessionID}`);
     const { accessToken }: any = req?.session?.user;
-    let userRoblox = { data: { } }
+    let userRoblox = { data: {} }
 
     if (accessToken) {
-      try { 
+      try {
         userRoblox = await axios.get(
-        `https://apis.roblox.com/oauth/v1/userinfo`,
-        {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            "Content-Type": "application/json",
-          },
-          timeout: 20000,
+          `https://apis.roblox.com/oauth/v1/userinfo`,
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              "Content-Type": "application/json",
+            },
+            timeout: 20000,
+          }
+        );
+      } catch (error) {
+        if (error.code === 'ECONNABORTED') {
+          Logger.error(`${ROBLOX_APP}: Request timeout error in fetching userinfo: ${error.message}`);
+        } else {
+          Logger.error(`${ROBLOX_APP}: An error occurred: ${error.message}`);
         }
-      );
-    } catch (error) {
-      if (error.code === 'ECONNABORTED') {
-        Logger.error(`${ROBLOX_APP}: Request timeout error in fetching userinfo: ${error.message}`);
-      } else {
-        Logger.error(`${ROBLOX_APP}: An error occurred: ${error.message}`);
       }
-    }
 
-    const robloxProfile  = new RobloxProfile(userRoblox?.data);
+
+      const robloxProfile = new RobloxProfile(userRoblox?.data);
+
+      try {
+        const userData = await axios.get(
+          `https://apis.roblox.com/cloud/v2/users/${userRoblox?.data?.sub}`,
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              "Content-Type": "application/json",
+            },
+            timeout: 20000,
+          }
+        );
+
+        // const interests =  await ana
+        robloxProfile.idVerified = userData?.data?.idVerified;
+        robloxProfile.premium = userData?.data?.premium;
+        
+      } catch (error) {
+        if (error.code === 'ECONNABORTED') {
+          Logger.error(`${ROBLOX_APP}: Request timeout error in fetching userinfo: ${error.message}`);
+        } else {
+          Logger.error(`${ROBLOX_APP}: An error occurred: ${error.message}`);
+        }
+      }
+
+
+
+
+      try {
+        const inventoryData = await axios.get(
+          `https://apis.roblox.com/cloud/v2/users/${userRoblox?.data?.sub}/inventory-items`,
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              "Content-Type": "application/json",
+            },
+            timeout: 20000,
+          }
+        );
+
+        console.log(inventoryData?.data?.inventoryItems)
+      } catch (error) {
+        if (error.code === 'ECONNABORTED') {
+          Logger.error(`${ROBLOX_APP}: Request timeout error in fetching userinfo: ${error.message}`);
+        } else {
+          Logger.error(`${ROBLOX_APP}: An error occurred: ${error.message}`);
+        }
+      }
+
+
+
+
 
       req.session.destroy(err => {
         activeConnections.delete(req.sessionID);
@@ -137,7 +190,7 @@ robloxRouter.get('/info', isAuthenticated, async (req, res) => {
         }
         Logger.info(`${ROBLOX_APP}: Session destroyed successfully`);
         Logger.info(`${ROBLOX_APP}: User information has been delivered successfully`);
-        return res.status(200).json({ app: ROBLOX_APP, message: "success", robloxProfile: robloxProfile  })
+        return res.status(200).json({ app: ROBLOX_APP, message: "success", robloxProfile: robloxProfile })
       });
     } else {
       Logger.error(`${ROBLOX_APP}: Token has been expired.`);
@@ -147,10 +200,10 @@ robloxRouter.get('/info', isAuthenticated, async (req, res) => {
     if (error.code === 'ECONNABORTED') {
       Logger.error(`${ROBLOX_APP}: Request timeout error in fetching userinfo: ${error.message}`);
       return res.status(408).json({ app: ROBLOX_APP, error: 'Request Timeout', message: 'Session has expired. Please log in again.' });
-  }
-  else{
-    Logger.error(`${ROBLOX_APP}: Error occurred in fetching user informantion: ${error.message}`);
-    return res.status(401).json({ app: ROBLOX_APP, error: 'Unauthorized', message: 'Session has expired. Please log in again.' });
-  }
+    }
+    else {
+      Logger.error(`${ROBLOX_APP}: Error occurred in fetching user informantion: ${error.message}`);
+      return res.status(401).json({ app: ROBLOX_APP, error: 'Unauthorized', message: 'Session has expired. Please log in again.' });
+    }
   }
 });
