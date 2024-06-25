@@ -20,6 +20,7 @@ export class RobloxProfile {
         this.premium = data.premium || false;
         this.idVerified = data.idVerified || false;
         this.interests = interests || [];
+        
     }
 
 
