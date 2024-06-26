@@ -61,7 +61,6 @@ app.post('/post', async (req: Request, res: Response): Promise<Response> => {
 
 
 app.get('/register-event', async (req: Request, res: Response) => {
-  console.log(">>>>", req.sessionID)
     req.session.save(() => {
     initSSE(req, res);
   });

@@ -4,10 +4,9 @@ import * as dotenv from 'dotenv';
 import axios from "axios";
 import { isAuthenticated, isConnected } from "../middlewares/authMiddleware";
 import Logger from "../lib/logger";
-import { FACEBOOK_APP, FACEBOOK_FETCH_INTEREST_FROM_NAMES_PROMPT, FACEBOOK_FETCH_INTEREST_PROMPT, INSTA_FETCH_INTEREST_PROMPT, activeConnections } from "../utils/global";
+import { FACEBOOK_APP, FACEBOOK_FETCH_INTEREST_FROM_NAMES_PROMPT, FACEBOOK_FETCH_INTEREST_PROMPT, activeConnections } from "../utils/global";
 import OAuthInstagramStrategy from "../auth/OAuthInstagramStrategy";
-import { InstaProfile } from "../entity/Instagram";
-import { createPrompt, extractContent } from "../utils/helper";
+import { createPrompt, extractContent, removeIdsFromObjects } from "../utils/helper";
 import { analyze } from "../utils/groq";
 import { FacebookProfile } from "../entity/Facebook";
 
@@ -75,14 +74,10 @@ const getPagingData = async (nextUrl:string) => {
                 }
                 url = "";
             }
-
-            
         }
-        
     }
 
     return data;
-
 }
 
 // Start authentication flow
@@ -150,8 +145,6 @@ facebookRouter.get('/info', isAuthenticated, async (req, res) => {
         Logger.info(`${FACEBOOK_APP}: Request for information has been received successfully on session Id ${req.sessionID}`);
         const { accessToken }: any = req?.session?.user;
         let fbUser = { data: { data: {} } }
-
-
         if (accessToken) {
             
             try {
@@ -174,40 +167,38 @@ facebookRouter.get('/info', isAuthenticated, async (req, res) => {
                 }
             }
 
-
             const moreFeedData = await getPagingData(fbUser?.data?.feed?.paging?.next);
-            const morePostsData = await getPagingData(fbUser?.data?.posts?.paging?.next);
             const moreLikesData = await getPagingData(fbUser?.data?.likes?.paging?.next);
             const moreMusicData = await getPagingData(fbUser?.data?.music?.paging?.next);
 
-         
-
-
-            
-            console.log("moreFeedData>>>>",moreMusicData)
             fbUser.data.likes.data = fbUser?.data?.likes?.data?.concat(moreLikesData)
             fbUser?.data?.feed?.data =  fbUser?.data?.feed?.data?.concat(moreFeedData)
-            fbUser?.data?.posts?.data = fbUser?.data?.posts?.data?.concat(morePostsData)
             fbUser?.data?.music?.data = fbUser?.data?.music?.data?.concat(moreMusicData)
+
             const facebookProfile = new FacebookProfile(fbUser?.data);
-            const feedContent = extractContent(fbUser?.data?.feed?.data);
-            const postContent = extractContent(fbUser?.data?.posts?.data);
+            const feed = removeIdsFromObjects(fbUser?.data?.feed?.data)
+            const favorite_athletes = removeIdsFromObjects(fbUser?.data?.favorite_athletes)
+            const favorite_teams = removeIdsFromObjects(fbUser?.data?.favorite_teams)
+            const favorite_music = removeIdsFromObjects(fbUser?.data?.music?.data)
+            const likes = removeIdsFromObjects(fbUser?.data?.likes?.data)
+
+
+            const feedContent = extractContent(feed);
             const favoriteAthletesContent = extractContent(fbUser?.data?.favorite_athletes);
             const favoriteTeamsContent = extractContent(fbUser?.data?.favorite_teams);
             const favoriteMusicContent = extractContent(fbUser?.data?.music?.data);
 
-            
-
-            const prompt1 = createPrompt(FACEBOOK_FETCH_INTEREST_PROMPT, feedContent +"\n"+ postContent);
+            const prompt1 = createPrompt(FACEBOOK_FETCH_INTEREST_PROMPT, feedContent);
             const prompt2 = createPrompt(FACEBOOK_FETCH_INTEREST_FROM_NAMES_PROMPT, favoriteAthletesContent +"\n"+ favoriteTeamsContent + "\n" + favoriteMusicContent);
-
             const interests1 = await analyze(prompt1);
             const interests2 = await analyze(prompt2);
+            
+            facebookProfile.feed = feed;
+            facebookProfile.favorite_athletes = favorite_athletes;
+            facebookProfile.favorite_teams = favorite_teams;
+            facebookProfile.music = favorite_music;
+            facebookProfile.likes = likes;
             facebookProfile.interests = interests1?.Interests.concat(interests2?.Interests);
-
-            // console.log(interests1);
-            // console.log(interests2);
-
             
             req.session.destroy(err => {
                 activeConnections.delete(req.sessionID);

@@ -1,4 +1,3 @@
-import e from "express";
 
 export function parseQueryString(query: string) {
   let params: any = {};
@@ -52,4 +51,15 @@ export function extractContent(data:any) {
     }
   return content;
 
+}
+
+
+
+export function removeIdsFromObjects(data:any) {
+  return data
+      .map(obj => {
+          const { id, ...rest } = obj;
+          return rest;
+      })
+      .filter(obj => obj.description || obj.message || obj.name || obj.about || obj.category);
 }
