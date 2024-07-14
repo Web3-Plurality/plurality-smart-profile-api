@@ -188,8 +188,9 @@ facebookRouter.get('/info', isAuthenticated, async (req, res) => {
             const favoriteAthletesContent = extractContent(fbUser?.data?.favorite_athletes);
             const favoriteTeamsContent = extractContent(fbUser?.data?.favorite_teams);
             const favoriteMusicContent = extractContent(fbUser?.data?.music?.data);
+            const likesContent = extractContent(likes);
 
-            const prompt1 = createPrompt(FACEBOOK_FETCH_INTEREST_PROMPT, feedContent);
+            const prompt1 = createPrompt(FACEBOOK_FETCH_INTEREST_PROMPT, feedContent + "\n" + likesContent);
             const prompt2 = createPrompt(FACEBOOK_FETCH_INTEREST_FROM_NAMES_PROMPT, favoriteAthletesContent +"\n"+ favoriteTeamsContent + "\n" + favoriteMusicContent);
             const interests1 = await analyze(prompt1);
             const interests2 = await analyze(prompt2);

@@ -4,9 +4,11 @@ import * as dotenv from 'dotenv';
 import axios from "axios";
 import { isAuthenticated, isConnected } from "../middlewares/authMiddleware";
 import Logger from "../lib/logger";
-import { ROBLOX_APP, activeConnections } from "../utils/global";
+import { ROBLOX_APP, ROBLOX_FETCH_INTEREST_PROMPT, activeConnections } from "../utils/global";
 import OAuthRobloxStrategy from "../auth/OAuthRobloxStrategy";
 import { RobloxProfile } from "../entity/Roblox";
+import { analyze } from "../utils/groq";
+import { createPrompt } from "../utils/helper";
 
 dotenv.config();
 
@@ -106,6 +108,7 @@ robloxRouter.get('/info', isAuthenticated, async (req, res) => {
     Logger.info(`${ROBLOX_APP}: Request for information has been received successfully on session Id ${req.sessionID}`);
     const { accessToken }: any = req?.session?.user;
     let userRoblox = { data: {} }
+    let inventoryData  = []
 
     if (accessToken) {
       try {
@@ -126,8 +129,7 @@ robloxRouter.get('/info', isAuthenticated, async (req, res) => {
           Logger.error(`${ROBLOX_APP}: An error occurred: ${error.message}`);
         }
       }
-
-
+      
       const robloxProfile = new RobloxProfile(userRoblox?.data);
 
       try {
@@ -142,10 +144,13 @@ robloxRouter.get('/info', isAuthenticated, async (req, res) => {
           }
         );
 
-        // const interests =  await ana
+        const prompt = createPrompt(ROBLOX_FETCH_INTEREST_PROMPT, userData?.data?.about)
+        const interests = await analyze(prompt)
+        robloxProfile.interests = interests?.Interests || [];
+        robloxProfile.introTags = interests?.IntroTags || [];
         robloxProfile.idVerified = userData?.data?.idVerified;
         robloxProfile.premium = userData?.data?.premium;
-        
+
       } catch (error) {
         if (error.code === 'ECONNABORTED') {
           Logger.error(`${ROBLOX_APP}: Request timeout error in fetching userinfo: ${error.message}`);
@@ -154,11 +159,8 @@ robloxRouter.get('/info', isAuthenticated, async (req, res) => {
         }
       }
 
-
-
-
       try {
-        const inventoryData = await axios.get(
+        inventoryData = await axios.get(
           `https://apis.roblox.com/cloud/v2/users/${userRoblox?.data?.sub}/inventory-items`,
           {
             headers: {
@@ -168,8 +170,7 @@ robloxRouter.get('/info', isAuthenticated, async (req, res) => {
             timeout: 20000,
           }
         );
-
-        console.log(inventoryData?.data?.inventoryItems)
+        robloxProfile.assests = inventoryData?.data?.inventoryItems || [];
       } catch (error) {
         if (error.code === 'ECONNABORTED') {
           Logger.error(`${ROBLOX_APP}: Request timeout error in fetching userinfo: ${error.message}`);
@@ -177,10 +178,6 @@ robloxRouter.get('/info', isAuthenticated, async (req, res) => {
           Logger.error(`${ROBLOX_APP}: An error occurred: ${error.message}`);
         }
       }
-
-
-
-
 
       req.session.destroy(err => {
         activeConnections.delete(req.sessionID);

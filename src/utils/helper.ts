@@ -47,6 +47,10 @@ export function extractContent(data:any) {
         content += data[index]?.name;
         content += "\n"
       }
+      else if (data[index]?.about) {
+        content += data[index]?.about;
+        content += "\n"
+      }
       
     }
   return content;

@@ -97,3 +97,25 @@ export const INSTA_FETCH_INTEREST_PROMPT = [
               Text:`
     }
   ]
+
+
+  export const ROBLOX_FETCH_INTEREST_PROMPT = [
+    {
+      "role": "system",
+      "content": "You are helpful asistant which extract insights from about of roblox user profile and output it in JSON. The JSON object must use the schema: {Interests: [string], IntroTags: [string]}."
+    },
+    {
+      role: "user",
+      content: `Fetch interests and tags from about of roblox user profile and make JSON of it.
+              The JSON schema should contain the following Object: 
+              Interests (also include other related topic and tags).
+              Put everything in the Interests array.
+              The second thing you have to do is Extract all introductory tags such as professions, roles, and notable titles from the following description and output them as a list of IntroTags.",
+              if you did not find any thing still you have to follow schema out.
+              The output JSON object must use the schema: {Interests: [string], IntroTags: [string]}.
+              Text:`
+    }
+  ]
+
+
+  

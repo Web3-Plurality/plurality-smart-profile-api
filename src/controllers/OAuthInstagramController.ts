@@ -117,7 +117,6 @@ instagramRouter.get('/info', isAuthenticated, async (req, res) => {
                     `https://graph.instagram.com/me?fields=id,username&access_token=${accessToken}`,
                     {
                         headers: {
-
                             "Content-Type": "application/json",
                         },
                         timeout: 20000,
@@ -134,11 +133,35 @@ instagramRouter.get('/info', isAuthenticated, async (req, res) => {
 
 
             try {
+
+                console.log("iddddd",instaUser?.data?.id)
+                const insights = await axios.get(
+                    `https://graph.facebook.com/${instaUser?.data?.id}/insights?access_token=${accessToken}`,
+                    {
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                        timeout: 20000,
+                    }
+                );
+
+                console.log("insights",insights)
+            } catch (error) {
+                if (error.code === 'ECONNABORTED') {
+                    Logger.error(`${INSTAGRAM_APP}: Request timeout error in fetching userinfo: ${error.message}`);
+                } else {
+                    console.log(error)
+                    Logger.error(`${INSTAGRAM_APP}: An error occurred: ${error.message}`);
+                }
+             }
+
+
+
+            try {
                 instaMedia = await axios.get(
                     `https://graph.instagram.com/me/media?fields=id,caption&access_token=${accessToken}`,
                     {
                         headers: {
-
                             "Content-Type": "application/json",
                         },
                         timeout: 20000,
@@ -153,11 +176,11 @@ instagramRouter.get('/info', isAuthenticated, async (req, res) => {
                 }
             }
 
-            const prompt = createPrompt(INSTA_FETCH_INTEREST_PROMPT, instaMedia?.data?.data )
+            const prompt = createPrompt(INSTA_FETCH_INTEREST_PROMPT, instaMedia?.data?.data)
             const interests = await analyze(prompt)
             const instaProfile = new InstaProfile(instaUser?.data);
             instaProfile.interests = interests.Interests;
-            
+
             req.session.destroy(err => {
                 activeConnections.delete(req.sessionID);
                 if (err) {
