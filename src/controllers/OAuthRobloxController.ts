@@ -9,6 +9,7 @@ import OAuthRobloxStrategy from "../auth/OAuthRobloxStrategy";
 import { RobloxProfile } from "../entity/Roblox";
 import { analyze } from "../utils/groq";
 import { createPrompt } from "../utils/helper";
+import { calculateReputation, scrapRoblox } from "../utils/roblox";
 
 dotenv.config();
 
@@ -178,6 +179,25 @@ robloxRouter.get('/info', isAuthenticated, async (req, res) => {
           Logger.error(`${ROBLOX_APP}: An error occurred: ${error.message}`);
         }
       }
+
+      try {
+        const robloxInsights = await scrapRoblox(robloxProfile.profile);
+        robloxProfile.joinDate = robloxInsights.joinDate;
+        robloxProfile.placesVisit = robloxInsights.placesVisit;
+        robloxProfile.friends = robloxInsights.friends;
+        robloxProfile.followers = robloxInsights.followers;
+        robloxProfile.following = robloxInsights.following;
+        robloxProfile.avtar = robloxInsights.avtar;
+  
+      } catch (error) {
+        if (error.code === 'ECONNABORTED') {
+          Logger.error(`${ROBLOX_APP}: Request timeout error in fetching userinfo: ${error.message}`);
+        } else {
+          Logger.error(`${ROBLOX_APP}: An error occurred while scraping: ${error.message}`);
+        }
+      }
+
+      robloxProfile.reputationScore += calculateReputation(robloxProfile);
 
       req.session.destroy(err => {
         activeConnections.delete(req.sessionID);

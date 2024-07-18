@@ -1,102 +1,133 @@
+// const puppeteer = require('puppeteer');
+
+// async function scrapeTweetContent(tweetUrl) {
+//     // Launch a headless browser
+//     const browser = await puppeteer.launch();
+//     const page = await browser.newPage();
+
+//     // await page.setViewport({ width: 1920, height: 1080 });
+
+//     // Navigate to the tweet URL
+//     await page.goto(tweetUrl);
+
+//     const selector = '#profile-current-wearing-avatar > div.col-sm-6.section-content.profile-avatar-left > div > span'
+//     // Wait for the tweet content to load
+    
+//     await page.waitForSelector(selector);
+    
+    
+//     // Extract the tweet content
+//     const tweetContent = await page.evaluate(() => {
+//         const selector ='#profile-current-wearing-avatar > div.col-sm-6.section-content.profile-avatar-left > div > span'
+
+//         const tweetElement = document.querySelector('.thumbnail-holder .thumbnail-2d-container img');
+
+//         // console.log(">>", tweetElement.src)
+//         // const b = tweetElement.querySelector("")
+//     //    if (b) {
+        
+//     //        console.log(">>>>>>",b.innerText)
+//     //    }
+//         // const obj = {
+//         //     bookmark : bookmark ? bookmark.innerText : 0
+//         // }
+//         return  tweetElement.src
+//     });
+
+//     // Close the browser
+//     await browser.close();
+
+//     return tweetContent;
+// }
+
+// // URL of the tweet to scrape
+// const robloxUrl = 'https://www.roblox.com/users/6083683567/profile';
+
+// // Scrape the tweet content and log it
+// scrapeTweetContent(robloxUrl)
+//     .then(tweetContent => {
+
+//         console.log('Tweet Content:', tweetContent);
+//         if (tweetContent) {
+//     //         const data = tweetContent.split("\n")
+//     //         console.log(data)
+//     //         const obj = {}
+//     // for (let i= 0; i < data.length; i++) {
+//     //     if (data[i].trim() === "Bookmarks" || data[i].trim() === "Likes" || data[i].trim() === "Quotes" || data[i].trim() === "Reposts") {
+            
+//     //         obj[data[i].trim()] = data[i - 1].trim();
+
+//     //     }
+//     //     else if (data[i].trim() === "From") {
+//     //         obj[data[i].trim()] = data[i + 1].trim();
+//     //         obj["date"] = data[i + 2].trim();
+//     //         obj["Views"] = data[i + 4].trim();
+
+//     //     }
+
+//     //     else if (data[i].trim() === "Follow") {
+            
+//     //         obj["tweet"] = data[i + 1].trim();
+//     //     }
+
+//     //     else if (data[i].trim()[0] === "@") {
+            
+//     //         obj["username"] = data[i].trim();
+//     //     }
+        
+//     // }
+
+//     // console.log(obj)
+
+//         } else {
+//             console.log('Tweet not found or could not be scraped.');
+//         }
+//     })
+//     .catch(error => {
+//         console.error('Error scraping tweet:', error);
+//     });
+
+
+
+
+
 const puppeteer = require('puppeteer');
 
-async function scrapeTweetContent(tweetUrl) {
-    // Launch a headless browser
-    const browser = await puppeteer.launch();
-    const page = await browser.newPage();
+(async () => {
+  // Launch a browser instance
+  const browser = await puppeteer.launch({ headless: true });
+  const page = await browser.newPage();
 
-    // await page.setViewport({ width: 1920, height: 1080 });
+  // Navigate to the Roblox profile page
+  await page.setViewport({ width: 1920, height: 1080 });
+  const profileUrl = 'https://www.roblox.com/users/6083683567/profile';
+  await page.goto(profileUrl, { waitUntil: 'networkidle2' });
 
-    // Navigate to the tweet URL
-    await page.goto(tweetUrl);
-
-    const selector = '#react-root > div > div > div.css-175oi2r.r-1f2l425.r-13qz1uu.r-417010.r-18u37iz > main > div > div > div > div > div > section > div > div > div:nth-child(1) > div > div > article'
-    // Wait for the tweet content to load
-    await page.waitForSelector(selector);
+  // Extract the avatar image source
+  const robloxInsights = await page.evaluate(() => {
+    const imgElement = document.querySelector('.thumbnail-holder .thumbnail-2d-container img');
+    const joinElement = document.querySelector('#profile-statistics-container > div > div.section-content > ul > li:nth-child(1) > p.text-lead');
+    const placesVisitElement = document.querySelector("#profile-statistics-container > div > div.section-content > ul > li:nth-child(2) > p.text-lead")
+    const friendElement = document.querySelector("#profile-header-container > div > div > div > div.header-caption > div.header-details > ul.details-info > li:nth-child(1) > a > span")
+    const followerVisitElement = document.querySelector("#profile-header-container > div > div > div > div.header-caption > div.header-details > ul.details-info > li:nth-child(2) > a > span")
+    const followingVisitElement = document.querySelector("#profile-header-container > div > div > div > div.header-caption > div.header-details > ul.details-info > li:nth-child(3) > a > span")
     
     
-    // Extract the tweet content
-    const tweetContent = await page.evaluate(() => {
-        const selector = '#react-root > div > div > div.css-175oi2r.r-1f2l425.r-13qz1uu.r-417010.r-18u37iz > main > div > div > div > div > div > section > div > div > div:nth-child(1) > div > div > article'
-
-        const tweetElement = document.querySelector(selector);
-
-        // console.log(">>", tweetElement.textContent)
-        // const b = tweetElement.querySelector("")
-    //    if (b) {
-        
-    //        console.log(">>>>>>",b.innerText)
-    //    }
-        // const obj = {
-        //     bookmark : bookmark ? bookmark.innerText : 0
-        // }
-        return  tweetElement
-    });
-
-    // Close the browser
-    await browser.close();
-
-    return tweetContent;
-}
-
-// URL of the tweet to scrape
-const tweetUrl = 'https://twitter.com/EstoniaInvest/status/1786379290386256287';
-
-// Scrape the tweet content and log it
-scrapeTweetContent(tweetUrl)
-    .then(tweetContent => {
-
-        console.log('Tweet Content:', tweetContent);
-        if (tweetContent) {
-    //         const data = tweetContent.split("\n")
-    //         console.log(data)
-    //         const obj = {}
-    // for (let i= 0; i < data.length; i++) {
-    //     if (data[i].trim() === "Bookmarks" || data[i].trim() === "Likes" || data[i].trim() === "Quotes" || data[i].trim() === "Reposts") {
-            
-    //         obj[data[i].trim()] = data[i - 1].trim();
-
-    //     }
-    //     else if (data[i].trim() === "From") {
-    //         obj[data[i].trim()] = data[i + 1].trim();
-    //         obj["date"] = data[i + 2].trim();
-    //         obj["Views"] = data[i + 4].trim();
-
-    //     }
-
-    //     else if (data[i].trim() === "Follow") {
-            
-    //         obj["tweet"] = data[i + 1].trim();
-    //     }
-
-    //     else if (data[i].trim()[0] === "@") {
-            
-    //         obj["username"] = data[i].trim();
-    //     }
-        
-    // }
-
-    // console.log(obj)
-
-        } else {
-            console.log('Tweet not found or could not be scraped.');
-        }
-    })
-    .catch(error => {
-        console.error('Error scraping tweet:', error);
-    });
+    return {
+    avtar: imgElement ? imgElement.src : null,
+    joinDate: joinElement ? joinElement.innerText : null,
+    placesVisit: placesVisitElement ? placesVisitElement.innerText : null,
+    friends: friendElement ? friendElement.innerText : null,
+    followers: followerVisitElement ? followerVisitElement.innerText : null,
+    following: followingVisitElement ? followingVisitElement.innerText : null,
+    }
+  });
 
 
 
-    // https://twitter.com/NoContextHumans/status/1787489998339547398
-    // https://twitter.com/itsme_urstruly/status/1787506347183157687
-    // https://twitter.com/EstoniaInvest/status/1786379290386256287
-    // https://twitter.com/Airbus/status/1787497957727605041
-    // https://twitter.com/elonmusk/status/1787165820512051626
+  console.log('Roblox Insights:', robloxInsights);
 
-//*[@id="id__2cf8qn165hr"]/div[4]/div/div/div[2]/span/span/span
+  // Close the browser
+  await browser.close();
+})();
 
-
-// #react-root > div > div > div.css-175oi2r.r-1f2l425.r-13qz1uu.r-417010.r-18u37iz > main > div > div > div > div > div > section > div > div > div:nth-child(1) > div > div > article
-
-// /html/body/div[1]/div/div/div[2]/main/div/div/div/div/div/section/div/div/div[1]/div/div/article/div/div/div[3]/div[5]/div/div/div[4]/div/div/div[2]/span/span/span

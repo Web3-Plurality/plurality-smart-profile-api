@@ -1,9 +1,14 @@
 export class RobloxProfile {
     created_at: number;
+    joinDate: string;
+    placesVisit: number;
+    friends: number;
+    followers: number;
+    following: number;
+    avtar: string;
     name: string;
     nickname: string;
     picture: string;
-    preferred_username: string;
     profile: string;
     sub: string;
     premium: boolean;
@@ -11,9 +16,17 @@ export class RobloxProfile {
     interests: string[];
     introTags: string[];
     assests: any[];
+    preferred_username: string;
+    reputationScore: number;
 
     constructor(data: any = {}) {
         this.created_at = data?.created_at || 0;
+        this.joinDate = "";
+        this.placesVisit =  0;
+        this.friends =   0;
+        this.followers = 0;
+        this.following = 0;
+        this.avtar = "";
         this.name = data?.name || "";
         this.nickname = data?.nickname || "";
         this.picture = data?.picture || "";
@@ -25,6 +38,7 @@ export class RobloxProfile {
         this.interests =  [];
         this.introTags =  [];
         this.assests =  [];    
+        this.reputationScore = 0;
     }
 
 

@@ -134,8 +134,6 @@ fortniteRouter.get('/info', isAuthenticated, async (req, res) => {
       }
       
       const fortniteProfile = new FortniteProfile(userFortnite?.data[0]);
-
-  
   
       req.session.destroy(err => {
         activeConnections.delete(req.sessionID);

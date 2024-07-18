@@ -39,7 +39,6 @@ passport.use(
         },
         // Verify callback
         (accessToken: any, refreshToken: any, profile: any, done: any) => {
-            console.log("Verify")
             return done(null, { accessToken, refreshToken, profile });
         }
     )
