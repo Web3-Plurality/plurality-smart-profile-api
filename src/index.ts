@@ -21,6 +21,7 @@ import { initSSE } from './middlewares/authMiddleware';
 import { snapchatRouter } from './controllers/OAuthSnapChatController';
 import { instagramRouter } from './controllers/OAuthInstagramController';
 import { facebookRouter } from './controllers/OAuthFacebookController';
+import { fortniteRouter } from './controllers/OAuthFortniteController';
 
 
 dotenv.config();
@@ -40,6 +41,7 @@ app.use("/oauth-snapchat", snapchatRouter);
 app.use("/oauth-roblox", robloxRouter);
 app.use("/oauth-facebook", facebookRouter);
 app.use("/oauth-instagram", instagramRouter);
+app.use("/oauth-fortnite", fortniteRouter);
 app.use("/permaweb", permawebRouter);
 app.use("/oauth-tiktok", tiktokRouter);
 app.use("/subgraph", subgraphRouter);

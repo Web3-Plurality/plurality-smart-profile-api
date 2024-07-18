@@ -67,7 +67,7 @@ const handleAPI = ()=>{
   };
 
   const handleOAuth = () => {
-    const oauthWindow = window.open('https://app.plurality.local/oauth-instagram?isWidget=true&origin=false&apps=false', 'oauth', 'width=500,height=600');
+    const oauthWindow = window.open('https://app.plurality.local/oauth-fortnite?isWidget=true&origin=false&apps=false', 'oauth', 'width=500,height=600');
     if (oauthWindow) {
       setPopup(oauthWindow);
       console.log('Window opened:', oauthWindow);
@@ -91,7 +91,7 @@ const handleAPI = ()=>{
   // }, [popup]);
 
   const handleInfoRequest = () => {
-    axios.get('https://app.plurality.local/oauth-instagram/info')
+    axios.get('https://app.plurality.local/oauth-fortnite/info')
       .then(response => {
         console.log('Info:', response.data);
       })
