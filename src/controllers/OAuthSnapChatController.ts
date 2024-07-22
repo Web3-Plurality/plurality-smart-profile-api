@@ -78,7 +78,6 @@ snapchatRouter.get('/callback', passport.authenticate('snapchat', { session: fal
     }
 
     Logger.info(`${SNAPCHAT_APP}: Redirecting to ${url}`);
-    console.log(req.user)
     // it will redirect to the dashboard or widget
     res.redirect(url);
     // it will send the url to the client, and it is for testing purpose
@@ -126,11 +125,9 @@ snapchatRouter.get('/info', isAuthenticated, async (req, res) => {
         if (error.code === 'ECONNABORTED') {
           Logger.error(`${SNAPCHAT_APP}: Request timeout error in fetching userinfo: ${error.message}`);
         } else {
-          console.log(error)
           Logger.error(`${SNAPCHAT_APP}: An error occurred: ${error.message}`);
         }
       }
-      console.log(snapUser?.data)
       const snapChatProfile = new SnapChatProfile(snapUser?.data?.data);
       // Destroy the session data
       req.session.destroy(err => {

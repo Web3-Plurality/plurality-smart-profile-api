@@ -16,13 +16,9 @@ export const twitterRouter = express.Router();
 
 // Serialization and deserialization
 passport.serializeUser(function (user, done) {
-  console.log("serialize")
-  console.log(user)
   done(null, user);
 });
 passport.deserializeUser(function (obj: any, done) {
-  console.log("deserialize")
-
   done(null, obj);
 });
 
@@ -42,7 +38,6 @@ passport.use(
     },
     // Verify callback
     (accessToken: any, refreshToken: any, profile: any, done: any) => {
-      console.log("Verify")
       return done(null, { accessToken, refreshToken, profile });
     }
   )

@@ -36,9 +36,6 @@ passport.use(
     },
     // Verify callback
     (accessToken: any, refreshToken: any, profile: any, done: any) => {
-      console.log("access token",accessToken);
-      console.log("refreshtoken",refreshToken)
-      console.log("decoded",jwt.decode(accessToken)?.sub)
       return done(null, { accessToken, refreshToken, account_id : jwt.decode(accessToken)?.sub });
     }
   )
@@ -123,7 +120,6 @@ fortniteRouter.get('/info', isAuthenticated, async (req, res) => {
             timeout: 20000,
           }
         );
-        // console.log(userFortnite?.data[0]);
 
       } catch (error) {
         if (error.code === 'ECONNABORTED') {

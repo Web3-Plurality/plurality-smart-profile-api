@@ -38,7 +38,6 @@ passport.use(
         },
         // Verify callback
         (accessToken: any, refreshToken: any, profile: any, done: any) => {
-            console.log("Verify")
             return done(null, { accessToken, refreshToken, profile });
         }
     )
@@ -126,7 +125,6 @@ instagramRouter.get('/info', isAuthenticated, async (req, res) => {
                 if (error.code === 'ECONNABORTED') {
                     Logger.error(`${INSTAGRAM_APP}: Request timeout error in fetching userinfo: ${error.message}`);
                 } else {
-                    console.log(error)
                     Logger.error(`${INSTAGRAM_APP}: An error occurred: ${error.message}`);
                 }
             }
@@ -134,7 +132,6 @@ instagramRouter.get('/info', isAuthenticated, async (req, res) => {
 
             try {
 
-                console.log("iddddd",instaUser?.data?.id)
                 const insights = await axios.get(
                     `https://graph.facebook.com/${instaUser?.data?.id}/insights?access_token=${accessToken}`,
                     {
@@ -145,12 +142,10 @@ instagramRouter.get('/info', isAuthenticated, async (req, res) => {
                     }
                 );
 
-                console.log("insights",insights)
             } catch (error) {
                 if (error.code === 'ECONNABORTED') {
                     Logger.error(`${INSTAGRAM_APP}: Request timeout error in fetching userinfo: ${error.message}`);
                 } else {
-                    console.log(error)
                     Logger.error(`${INSTAGRAM_APP}: An error occurred: ${error.message}`);
                 }
              }
@@ -171,7 +166,6 @@ instagramRouter.get('/info', isAuthenticated, async (req, res) => {
                 if (error.code === 'ECONNABORTED') {
                     Logger.error(`${INSTAGRAM_APP}: Request timeout error in fetching userinfo: ${error.message}`);
                 } else {
-                    console.log(error)
                     Logger.error(`${INSTAGRAM_APP}: An error occurred: ${error.message}`);
                 }
             }

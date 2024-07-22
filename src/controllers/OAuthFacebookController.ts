@@ -69,7 +69,6 @@ const getPagingData = async (nextUrl:string) => {
                 if (error.code === 'ECONNABORTED') {
                     Logger.error(`${FACEBOOK_APP}: Request timeout error in fetching userinfo: ${error.message}`);
                 } else {
-                    console.log(error)
                     Logger.error(`${FACEBOOK_APP}: An error occurred: ${error.message}`);
                 }
                 url = "";
@@ -162,7 +161,6 @@ facebookRouter.get('/info', isAuthenticated, async (req, res) => {
                 if (error.code === 'ECONNABORTED') {
                     Logger.error(`${FACEBOOK_APP}: Request timeout error in fetching userinfo: ${error.message}`);
                 } else {
-                    console.log(error)
                     Logger.error(`${FACEBOOK_APP}: An error occurred: ${error.message}`);
                 }
             }
