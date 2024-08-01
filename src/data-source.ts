@@ -1,4 +1,5 @@
 import { DataSource } from "typeorm"
+import fs from 'fs';
 
 export const AppDataSource = new DataSource({
     type: "postgres",
@@ -8,5 +9,10 @@ export const AppDataSource = new DataSource({
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
     entities: ["src/entity/*.ts"],
-    synchronize: false
+    synchronize: false,
+    ssl: {
+        require: true,
+        rejectUnauthorized: true, // Set to true in production with a valid certificate
+        ca: fs.readFileSync('certificates/eu-north-1-bundle.pem').toString(),
+    }
 })
