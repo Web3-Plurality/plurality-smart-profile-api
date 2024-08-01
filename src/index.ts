@@ -14,7 +14,7 @@ import { permawebRouter } from './controllers/PermawebUploadController';
 import { tiktokRouter } from './controllers/OAuthTikTokController';
 import { subgraphRouter } from './controllers/SubgraphController';
 import https from "https"
-import { stytchRouter } from './controllers/StytchController';
+import { userRouter } from './controllers/UserController';
 import { AppDataSource } from './data-source';
 import fs from "fs";
 import { initSSE } from './utils/global';
@@ -44,7 +44,7 @@ app.use("/oauth-fortnite", fortniteRouter);
 app.use("/permaweb", permawebRouter);
 app.use("/oauth-tiktok", tiktokRouter);
 app.use("/subgraph", subgraphRouter);
-app.use("/stytch", stytchRouter);
+app.use("/user", userRouter);
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 app.get('/', async (req: Request, res: Response): Promise<Response> => {
