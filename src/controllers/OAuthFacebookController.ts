@@ -4,12 +4,12 @@ import * as dotenv from 'dotenv';
 import axios from "axios";
 import { isAuthenticated, isConnected } from "../middlewares/authMiddleware";
 import Logger from "../lib/logger";
-import { FACEBOOK_APP, FACEBOOK_FETCH_INTEREST_FROM_NAMES_PROMPT, FACEBOOK_FETCH_INTEREST_PROMPT, activeConnections } from "../utils/global";
+import { FACEBOOK_APP, activeConnections, createPrompt } from "../utils/global";
 import OAuthInstagramStrategy from "../auth/OAuthInstagramStrategy";
-import { createPrompt, extractContent, removeIdsFromObjects } from "../utils/helper";
 import { analyze } from "../utils/groq";
 import { FacebookProfile } from "../entity/Facebook";
-import { calculateReputation } from "../utils/facebook";
+import { calculateReputation, extractContent, getPagingData, removeIdsFromObjects } from "../utils/facebook";
+import { FACEBOOK_FETCH_INTEREST_FROM_NAMES_PROMPT, FACEBOOK_FETCH_INTEREST_PROMPT } from "../utils/aiPrompts";
 
 dotenv.config();
 
@@ -43,41 +43,6 @@ passport.use(
         }
     )
 );
-
-
-const getPagingData = async (nextUrl:string) => {
-    let data = [];
-    let url  = nextUrl;
-    for (let index = 0; index < 3; index++) {
-        if (url) {
-            
-            try {
-                const moreFeed = await axios.get(
-                    url,
-                    {
-                        headers: {
-
-                            "Content-Type": "application/json",
-                        },
-                        timeout: 20000,
-                    }
-                );
-
-                data = data?.concat(moreFeed.data?.data)
-                url = moreFeed.data?.paging?.next || "";
-            } catch (error) {
-                if (error.code === 'ECONNABORTED') {
-                    Logger.error(`${FACEBOOK_APP}: Request timeout error in fetching userinfo: ${error.message}`);
-                } else {
-                    Logger.error(`${FACEBOOK_APP}: An error occurred: ${error.message}`);
-                }
-                url = "";
-            }
-        }
-    }
-
-    return data;
-}
 
 // Start authentication flow
 facebookRouter.get(
@@ -169,6 +134,7 @@ facebookRouter.get('/info', isAuthenticated, async (req, res) => {
             const moreLikesData = await getPagingData(fbUser?.data?.likes?.paging?.next);
             const moreMusicData = await getPagingData(fbUser?.data?.music?.paging?.next);
 
+            
             fbUser.data.likes.data = fbUser?.data?.likes?.data?.concat(moreLikesData)
             fbUser?.data?.feed?.data =  fbUser?.data?.feed?.data?.concat(moreFeedData)
             fbUser?.data?.music?.data = fbUser?.data?.music?.data?.concat(moreMusicData)
@@ -179,7 +145,6 @@ facebookRouter.get('/info', isAuthenticated, async (req, res) => {
             const favorite_teams = removeIdsFromObjects(fbUser?.data?.favorite_teams)
             const favorite_music = removeIdsFromObjects(fbUser?.data?.music?.data)
             const likes = removeIdsFromObjects(fbUser?.data?.likes?.data)
-
 
             const feedContent = extractContent(feed);
             const favoriteAthletesContent = extractContent(fbUser?.data?.favorite_athletes);
@@ -199,7 +164,7 @@ facebookRouter.get('/info', isAuthenticated, async (req, res) => {
             facebookProfile.likes = likes;
             facebookProfile.interests = interests1?.Interests.concat(interests2?.Interests);
             facebookProfile.reputationScore = calculateReputation(facebookProfile);
-
+            
             req.session.destroy(err => {
                 activeConnections.delete(req.sessionID);
                 if (err) {

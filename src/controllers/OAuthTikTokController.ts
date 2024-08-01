@@ -4,12 +4,12 @@ import TikTokOAuth2Strategy from "../auth/OAuthTikTokStrategy"
 import passport from "passport";
 import axios from "axios";
 import { TikTokProfile } from "../entity/Tiktok";
-import { TIKTOK_APP, TIKTOK_FETCH_INTEREST_PROMPT, activeConnections } from "../utils/global";
+import { TIKTOK_APP, activeConnections, createPrompt } from "../utils/global";
 import { isAuthenticated, isConnected } from "../middlewares/authMiddleware";
 import { analyze } from "../utils/groq";
 import { calculateReputation } from "../utils/tiktok";
 import Logger from "../lib/logger";
-import { createPrompt } from "../utils/helper";
+import { TIKTOK_FETCH_INTEREST_PROMPT } from "../utils/aiPrompts";
 
 dotenv.config();
 

@@ -81,9 +81,9 @@ fortniteRouter.get('/callback', passport.authenticate('fortnite', { session: fal
 
     Logger.info(`${FORTNITE_APP}: Redirecting to ${url}`);
     // it will redirect to the dashboard or widget
-    // res.redirect(url);
+    res.redirect(url);
     // it will send the url to the client, and it is for testing purpose
-    res.send(url);
+    // res.send(url);
 
     // Send a message to the client that the token has been received
     if (req?.user?.accessToken && serverSentEventResponse) {

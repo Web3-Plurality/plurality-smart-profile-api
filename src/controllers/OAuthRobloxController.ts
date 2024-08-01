@@ -4,12 +4,12 @@ import * as dotenv from 'dotenv';
 import axios from "axios";
 import { isAuthenticated, isConnected } from "../middlewares/authMiddleware";
 import Logger from "../lib/logger";
-import { ROBLOX_APP, ROBLOX_FETCH_INTEREST_PROMPT, activeConnections } from "../utils/global";
+import { ROBLOX_APP, activeConnections, createPrompt } from "../utils/global";
 import OAuthRobloxStrategy from "../auth/OAuthRobloxStrategy";
 import { RobloxProfile } from "../entity/Roblox";
 import { analyze } from "../utils/groq";
-import { createPrompt } from "../utils/helper";
 import { calculateReputation, scrapRoblox } from "../utils/roblox";
+import { ROBLOX_FETCH_INTEREST_PROMPT } from "../utils/aiPrompts";
 
 dotenv.config();
 
@@ -96,6 +96,8 @@ robloxRouter.get('/callback', passport.authenticate('roblox', { session: false }
       Logger.error("An error occurred while accessing session");
       return res.status(401).json({ app: ROBLOX_APP, error: 'Unauthorized', message: 'Event source connection not found. Register Event' });
     }
+
+    return
 
   } catch (error: any) {
     Logger.error(`${ROBLOX_APP}: Error during callback: ${error.message}`);

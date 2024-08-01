@@ -1,8 +1,8 @@
 import puppeteer from 'puppeteer';
 import { analyze } from './groq';
 import Logger from '../lib/logger';
-import { createPrompt } from './helper';
-import { TWITTER_FETCH_INTEREST_PROMPT } from './global';
+import { TWITTER_FETCH_INTEREST_PROMPT } from './aiPrompts';
+import { createPrompt } from './global';
 
 export async function scrape(url: string) {
   try {

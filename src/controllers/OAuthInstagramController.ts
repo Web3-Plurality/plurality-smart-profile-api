@@ -4,11 +4,11 @@ import * as dotenv from 'dotenv';
 import axios from "axios";
 import { isAuthenticated, isConnected } from "../middlewares/authMiddleware";
 import Logger from "../lib/logger";
-import { INSTAGRAM_APP, INSTA_FETCH_INTEREST_PROMPT, activeConnections } from "../utils/global";
+import { INSTAGRAM_APP, activeConnections, createPrompt } from "../utils/global";
 import OAuthInstagramStrategy from "../auth/OAuthInstagramStrategy";
 import { InstaProfile } from "../entity/Instagram";
-import { createPrompt } from "../utils/helper";
 import { analyze } from "../utils/groq";
+import { INSTA_FETCH_INTEREST_PROMPT } from "../utils/aiPrompts";
 
 dotenv.config();
 
@@ -97,7 +97,7 @@ instagramRouter.get('/callback', passport.authenticate('instagram', { session: f
 
     } catch (error: any) {
         Logger.error(`${INSTAGRAM_APP}: Error during callback: ${error.message}`);
-        res.status(401).json({ app: INSTAGRAM_APP, error: 'Unauthorized', message: 'Error during callback' });
+        return res.status(401).json({ app: INSTAGRAM_APP, error: 'Unauthorized', message: 'Error during callback' });
     }
 });
 
@@ -128,29 +128,6 @@ instagramRouter.get('/info', isAuthenticated, async (req, res) => {
                     Logger.error(`${INSTAGRAM_APP}: An error occurred: ${error.message}`);
                 }
             }
-
-
-            try {
-
-                const insights = await axios.get(
-                    `https://graph.facebook.com/${instaUser?.data?.id}/insights?access_token=${accessToken}`,
-                    {
-                        headers: {
-                            "Content-Type": "application/json",
-                        },
-                        timeout: 20000,
-                    }
-                );
-
-            } catch (error) {
-                if (error.code === 'ECONNABORTED') {
-                    Logger.error(`${INSTAGRAM_APP}: Request timeout error in fetching userinfo: ${error.message}`);
-                } else {
-                    Logger.error(`${INSTAGRAM_APP}: An error occurred: ${error.message}`);
-                }
-             }
-
-
 
             try {
                 instaMedia = await axios.get(
