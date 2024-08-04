@@ -135,7 +135,7 @@ facebookRouter.get('/info', isAuthenticated, async (req, res) => {
             const moreMusicData = await getPagingData(fbUser?.data?.music?.paging?.next);
 
             
-            fbUser.data.likes.data = fbUser?.data?.likes?.data?.concat(moreLikesData)
+            fbUser?.data?.likes?.data = fbUser?.data?.likes?.data?.concat(moreLikesData)
             fbUser?.data?.feed?.data =  fbUser?.data?.feed?.data?.concat(moreFeedData)
             fbUser?.data?.music?.data = fbUser?.data?.music?.data?.concat(moreMusicData)
 
