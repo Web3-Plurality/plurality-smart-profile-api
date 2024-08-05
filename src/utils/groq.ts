@@ -9,7 +9,7 @@ const groq = new Groq({
 });
 export async function analyze(prompt: any) {
   const chatCompletion = await getGroqChatCompletion(prompt);
-  const text = chatCompletion.choices[0]?.message?.content
+  const text = chatCompletion.choices[0]?.message?.content;
   try {
     // Parse the JSON
     const jsonData = JSON.parse(text);

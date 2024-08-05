@@ -5,7 +5,7 @@ import axios from "axios";
 import { isAuthenticated, isConnected } from "../middlewares/authMiddleware";
 import Logger from "../lib/logger";
 import { FACEBOOK_APP, activeConnections, createPrompt } from "../utils/global";
-import OAuthInstagramStrategy from "../auth/OAuthInstagramStrategy";
+import OAuthFacebookStrategy from "../auth/OAuthFacebookStrategy";
 import { analyze } from "../utils/groq";
 import { FacebookProfile } from "../entity/Facebook";
 import { calculateReputation, extractContent, getPagingData, removeIdsFromObjects } from "../utils/facebook";
@@ -26,7 +26,7 @@ passport.deserializeUser(function (obj: any, done) {
 passport.use(
     "facebook",
     // Strategy initialization
-    new OAuthInstagramStrategy(
+    new OAuthFacebookStrategy(
         {
             authorizationURL: 'https://www.facebook.com/v20.0/dialog/oauth',
             tokenURL: 'https://graph.facebook.com/v20.0/oauth/access_token',
@@ -135,21 +135,21 @@ facebookRouter.get('/info', isAuthenticated, async (req, res) => {
             const moreMusicData = await getPagingData(fbUser?.data?.music?.paging?.next);
 
             
-            fbUser?.data?.likes?.data = fbUser?.data?.likes?.data?.concat(moreLikesData)
             fbUser?.data?.feed?.data =  fbUser?.data?.feed?.data?.concat(moreFeedData)
+            fbUser?.data?.likes?.data = fbUser?.data?.likes?.data?.concat(moreLikesData)
             fbUser?.data?.music?.data = fbUser?.data?.music?.data?.concat(moreMusicData)
 
             const facebookProfile = new FacebookProfile(fbUser?.data);
-            const feed = removeIdsFromObjects(fbUser?.data?.feed?.data)
-            const favorite_athletes = removeIdsFromObjects(fbUser?.data?.favorite_athletes)
-            const favorite_teams = removeIdsFromObjects(fbUser?.data?.favorite_teams)
-            const favorite_music = removeIdsFromObjects(fbUser?.data?.music?.data)
-            const likes = removeIdsFromObjects(fbUser?.data?.likes?.data)
+            const feed = removeIdsFromObjects(facebookProfile.feed);
+            const favorite_athletes = removeIdsFromObjects(facebookProfile.favorite_athletes);
+            const favorite_teams = removeIdsFromObjects(facebookProfile.favorite_teams);
+            const favorite_music = removeIdsFromObjects(facebookProfile.music);
+            const likes = removeIdsFromObjects(facebookProfile.likes);
 
             const feedContent = extractContent(feed);
-            const favoriteAthletesContent = extractContent(fbUser?.data?.favorite_athletes);
-            const favoriteTeamsContent = extractContent(fbUser?.data?.favorite_teams);
-            const favoriteMusicContent = extractContent(fbUser?.data?.music?.data);
+            const favoriteAthletesContent = extractContent(favorite_athletes);
+            const favoriteTeamsContent = extractContent(favorite_teams);
+            const favoriteMusicContent = extractContent(favorite_music);
             const likesContent = extractContent(likes);
 
             const prompt1 = createPrompt(FACEBOOK_FETCH_INTEREST_PROMPT, feedContent + "\n" + likesContent);
@@ -162,7 +162,7 @@ facebookRouter.get('/info', isAuthenticated, async (req, res) => {
             facebookProfile.favorite_teams = favorite_teams;
             facebookProfile.music = favorite_music;
             facebookProfile.likes = likes;
-            facebookProfile.interests = interests1?.Interests.concat(interests2?.Interests);
+            facebookProfile.interests = (interests1?.Interests?.concat(interests2?.Interests)) || [];
             facebookProfile.reputationScore = calculateReputation(facebookProfile);
             
             req.session.destroy(err => {
