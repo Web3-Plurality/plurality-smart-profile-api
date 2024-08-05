@@ -7,7 +7,7 @@ import { scrape, calculateReputation } from "../utils/twitter";
 import { TwitterProfile } from "../entity/Twitter";
 import { isAuthenticated, isConnected } from "../middlewares/authMiddleware";
 import Logger from "../lib/logger";
-import { TWITTER_APP, activeConnections } from "../utils/global";
+import { INTERNAL_SERVER_ERROR, TIMEOUT_ERROR, TWITTER_APP, activeConnections } from "../utils/global";
 
 dotenv.config();
 
@@ -62,20 +62,20 @@ twitterRouter.get('/callback', passport.authenticate('twitter', { session: false
     
     Logger.info(`${TWITTER_APP}: Callback from Twitter has been received successfully on session Id${req.sessionID}`);
     let url: any;
-    const { isWidget, origin, apps } = req.session.redirectParams;
+    const { isWidget, origin, apps } = req?.session?.redirectParams;
     const serverSentEventResponse = activeConnections.get(req.sessionID);
     req.session.user = {
-      accessToken: req.user.accessToken,
-      refreshToken: req.user.refreshToken
+      accessToken: req?.user?.accessToken,
+      refreshToken: req?.user?.refreshToken
     }
 
     if (isWidget == 'true')
-      url = `${process.env.WIDGET_UI_URL}?isWidget=${isWidget}&origin=${origin}&apps=${apps}&id_platform=twitter`
+      url = `${process.env.WIDGET_UI_URL}?isWidget=${isWidget}&origin=${origin}&apps=${apps}&id_platform=${TWITTER_APP}`
     else if (isWidget == 'false')
-      url = `${process.env.DASHBOARD_UI_URL}?isWidget=${isWidget}&origin=${origin}&apps=${apps}&id_platform=twitter`
+      url = `${process.env.DASHBOARD_UI_URL}?isWidget=${isWidget}&origin=${origin}&apps=${apps}&id_platform=${TWITTER_APP}`
     else {
       Logger.info(`${TWITTER_APP}: Did not find the isWidget parameter in callback. Redirecting to default dashboard`);
-      url = `${process.env.DASHBOARD_UI_URL}?isWidget=${isWidget}&origin=${origin}&apps=${apps}&id_platform=twitter`
+      url = `${process.env.DASHBOARD_UI_URL}?isWidget=${isWidget}&origin=${origin}&apps=${apps}&id_platform=${TWITTER_APP}`
     }
 
     Logger.info(`${TWITTER_APP}: Redirecting to ${url}`);
@@ -87,16 +87,16 @@ twitterRouter.get('/callback', passport.authenticate('twitter', { session: false
     // Send a message to the client that the token has been received
     if (req?.user?.accessToken && serverSentEventResponse) {
       serverSentEventResponse.write(`data: {"message":"received", "app":"${TWITTER_APP}"}\n\n`)
-      Logger.info(`${TWITTER_APP}: Access token of Twitter received successfully`);
+      Logger.info(`${TWITTER_APP}: Access token has been received successfully`);
     }
     else {
       Logger.error("An error occurred while accessing session"); 
-      return res.status(401).json({ app: TWITTER_APP, error: 'Unauthorized', message: 'Event source connection not found. Register Event' });
+      return res.status(500).json({ app: TWITTER_APP,  message: INTERNAL_SERVER_ERROR });
     }
 
   } catch (error: any) {
     Logger.error(`${TWITTER_APP}: Error during callback: ${error.message}`);
-    res.status(401).json({ app: TWITTER_APP, error: 'Unauthorized', message: 'Error during callback' });
+    res.status(500).json({ app: TWITTER_APP,  message: INTERNAL_SERVER_ERROR });
   }
 });
 
@@ -204,7 +204,7 @@ twitterRouter.get('/info', isAuthenticated, async (req, res) => {
         activeConnections.delete(req.sessionID);
         if (err) {
           Logger.error(`${TWITTER_APP}: Error during session destroy: ${err.message}`);
-          return res.status(500).json({ app: TWITTER_APP, message: "Error during session destroy", error: err });
+          return res.status(500).json({ app: TWITTER_APP, message: INTERNAL_SERVER_ERROR});
         }
         Logger.info(`${TWITTER_APP}: Session destroyed successfully`);
         Logger.info(`${TWITTER_APP}: User information has been delivered successfully`);
@@ -212,16 +212,16 @@ twitterRouter.get('/info', isAuthenticated, async (req, res) => {
       });
     } else {
       Logger.error(`${TWITTER_APP}: Token has been expired.`);
-      return res.status(401).json({ app: TWITTER_APP, error: 'Unauthorized', message: 'Token has been expired or not found. Please log in again.' });
+      return res.status(500).json({ app: TWITTER_APP,  message: INTERNAL_SERVER_ERROR });
     }
   } catch (error: any) {
     if (error.code === 'ECONNABORTED') {
       Logger.error(`${TWITTER_APP}: Request timeout error in fetching userinfo: ${error.message}`);
-      return res.status(408).json({ app: TWITTER_APP, error: 'Request Timeout', message: 'Session has expired. Please log in again.' });
+      return res.status(408).json({ app: TWITTER_APP, message: TIMEOUT_ERROR });
   }
   else{
     Logger.error(`${TWITTER_APP}: Error occurred in fetching user informantion: ${error.message}`);
-    return res.status(401).json({ app: TWITTER_APP, error: 'Unauthorized', message: 'Session has expired. Please log in again.' });
+    return res.status(500).json({ app: TWITTER_APP,  message: INTERNAL_SERVER_ERROR });
   }
   }
 });

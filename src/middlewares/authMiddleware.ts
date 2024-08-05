@@ -3,7 +3,7 @@ import { activeConnections } from "../utils/global";
 import Logger from "../lib/logger";
 
 export function isAuthenticated(req: Request, res: Response, next) {
-    if (req.sessionID && req?.session?.user?.accessToken) {
+    if (req?.sessionID && req?.session?.user?.accessToken) {
       // User is authenticated
       return next();
     }

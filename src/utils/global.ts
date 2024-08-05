@@ -8,6 +8,10 @@ export const FACEBOOK_APP = "facebook";
 export const FORTNITE_APP = "fortnite";
 
 
+export const INTERNAL_SERVER_ERROR = "Internal Server Error";
+export const TIMEOUT_ERROR = 'Request timeout error in fetching userinfo';
+
+
 export function parseQueryString(query: string) {
   let params: any = {};
   // Remove the leading question mark if present

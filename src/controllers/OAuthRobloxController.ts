@@ -4,7 +4,7 @@ import * as dotenv from 'dotenv';
 import axios from "axios";
 import { isAuthenticated, isConnected } from "../middlewares/authMiddleware";
 import Logger from "../lib/logger";
-import { ROBLOX_APP, activeConnections, createPrompt } from "../utils/global";
+import { INTERNAL_SERVER_ERROR, ROBLOX_APP, TIMEOUT_ERROR, activeConnections, createPrompt } from "../utils/global";
 import OAuthRobloxStrategy from "../auth/OAuthRobloxStrategy";
 import { RobloxProfile } from "../entity/Roblox";
 import { analyze } from "../utils/groq";
@@ -63,7 +63,7 @@ robloxRouter.get(
 robloxRouter.get('/callback', passport.authenticate('roblox', { session: false }), async (req, res) => {
   try {
 
-    Logger.info(`${ROBLOX_APP}: Callback from Twitter has been received successfully on session Id${req.sessionID}`);
+    Logger.info(`${ROBLOX_APP}: Callback has been received successfully on session Id${req.sessionID}`);
     let url: any;
     const { isWidget, origin, apps } = req.session.redirectParams;
     const serverSentEventResponse = activeConnections.get(req.sessionID);
@@ -73,12 +73,12 @@ robloxRouter.get('/callback', passport.authenticate('roblox', { session: false }
     }
 
     if (isWidget == 'true')
-      url = `${process.env.WIDGET_UI_URL}?isWidget=${isWidget}&origin=${origin}&apps=${apps}&id_platform=twitter`
+      url = `${process.env.WIDGET_UI_URL}?isWidget=${isWidget}&origin=${origin}&apps=${apps}&id_platform=${ROBLOX_APP}`
     else if (isWidget == 'false')
-      url = `${process.env.DASHBOARD_UI_URL}?isWidget=${isWidget}&origin=${origin}&apps=${apps}&id_platform=twitter`
+      url = `${process.env.DASHBOARD_UI_URL}?isWidget=${isWidget}&origin=${origin}&apps=${apps}&id_platform=${ROBLOX_APP}`
     else {
       Logger.info(`${ROBLOX_APP}: Did not find the isWidget parameter in callback. Redirecting to default dashboard`);
-      url = `${process.env.DASHBOARD_UI_URL}?isWidget=${isWidget}&origin=${origin}&apps=${apps}&id_platform=twitter`
+      url = `${process.env.DASHBOARD_UI_URL}?isWidget=${isWidget}&origin=${origin}&apps=${apps}&id_platform=${ROBLOX_APP}`
     }
 
     Logger.info(`${ROBLOX_APP}: Redirecting to ${url}`);
@@ -90,18 +90,16 @@ robloxRouter.get('/callback', passport.authenticate('roblox', { session: false }
     // Send a message to the client that the token has been received
     if (req?.user?.accessToken && serverSentEventResponse) {
       serverSentEventResponse.write(`data: {"message":"received", "app":"${ROBLOX_APP}"}\n\n`)
-      Logger.info(`${ROBLOX_APP}: Access token of Twitter received successfully`);
+      Logger.info(`${ROBLOX_APP}: Access token has been received successfully`);
     }
     else {
       Logger.error("An error occurred while accessing session");
-      return res.status(401).json({ app: ROBLOX_APP, error: 'Unauthorized', message: 'Event source connection not found. Register Event' });
+      return res.status(500).json({ app: ROBLOX_APP, message: INTERNAL_SERVER_ERROR });
     }
-
-    return
 
   } catch (error: any) {
     Logger.error(`${ROBLOX_APP}: Error during callback: ${error.message}`);
-    res.status(401).json({ app: ROBLOX_APP, error: 'Unauthorized', message: 'Error during callback' });
+    res.status(500).json({ app: ROBLOX_APP, message: 'Error during callback' });
   }
 });
 
@@ -111,7 +109,7 @@ robloxRouter.get('/info', isAuthenticated, async (req, res) => {
     Logger.info(`${ROBLOX_APP}: Request for information has been received successfully on session Id ${req.sessionID}`);
     const { accessToken }: any = req?.session?.user;
     let userRoblox = { data: {} }
-    let inventoryData  = []
+    let inventoryData = []
 
     if (accessToken) {
       try {
@@ -132,7 +130,7 @@ robloxRouter.get('/info', isAuthenticated, async (req, res) => {
           Logger.error(`${ROBLOX_APP}: An error occurred: ${error.message}`);
         }
       }
-      
+
       const robloxProfile = new RobloxProfile(userRoblox?.data);
 
       try {
@@ -149,10 +147,10 @@ robloxRouter.get('/info', isAuthenticated, async (req, res) => {
 
         const prompt = createPrompt(ROBLOX_FETCH_INTEREST_PROMPT, userData?.data?.about)
         const interests = await analyze(prompt)
-        robloxProfile.interests = interests?.Interests || [];
-        robloxProfile.introTags = interests?.IntroTags || [];
-        robloxProfile.idVerified = userData?.data?.idVerified;
-        robloxProfile.premium = userData?.data?.premium;
+        robloxProfile.interests ??= interests?.Interests
+        robloxProfile.introTags ??= interests?.IntroTags
+        robloxProfile.idVerified ??= userData?.data?.idVerified
+        robloxProfile.premium ??= userData?.data?.premium
 
       } catch (error) {
         if (error.code === 'ECONNABORTED') {
@@ -173,7 +171,7 @@ robloxRouter.get('/info', isAuthenticated, async (req, res) => {
             timeout: 20000,
           }
         );
-        robloxProfile.assests = inventoryData?.data?.inventoryItems || [];
+        robloxProfile.assests ??= inventoryData?.data?.inventoryItems;
       } catch (error) {
         if (error.code === 'ECONNABORTED') {
           Logger.error(`${ROBLOX_APP}: Request timeout error in fetching userinfo: ${error.message}`);
@@ -183,14 +181,14 @@ robloxRouter.get('/info', isAuthenticated, async (req, res) => {
       }
 
       try {
-        const robloxInsights = await scrapRoblox(robloxProfile.profile);
-        robloxProfile.joinDate = robloxInsights.joinDate;
-        robloxProfile.placesVisit = robloxInsights.placesVisit;
-        robloxProfile.friends = robloxInsights.friends;
-        robloxProfile.followers = robloxInsights.followers;
-        robloxProfile.following = robloxInsights.following;
-        robloxProfile.avtar = robloxInsights.avtar;
-  
+        const robloxInsights = await scrapRoblox(robloxProfile?.profile);
+        robloxProfile.joinDate ??= robloxInsights?.joinDate;
+        robloxProfile.placesVisit ??= robloxInsights?.placesVisit;
+        robloxProfile.friends ??= robloxInsights?.friends;
+        robloxProfile.followers ??= robloxInsights?.followers;
+        robloxProfile.following ??= robloxInsights?.following;
+        robloxProfile.avtar ??= robloxInsights?.avtar;
+
       } catch (error) {
         if (error.code === 'ECONNABORTED') {
           Logger.error(`${ROBLOX_APP}: Request timeout error in fetching userinfo: ${error.message}`);
@@ -205,7 +203,7 @@ robloxRouter.get('/info', isAuthenticated, async (req, res) => {
         activeConnections.delete(req.sessionID);
         if (err) {
           Logger.error(`${ROBLOX_APP}: Error during session destroy: ${err.message}`);
-          return res.status(500).json({ app: ROBLOX_APP, message: "Error during session destroy", error: err });
+          return res.status(500).json({ app: ROBLOX_APP, message: INTERNAL_SERVER_ERROR, error: err });
         }
         Logger.info(`${ROBLOX_APP}: Session destroyed successfully`);
         Logger.info(`${ROBLOX_APP}: User information has been delivered successfully`);
@@ -213,16 +211,16 @@ robloxRouter.get('/info', isAuthenticated, async (req, res) => {
       });
     } else {
       Logger.error(`${ROBLOX_APP}: Token has been expired.`);
-      return res.status(401).json({ app: ROBLOX_APP, error: 'Unauthorized', message: 'Token has been expired or not found. Please log in again.' });
+      return res.status(500).json({ app: ROBLOX_APP, message: INTERNAL_SERVER_ERROR });
     }
   } catch (error: any) {
     if (error.code === 'ECONNABORTED') {
       Logger.error(`${ROBLOX_APP}: Request timeout error in fetching userinfo: ${error.message}`);
-      return res.status(408).json({ app: ROBLOX_APP, error: 'Request Timeout', message: 'Session has expired. Please log in again.' });
+      return res.status(408).json({ app: ROBLOX_APP, message: TIMEOUT_ERROR });
     }
     else {
       Logger.error(`${ROBLOX_APP}: Error occurred in fetching user informantion: ${error.message}`);
-      return res.status(401).json({ app: ROBLOX_APP, error: 'Unauthorized', message: 'Session has expired. Please log in again.' });
+      return res.status(500).json({ app: ROBLOX_APP, message: INTERNAL_SERVER_ERROR });
     }
   }
 });

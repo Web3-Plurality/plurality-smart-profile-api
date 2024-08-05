@@ -4,7 +4,7 @@ import * as dotenv from 'dotenv';
 import axios from "axios";
 import { isAuthenticated, isConnected } from "../middlewares/authMiddleware";
 import Logger from "../lib/logger";
-import { SNAPCHAT_APP, activeConnections } from "../utils/global";
+import { INTERNAL_SERVER_ERROR, SNAPCHAT_APP, TIMEOUT_ERROR, activeConnections } from "../utils/global";
 import OAuthSnapChatStrategy from "../auth/OAuthSnapChatStrategy";
 import { SnapChatProfile } from "../entity/Snapchat";
 
@@ -61,20 +61,20 @@ snapchatRouter.get('/callback', passport.authenticate('snapchat', { session: fal
 
     Logger.info(`${SNAPCHAT_APP}: Callback has been received successfully on session Id${req.sessionID}`);
     let url: any;
-    const { isWidget, origin, apps } = req.session.redirectParams;
+    const { isWidget, origin, apps } = req?.session?.redirectParams;
     const serverSentEventResponse = activeConnections.get(req.sessionID);
     req.session.user = {
-      accessToken: req.user.accessToken,
-      refreshToken: req.user.refreshToken
+      accessToken: req?.user?.accessToken,
+      refreshToken: req?.user?.refreshToken
     }
 
     if (isWidget == 'true')
-      url = `${process.env.WIDGET_UI_URL}?isWidget=${isWidget}&origin=${origin}&apps=${apps}&id_platform=twitter`
+      url = `${process.env.WIDGET_UI_URL}?isWidget=${isWidget}&origin=${origin}&apps=${apps}&id_platform=${SNAPCHAT_APP}`
     else if (isWidget == 'false')
-      url = `${process.env.DASHBOARD_UI_URL}?isWidget=${isWidget}&origin=${origin}&apps=${apps}&id_platform=twitter`
+      url = `${process.env.DASHBOARD_UI_URL}?isWidget=${isWidget}&origin=${origin}&apps=${apps}&id_platform=${SNAPCHAT_APP}`
     else {
       Logger.info(`${SNAPCHAT_APP}: Did not find the isWidget parameter in callback. Redirecting to default dashboard`);
-      url = `${process.env.DASHBOARD_UI_URL}?isWidget=${isWidget}&origin=${origin}&apps=${apps}&id_platform=twitter`
+      url = `${process.env.DASHBOARD_UI_URL}?isWidget=${isWidget}&origin=${origin}&apps=${apps}&id_platform=${SNAPCHAT_APP}`
     }
 
     Logger.info(`${SNAPCHAT_APP}: Redirecting to ${url}`);
@@ -86,16 +86,16 @@ snapchatRouter.get('/callback', passport.authenticate('snapchat', { session: fal
     // Send a message to the client that the token has been received
     if (req?.user?.accessToken && serverSentEventResponse) {
       serverSentEventResponse.write(`data: {"message":"received", "app":"${SNAPCHAT_APP}"}\n\n`)
-      Logger.info(`${SNAPCHAT_APP}: Access token of Twitter received successfully`);
+      Logger.info(`${SNAPCHAT_APP}: Access token has been received successfully`);
     }
     else {
       Logger.error("An error occurred while accessing session");
-      return res.status(401).json({ app: SNAPCHAT_APP, error: 'Unauthorized', message: 'Event source connection not found. Register Event' });
+      return res.status(500).json({ app: SNAPCHAT_APP, message: INTERNAL_SERVER_ERROR });
     }
 
   } catch (error: any) {
     Logger.error(`${SNAPCHAT_APP}: Error during callback: ${error.message}`);
-    res.status(401).json({ app: SNAPCHAT_APP, error: 'Unauthorized', message: 'Error during callback' });
+    res.status(500).json({ app: SNAPCHAT_APP, message: INTERNAL_SERVER_ERROR });
   }
 });
 
@@ -134,7 +134,7 @@ snapchatRouter.get('/info', isAuthenticated, async (req, res) => {
         activeConnections.delete(req.sessionID);
         if (err) {
           Logger.error(`${SNAPCHAT_APP}: Error during session destroy: ${err.message}`);
-          return res.status(500).json({ app: SNAPCHAT_APP, message: "Error during session destroy", error: err });
+          return res.status(500).json({ app: SNAPCHAT_APP, message: INTERNAL_SERVER_ERROR, error: err });
         }
         Logger.info(`${SNAPCHAT_APP}: Session destroyed successfully`);
         Logger.info(`${SNAPCHAT_APP}: User information has been delivered successfully`);
@@ -142,16 +142,16 @@ snapchatRouter.get('/info', isAuthenticated, async (req, res) => {
       });
     } else {
       Logger.error(`${SNAPCHAT_APP}: Token has been expired.`);
-      return res.status(401).json({ app: SNAPCHAT_APP, error: 'Unauthorized', message: 'Token has been expired or not found. Please log in again.' });
+      return res.status(500).json({ app: SNAPCHAT_APP, message: INTERNAL_SERVER_ERROR });
     }
   } catch (error: any) {
     if (error.code === 'ECONNABORTED') {
       Logger.error(`${SNAPCHAT_APP}: Request timeout error in fetching userinfo: ${error.message}`);
-      return res.status(408).json({ app: SNAPCHAT_APP, error: 'Request Timeout', message: 'Session has expired. Please log in again.' });
+      return res.status(408).json({ app: SNAPCHAT_APP, message: TIMEOUT_ERROR });
     }
     else {
       Logger.error(`${SNAPCHAT_APP}: Error occurred in fetching user informantion: ${error.message}`);
-      return res.status(401).json({ app: SNAPCHAT_APP, error: 'Unauthorized', message: 'Session has expired. Please log in again.' });
+      return res.status(500).json({ app: SNAPCHAT_APP, message: INTERNAL_SERVER_ERROR });
     }
   }
 });

@@ -4,7 +4,7 @@ import * as dotenv from 'dotenv';
 import axios from "axios";
 import { isAuthenticated, isConnected } from "../middlewares/authMiddleware";
 import Logger from "../lib/logger";
-import { FACEBOOK_APP, activeConnections, createPrompt } from "../utils/global";
+import { FACEBOOK_APP, INTERNAL_SERVER_ERROR, TIMEOUT_ERROR, activeConnections, createPrompt } from "../utils/global";
 import OAuthFacebookStrategy from "../auth/OAuthFacebookStrategy";
 import { analyze } from "../utils/groq";
 import { FacebookProfile } from "../entity/Facebook";
@@ -64,12 +64,12 @@ facebookRouter.get('/callback', passport.authenticate('facebook', { session: fal
 
         Logger.info(`${FACEBOOK_APP}: Callback has been received successfully on session Id${req.sessionID}`);
         let url: any;
-        const { isWidget, origin, apps } = req.session.redirectParams;
-        const serverSentEventResponse = activeConnections.get(req.sessionID);
+        const { isWidget, origin, apps } = req?.session?.redirectParams;
+        const serverSentEventResponse = activeConnections.get(req?.sessionID);
 
         req.session.user = {
-            accessToken: req.user.accessToken,
-            refreshToken: req.user.refreshToken
+            accessToken: req.user?.accessToken,
+            refreshToken: req.user?.refreshToken
         }
 
         if (isWidget == 'true')
@@ -94,12 +94,12 @@ facebookRouter.get('/callback', passport.authenticate('facebook', { session: fal
         }
         else {
             Logger.error("An error occurred while accessing session");
-            return res.status(401).json({ app: FACEBOOK_APP, error: 'Unauthorized', message: 'Event source connection not found. Register Event' });
+            return res.status(500).json({ app: FACEBOOK_APP, message: INTERNAL_SERVER_ERROR });
         }
 
     } catch (error: any) {
         Logger.error(`${FACEBOOK_APP}: Error during callback: ${error.message}`);
-        res.status(401).json({ app: FACEBOOK_APP, error: 'Unauthorized', message: 'Error during callback' });
+        res.status(500).json({ app: FACEBOOK_APP, message: INTERNAL_SERVER_ERROR });
     }
 });
 
@@ -110,7 +110,7 @@ facebookRouter.get('/info', isAuthenticated, async (req, res) => {
         const { accessToken }: any = req?.session?.user;
         let fbUser = { data: { data: {} } }
         if (accessToken) {
-            
+
             try {
                 fbUser = await axios.get(
                     `https://graph.facebook.com/v20.0/me?fields=id,name,email,languages,location,feed{description,message},likes{about,bio,category},music{about,bio,category,name},posts{caption,description,message},favorite_athletes,friends,favorite_teams&access_token=${accessToken}`,
@@ -134,17 +134,17 @@ facebookRouter.get('/info', isAuthenticated, async (req, res) => {
             const moreLikesData = await getPagingData(fbUser?.data?.likes?.paging?.next);
             const moreMusicData = await getPagingData(fbUser?.data?.music?.paging?.next);
 
-            
-            fbUser?.data?.feed?.data =  fbUser?.data?.feed?.data?.concat(moreFeedData)
+
+            fbUser?.data?.feed?.data = fbUser?.data?.feed?.data?.concat(moreFeedData)
             fbUser?.data?.likes?.data = fbUser?.data?.likes?.data?.concat(moreLikesData)
             fbUser?.data?.music?.data = fbUser?.data?.music?.data?.concat(moreMusicData)
 
             const facebookProfile = new FacebookProfile(fbUser?.data);
-            const feed = removeIdsFromObjects(facebookProfile.feed);
-            const favorite_athletes = removeIdsFromObjects(facebookProfile.favorite_athletes);
-            const favorite_teams = removeIdsFromObjects(facebookProfile.favorite_teams);
-            const favorite_music = removeIdsFromObjects(facebookProfile.music);
-            const likes = removeIdsFromObjects(facebookProfile.likes);
+            const feed = removeIdsFromObjects(facebookProfile?.feed);
+            const favorite_athletes = removeIdsFromObjects(facebookProfile?.favorite_athletes);
+            const favorite_teams = removeIdsFromObjects(facebookProfile?.favorite_teams);
+            const favorite_music = removeIdsFromObjects(facebookProfile?.music);
+            const likes = removeIdsFromObjects(facebookProfile?.likes);
 
             const feedContent = extractContent(feed);
             const favoriteAthletesContent = extractContent(favorite_athletes);
@@ -153,23 +153,23 @@ facebookRouter.get('/info', isAuthenticated, async (req, res) => {
             const likesContent = extractContent(likes);
 
             const prompt1 = createPrompt(FACEBOOK_FETCH_INTEREST_PROMPT, feedContent + "\n" + likesContent);
-            const prompt2 = createPrompt(FACEBOOK_FETCH_INTEREST_FROM_NAMES_PROMPT, favoriteAthletesContent +"\n"+ favoriteTeamsContent + "\n" + favoriteMusicContent);
+            const prompt2 = createPrompt(FACEBOOK_FETCH_INTEREST_FROM_NAMES_PROMPT, favoriteAthletesContent + "\n" + favoriteTeamsContent + "\n" + favoriteMusicContent);
             const interests1 = await analyze(prompt1);
             const interests2 = await analyze(prompt2);
 
-            facebookProfile.feed = feed;
-            facebookProfile.favorite_athletes = favorite_athletes;
-            facebookProfile.favorite_teams = favorite_teams;
-            facebookProfile.music = favorite_music;
-            facebookProfile.likes = likes;
-            facebookProfile.interests = (interests1?.Interests?.concat(interests2?.Interests)) || [];
-            facebookProfile.reputationScore = calculateReputation(facebookProfile);
-            
+            facebookProfile.feed ??= feed;
+            facebookProfile.favorite_athletes ??= favorite_athletes;
+            facebookProfile.favorite_teams ??= favorite_teams;
+            facebookProfile.music ??= favorite_music;
+            facebookProfile.likes ??= likes;
+            facebookProfile.interests ??= (interests1?.Interests?.concat(interests2?.Interests));
+            facebookProfile.reputationScore ??= calculateReputation(facebookProfile);
+
             req.session.destroy(err => {
                 activeConnections.delete(req.sessionID);
                 if (err) {
                     Logger.error(`${FACEBOOK_APP}: Error during session destroy: ${err.message}`);
-                    return res.status(500).json({ app: FACEBOOK_APP, message: "Error during session destroy", error: err });
+                    return res.status(500).json({ app: FACEBOOK_APP, message: INTERNAL_SERVER_ERROR, error: err });
                 }
                 Logger.info(`${FACEBOOK_APP}: Session destroyed successfully`);
                 Logger.info(`${FACEBOOK_APP}: User information has been delivered successfully`);
@@ -177,16 +177,16 @@ facebookRouter.get('/info', isAuthenticated, async (req, res) => {
             });
         } else {
             Logger.error(`${FACEBOOK_APP}: Token has been expired.`);
-            return res.status(401).json({ app: FACEBOOK_APP, error: 'Unauthorized', message: 'Token has been expired or not found. Please log in again.' });
+            return res.status(500).json({ app: FACEBOOK_APP, message: INTERNAL_SERVER_ERROR });
         }
     } catch (error: any) {
         if (error.code === 'ECONNABORTED') {
             Logger.error(`${FACEBOOK_APP}: Request timeout error in fetching userinfo: ${error.message}`);
-            return res.status(408).json({ app: FACEBOOK_APP, error: 'Request Timeout', message: 'Session has expired. Please log in again.' });
+            return res.status(408).json({ app: FACEBOOK_APP, message: TIMEOUT_ERROR });
         }
         else {
             Logger.error(`${FACEBOOK_APP}: Error occurred in fetching user informantion: ${error.message}`);
-            return res.status(401).json({ app: FACEBOOK_APP, error: 'Unauthorized', message: 'Session has expired. Please log in again.' });
+            return res.status(500).json({ app: FACEBOOK_APP, message: INTERNAL_SERVER_ERROR });
         }
     }
 });
