@@ -13,7 +13,7 @@ export function calculateReputation(data: TwitterProfile): number {
     const descriptionWeight: number = 0.1;
     const createdAtWeight: number = 0.1; // Weight for account creation date
 
-    // Extract data from twitter profile
+    // Extract data from instagram profile
     const {
         followersCount,
         tweetCount,

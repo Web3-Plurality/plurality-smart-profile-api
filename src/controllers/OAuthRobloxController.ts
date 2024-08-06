@@ -145,12 +145,12 @@ robloxRouter.get('/info', isAuthenticated, async (req, res) => {
           }
         );
 
-        const prompt = createPrompt(ROBLOX_FETCH_INTEREST_PROMPT, userData?.data?.about)
-        const interests = await analyze(prompt)
-        robloxProfile.interests ??= interests?.Interests
-        robloxProfile.introTags ??= interests?.IntroTags
-        robloxProfile.idVerified ??= userData?.data?.idVerified
-        robloxProfile.premium ??= userData?.data?.premium
+        const prompt = createPrompt(ROBLOX_FETCH_INTEREST_PROMPT, userData?.data?.about);
+        const interests = await analyze(prompt);
+        robloxProfile.interests = interests?.Interests || [];
+        robloxProfile.introTags = interests?.IntroTags || [];
+        robloxProfile.idVerified = userData?.data?.idVerified;
+        robloxProfile.premium = userData?.data?.premium;
 
       } catch (error) {
         if (error.code === 'ECONNABORTED') {
@@ -171,7 +171,7 @@ robloxRouter.get('/info', isAuthenticated, async (req, res) => {
             timeout: 20000,
           }
         );
-        robloxProfile.assests ??= inventoryData?.data?.inventoryItems;
+        robloxProfile.assests = inventoryData?.data?.inventoryItems;
       } catch (error) {
         if (error.code === 'ECONNABORTED') {
           Logger.error(`${ROBLOX_APP}: Request timeout error in fetching userinfo: ${error.message}`);
@@ -182,12 +182,12 @@ robloxRouter.get('/info', isAuthenticated, async (req, res) => {
 
       try {
         const robloxInsights = await scrapRoblox(robloxProfile?.profile);
-        robloxProfile.joinDate ??= robloxInsights?.joinDate;
-        robloxProfile.placesVisit ??= robloxInsights?.placesVisit;
-        robloxProfile.friends ??= robloxInsights?.friends;
-        robloxProfile.followers ??= robloxInsights?.followers;
-        robloxProfile.following ??= robloxInsights?.following;
-        robloxProfile.avtar ??= robloxInsights?.avtar;
+        robloxProfile.joinDate = robloxInsights?.joinDate;
+        robloxProfile.placesVisit = robloxInsights?.placesVisit;
+        robloxProfile.friends = robloxInsights?.friends;
+        robloxProfile.followers = robloxInsights?.followers;
+        robloxProfile.following = robloxInsights?.following;
+        robloxProfile.avtar = robloxInsights?.avtar;
 
       } catch (error) {
         if (error.code === 'ECONNABORTED') {

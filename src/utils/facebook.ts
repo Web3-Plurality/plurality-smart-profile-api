@@ -13,7 +13,7 @@ export function calculateReputation(data: FacebookProfile): number {
     const likeCountWeight: number = 0.1;
     const musicCountWeight: number = 0.1;
 
-    // Extract data from twitter profile
+    // Extract data from facebook profile
     const {
         friends_count,
         athletes_count,
@@ -55,8 +55,8 @@ export function calculateReputation(data: FacebookProfile): number {
 
     return reputationScore;
 }
-
-export function removeIdsFromObjects(data:any) {
+// remove ids from objects
+export function sanitizeObject(data:any) {
     return data
         .map(obj => {
             const { id, ...rest } = obj;

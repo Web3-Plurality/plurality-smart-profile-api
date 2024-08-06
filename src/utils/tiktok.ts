@@ -13,7 +13,7 @@ export function calculateReputation(data: TikTokProfile): number {
     // const bioDescriptionWeight: number = 0.1;
     // const createdAtWeight: number = 0.1; // Weight for account creation date
 
-    // Extract data from twitter profile
+    // Extract data from tiktok profile
     const {
         videoCount,
         bioDescription,

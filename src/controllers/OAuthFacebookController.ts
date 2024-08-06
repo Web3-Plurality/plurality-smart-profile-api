@@ -8,7 +8,7 @@ import { FACEBOOK_APP, INTERNAL_SERVER_ERROR, TIMEOUT_ERROR, activeConnections, 
 import OAuthFacebookStrategy from "../auth/OAuthFacebookStrategy";
 import { analyze } from "../utils/groq";
 import { FacebookProfile } from "../entity/Facebook";
-import { calculateReputation, extractContent, getPagingData, removeIdsFromObjects } from "../utils/facebook";
+import { calculateReputation, extractContent, getPagingData, sanitizeObject } from "../utils/facebook";
 import { FACEBOOK_FETCH_INTEREST_FROM_NAMES_PROMPT, FACEBOOK_FETCH_INTEREST_PROMPT } from "../utils/aiPrompts";
 
 dotenv.config();
@@ -140,11 +140,11 @@ facebookRouter.get('/info', isAuthenticated, async (req, res) => {
             fbUser?.data?.music?.data = fbUser?.data?.music?.data?.concat(moreMusicData)
 
             const facebookProfile = new FacebookProfile(fbUser?.data);
-            const feed = removeIdsFromObjects(facebookProfile?.feed);
-            const favorite_athletes = removeIdsFromObjects(facebookProfile?.favorite_athletes);
-            const favorite_teams = removeIdsFromObjects(facebookProfile?.favorite_teams);
-            const favorite_music = removeIdsFromObjects(facebookProfile?.music);
-            const likes = removeIdsFromObjects(facebookProfile?.likes);
+            const feed = sanitizeObject(facebookProfile?.feed);
+            const favorite_athletes = sanitizeObject(facebookProfile?.favorite_athletes);
+            const favorite_teams = sanitizeObject(facebookProfile?.favorite_teams);
+            const favorite_music = sanitizeObject(facebookProfile?.music);
+            const likes = sanitizeObject(facebookProfile?.likes);
 
             const feedContent = extractContent(feed);
             const favoriteAthletesContent = extractContent(favorite_athletes);
@@ -157,13 +157,13 @@ facebookRouter.get('/info', isAuthenticated, async (req, res) => {
             const interests1 = await analyze(prompt1);
             const interests2 = await analyze(prompt2);
 
-            facebookProfile.feed ??= feed;
-            facebookProfile.favorite_athletes ??= favorite_athletes;
-            facebookProfile.favorite_teams ??= favorite_teams;
-            facebookProfile.music ??= favorite_music;
-            facebookProfile.likes ??= likes;
-            facebookProfile.interests ??= (interests1?.Interests?.concat(interests2?.Interests));
-            facebookProfile.reputationScore ??= calculateReputation(facebookProfile);
+            facebookProfile.feed = feed;
+            facebookProfile.favorite_athletes = favorite_athletes;
+            facebookProfile.favorite_teams = favorite_teams;
+            facebookProfile.music = favorite_music;
+            facebookProfile.likes = likes;
+            facebookProfile.interests = (interests1?.Interests?.concat(interests2?.Interests));
+            facebookProfile.reputationScore = calculateReputation(facebookProfile);
 
             req.session.destroy(err => {
                 activeConnections.delete(req.sessionID);

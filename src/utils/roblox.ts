@@ -47,7 +47,7 @@ export const scrapRoblox =  async(url: string) => {
     const premiumWeight: number = 0.1;
     const createdAtWeight: number = 0.1;
 
-    // Extract data from twitter profile
+    // Extract data from roblox profile
     const {
         placesVisit,
         friends,
