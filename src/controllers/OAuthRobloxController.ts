@@ -33,7 +33,7 @@ passport.use(
       clientID: process.env.ROBLOX_CLIENT_ID,
       clientSecret: process.env.ROBLOX_CLIENT_SECRET,
       callbackURL: process.env.ROBLOX_CALLBACK_URL,
-      scope: "openid profile",// spaces
+      scope: "openid profile asset:read",// spaces
       state: true,
       pkce: true,
     },
@@ -50,12 +50,6 @@ robloxRouter.get(
   isConnected,
   async (req: Request, res: Response, next) => {
     Logger.info(`${ROBLOX_APP}: Request for Oauth has been received successfully on session Id${req.sessionID}`)
-    req?.session?.redirectParams = {
-      isWidget: req?.query?.isWidget,
-      origin: req?.query?.origin,
-      apps: req?.query?.apps,
-    };
-
     passport.authenticate('roblox')(req, res, next);
   });
 
@@ -64,26 +58,15 @@ robloxRouter.get('/callback', passport.authenticate('roblox', { session: false }
   try {
 
     Logger.info(`${ROBLOX_APP}: Callback has been received successfully on session Id${req.sessionID}`);
-    let url: any;
-    const { isWidget, origin, apps } = req.session.redirectParams;
     const serverSentEventResponse = activeConnections.get(req.sessionID);
     req.session.user = {
       accessToken: req.user.accessToken,
       refreshToken: req.user.refreshToken
     }
 
-    if (isWidget == 'true')
-      url = `${process.env.WIDGET_UI_URL}?isWidget=${isWidget}&origin=${origin}&apps=${apps}&id_platform=${ROBLOX_APP}`
-    else if (isWidget == 'false')
-      url = `${process.env.DASHBOARD_UI_URL}?isWidget=${isWidget}&origin=${origin}&apps=${apps}&id_platform=${ROBLOX_APP}`
-    else {
-      Logger.info(`${ROBLOX_APP}: Did not find the isWidget parameter in callback. Redirecting to default dashboard`);
-      url = `${process.env.DASHBOARD_UI_URL}?isWidget=${isWidget}&origin=${origin}&apps=${apps}&id_platform=${ROBLOX_APP}`
-    }
-
-    Logger.info(`${ROBLOX_APP}: Redirecting to ${url}`);
+    Logger.info(`${ROBLOX_APP}: Redirecting to ${process.env.WIDGET_UI_URL}`);
     // it will redirect to the dashboard or widget
-    res.redirect(url);
+    res.redirect(process.env.WIDGET_UI_URL);
     // it will send the url to the client, and it is for testing purpose
     // res.send(url);
 
@@ -179,6 +162,30 @@ robloxRouter.get('/info', isAuthenticated, async (req, res) => {
           Logger.error(`${ROBLOX_APP}: An error occurred: ${error.message}`);
         }
       }
+
+
+      // try {
+      //   console.log("asset Id")
+      //   console.log(robloxProfile.assests[0]?.assetDetails?.assetId)
+      //   const asset = await axios.get(
+      //     `https://apis.roblox.com/assets/v1/assets/${robloxProfile.assests[0]?.assetDetails?.assetId}`,
+      //     {
+      //       headers: {
+      //         Authorization: `Bearer ${accessToken}`,
+      //         "Content-Type": "application/json",
+      //       },
+      //       timeout: 20000,
+      //     }
+      //   );
+      //   console.log("aaaaaaaaaa")
+      //   console.log(asset?.data)
+      // } catch (error) {
+      //   if (error.code === 'ECONNABORTED') {
+      //     Logger.error(`${ROBLOX_APP}: Request timeout error in fetching userinfo: ${error.message}`);
+      //   } else {
+      //     Logger.error(`${ROBLOX_APP}: An error occurred: ${error.message}`);
+      //   }
+      // }
 
       try {
         const robloxInsights = await scrapRoblox(robloxProfile?.profile);

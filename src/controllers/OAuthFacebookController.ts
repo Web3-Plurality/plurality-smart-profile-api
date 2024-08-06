@@ -50,11 +50,6 @@ facebookRouter.get(
     isConnected,
     async (req: Request, res: Response, next) => {
         Logger.info(`${FACEBOOK_APP}: Request for Oauth has been received successfully on session Id ${req.sessionID}`)
-        req?.session?.redirectParams = {
-            isWidget: req?.query?.isWidget,
-            origin: req?.query?.origin,
-            apps: req?.query?.apps,
-        };
         passport.authenticate('facebook')(req, res, next);
     });
 
@@ -63,27 +58,15 @@ facebookRouter.get('/callback', passport.authenticate('facebook', { session: fal
     try {
 
         Logger.info(`${FACEBOOK_APP}: Callback has been received successfully on session Id${req.sessionID}`);
-        let url: any;
-        const { isWidget, origin, apps } = req?.session?.redirectParams;
         const serverSentEventResponse = activeConnections.get(req?.sessionID);
-
         req.session.user = {
             accessToken: req.user?.accessToken,
             refreshToken: req.user?.refreshToken
         }
 
-        if (isWidget == 'true')
-            url = `${process.env.WIDGET_UI_URL}?isWidget=${isWidget}&origin=${origin}&apps=${apps}&id_platform=twitter`
-        else if (isWidget == 'false')
-            url = `${process.env.DASHBOARD_UI_URL}?isWidget=${isWidget}&origin=${origin}&apps=${apps}&id_platform=twitter`
-        else {
-            Logger.info(`${FACEBOOK_APP}: Did not find the isWidget parameter in callback. Redirecting to default dashboard`);
-            url = `${process.env.DASHBOARD_UI_URL}?isWidget=${isWidget}&origin=${origin}&apps=${apps}&id_platform=twitter`
-        }
-
-        Logger.info(`${FACEBOOK_APP}: Redirecting to ${url}`);
+        Logger.info(`${FACEBOOK_APP}: Redirecting to ${process.env.WIDGET_UI_URL}`);
         // it will redirect to the dashboard or widget
-        res.redirect(url);
+        res.redirect(process.env.WIDGET_UI_URL);
         // it will send the url to the client, and it is for testing purpose
         // res.send(url);
 

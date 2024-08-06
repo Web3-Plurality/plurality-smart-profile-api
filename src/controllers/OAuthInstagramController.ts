@@ -49,11 +49,6 @@ instagramRouter.get(
     isConnected,
     async (req: Request, res: Response, next) => {
         Logger.info(`${INSTAGRAM_APP}: Request for Oauth has been received successfully on session Id ${req.sessionID}`)
-        req?.session?.redirectParams = {
-            isWidget: req?.query?.isWidget,
-            origin: req?.query?.origin,
-            apps: req?.query?.apps,
-        };
         passport.authenticate('instagram')(req, res, next);
     });
 
@@ -62,26 +57,15 @@ instagramRouter.get('/callback', passport.authenticate('instagram', { session: f
     try {
 
         Logger.info(`${INSTAGRAM_APP}: Callback has been received successfully on session Id${req.sessionID}`);
-        let url: any;
-        const { isWidget, origin, apps } = req.session.redirectParams;
         const serverSentEventResponse = activeConnections.get(req.sessionID);
         req.session.user = {
             accessToken: req.user.accessToken,
             refreshToken: req.user.refreshToken
         }
-
-        if (isWidget == 'true')
-            url = `${process.env.WIDGET_UI_URL}?isWidget=${isWidget}&origin=${origin}&apps=${apps}&id_platform=${INSTAGRAM_APP}`
-        else if (isWidget == 'false')
-            url = `${process.env.DASHBOARD_UI_URL}?isWidget=${isWidget}&origin=${origin}&apps=${apps}&id_platform=${INSTAGRAM_APP}`
-        else {
-            Logger.info(`${INSTAGRAM_APP}: Did not find the isWidget parameter in callback. Redirecting to default dashboard`);
-            url = `${process.env.DASHBOARD_UI_URL}?isWidget=${isWidget}&origin=${origin}&apps=${apps}&id_platform=${INSTAGRAM_APP}`
-        }
-
-        Logger.info(`${INSTAGRAM_APP}: Redirecting to ${url}`);
+        
+        Logger.info(`${INSTAGRAM_APP}: Redirecting to ${process.env.WIDGET_UI_URL}`);
         // it will redirect to the dashboard or widget
-        res.redirect(url);
+        res.redirect(process.env.WIDGET_UI_URL);
         // it will send the url to the client, and it is for testing purpose
         // res.send(url);
         // Send a message to the client that the token has been received

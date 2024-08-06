@@ -42,11 +42,6 @@ passport.use("tiktok", new TikTokOAuth2Strategy(
 tiktokRouter.get('/', isConnected, async (req: Request, res: Response, next) => {
 
   Logger.info(`${TIKTOK_APP}: Request for Tiktok Oauth has been received successfully on session Id${req.sessionID}`)
-  req?.session?.redirectParams = {
-    isWidget: req?.query?.isWidget,
-    origin: req?.query?.origin,
-    apps: req?.query?.apps,
-  };
   const csrfState = Math.random().toString(36).substring(2);
   passport.authenticate('tiktok', { state: csrfState })(req, res, next);
 })
@@ -54,29 +49,15 @@ tiktokRouter.get('/', isConnected, async (req: Request, res: Response, next) => 
 tiktokRouter.get('/callback', passport.authenticate("tiktok", { session: false }), async (req, res) => {
   try {
     Logger.info(`${TIKTOK_APP}: Callback from Tiktok has been received successfully on session Id${req.sessionID}`);
-
-    let url: any;
     const serverSentEventResponse = activeConnections.get(req.sessionID);
-    const { isWidget, origin, apps } = req.session.redirectParams;
-
     req.session.user = {
       accessToken: req.user.accessToken,
       refreshToken: req.user.refreshToken
     }
 
-    if (isWidget == 'true')
-      url = `${process.env.WIDGET_UI_URL}?isWidget=${isWidget}&origin=${origin}&apps=${apps}`
-    else if (isWidget == 'false')
-      url = `${process.env.DASHBOARD_UI_URL}?isWidget=${isWidget}&origin=${origin}&apps=${apps}`
-    else {
-      Logger.info(`${TIKTOK_APP}: Did not find the isWidget parameter in callback. Redirecting to default dashboard`);
-      url = `${process.env.DASHBOARD_UI_URL}?isWidget=${isWidget}&origin=${origin}&apps=${apps}`
-    }
-
-    Logger.info(`${TIKTOK_APP}: Redirecting to ${url}`);
-
+    Logger.info(`${TIKTOK_APP}: Redirecting to ${process.env.WIDGET_UI_URL}`);
     // it will redirect to the dashboard or widget
-    res.redirect(url);
+    res.redirect(process.env.WIDGET_UI_URL);
     // it will send the url to the client, and it is for testing purpose
     // res.send(url);
 
