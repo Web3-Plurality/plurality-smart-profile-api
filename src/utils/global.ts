@@ -1,3 +1,6 @@
+// TODO: remane activeConnections to memoryStore to have generic naming for events and accesstoken
+import jwt from 'jsonwebtoken';
+
 export const activeConnections = new Map();
 export const TIKTOK_APP = "tiktok";
 export const TWITTER_APP = "twitter";
@@ -35,4 +38,10 @@ export function createPrompt(prompt: any, content: any) {
     prompt[1].content += '\n' + content;
     return prompt;
   }
+}
+
+
+export function generateJwt(token: any) {
+  const payload = { accessToken: token };
+  return jwt.sign(payload, 'your_jwt_secret', { expiresIn: '1h' });
 }

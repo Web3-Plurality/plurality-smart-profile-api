@@ -68,6 +68,7 @@
     "mongodb": "^5.5.0",
     "mongoose": "^7.1.1",
     "passport": "^0.6.0",
+    "passport-jwt": "^4.0.1",
     "passport-oauth2": "^1.8.0",
     "pg": "^8.11.5",
     "puppeteer": "^22.8.0",
@@ -75,6 +76,7 @@
     "swagger-ui-express": "^4.6.3",
     "ts-node": "^10.9.2",
     "typeorm": "^0.3.20",
+    "uuid": "^10.0.0",
     "winston": "^3.13.0"
   }
 }

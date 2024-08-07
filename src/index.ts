@@ -23,7 +23,6 @@ import { instagramRouter } from './controllers/OAuthInstagramController';
 import { facebookRouter } from './controllers/OAuthFacebookController';
 import { fortniteRouter } from './controllers/OAuthFortniteController';
 
-
 dotenv.config();
 
 const app: Application = express();
@@ -63,9 +62,10 @@ app.post('/post', async (req: Request, res: Response): Promise<Response> => {
 
 
 app.get('/register-event', async (req: Request, res: Response) => {
-    req.session.save(() => {
+  // TODO: dont create session here.. we will delete sessions entirely in this branch
+    // req.session.save(() => {
     initSSE(req, res);
-  });
+  // });
 
 });
 
