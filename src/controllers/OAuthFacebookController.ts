@@ -1,0 +1,175 @@
+import express, { Request, Response } from "express";
+import passport from "passport";
+import * as dotenv from 'dotenv';
+import axios from "axios";
+import { isAuthenticated, isConnected } from "../middlewares/authMiddleware";
+import Logger from "../lib/logger";
+import { FACEBOOK_APP, INTERNAL_SERVER_ERROR, TIMEOUT_ERROR, activeConnections, createPrompt } from "../utils/global";
+import OAuthFacebookStrategy from "../auth/OAuthFacebookStrategy";
+import { analyze } from "../utils/groq";
+import { FacebookProfile } from "../entity/Facebook";
+import { calculateReputation, extractContent, getPagingData, sanitizeObject } from "../utils/facebook";
+import { FACEBOOK_FETCH_INTEREST_FROM_NAMES_PROMPT, FACEBOOK_FETCH_INTEREST_PROMPT } from "../utils/aiPrompts";
+
+dotenv.config();
+
+export const facebookRouter = express.Router();
+
+// Serialization and deserialization
+passport.serializeUser(function (user, done) {
+    done(null, user);
+});
+passport.deserializeUser(function (obj: any, done) {
+    done(null, obj);
+});
+
+passport.use(
+    "facebook",
+    // Strategy initialization
+    new OAuthFacebookStrategy(
+        {
+            authorizationURL: 'https://www.facebook.com/v20.0/dialog/oauth',
+            tokenURL: 'https://graph.facebook.com/v20.0/oauth/access_token',
+            clientID: process.env.FACEBOOK_CLIENT_ID,
+            clientSecret: process.env.FACEBOOK_CLIENT_SECRET,
+            callbackURL: process.env.FACEBOOK_CALLBACK_URL,
+            scope: "public_profile,email,user_likes,user_location,user_posts,user_friends",
+            state: true,
+            pkce: true,
+        },
+        // Verify callback
+        (accessToken: any, refreshToken: any, profile: any, done: any) => {
+            return done(null, { accessToken, refreshToken, profile });
+        }
+    )
+);
+
+// Start authentication flow
+facebookRouter.get(
+    '/',
+    isConnected,
+    async (req: Request, res: Response, next) => {
+        Logger.info(`${FACEBOOK_APP}: Request for Oauth has been received successfully on session Id ${req.sessionID}`)
+        passport.authenticate('facebook')(req, res, next);
+    });
+
+// Callback handler
+facebookRouter.get('/callback', passport.authenticate('facebook', { session: false }), async (req, res) => {
+    try {
+
+        Logger.info(`${FACEBOOK_APP}: Callback has been received successfully on session Id${req.sessionID}`);
+        const serverSentEventResponse = activeConnections.get(req?.sessionID);
+        req.session.user = {
+            accessToken: req.user?.accessToken,
+            refreshToken: req.user?.refreshToken
+        }
+
+        Logger.info(`${FACEBOOK_APP}: Redirecting to ${process.env.WIDGET_UI_URL}`);
+        // it will redirect to the dashboard or widget
+        res.redirect(process.env.WIDGET_UI_URL);
+        // it will send the url to the client, and it is for testing purpose
+        // res.send(url);
+
+        // Send a message to the client that the token has been received
+        if (req?.user?.accessToken && serverSentEventResponse) {
+            serverSentEventResponse.write(`data: {"message":"received", "app":"${FACEBOOK_APP}"}\n\n`)
+            Logger.info(`${FACEBOOK_APP}: Access token has been received successfully`);
+        }
+        else {
+            Logger.error("An error occurred while accessing session");
+            return res.status(500).json({ app: FACEBOOK_APP, message: INTERNAL_SERVER_ERROR });
+        }
+
+    } catch (error: any) {
+        Logger.error(`${FACEBOOK_APP}: Error during callback: ${error.message}`);
+        res.status(500).json({ app: FACEBOOK_APP, message: INTERNAL_SERVER_ERROR });
+    }
+});
+
+// Callback handler
+facebookRouter.get('/info', isAuthenticated, async (req, res) => {
+    try {
+        Logger.info(`${FACEBOOK_APP}: Request for information has been received successfully on session Id ${req.sessionID}`);
+        const { accessToken }: any = req?.session?.user;
+        let fbUser = { data: { data: {} } }
+        if (accessToken) {
+
+            try {
+                fbUser = await axios.get(
+                    `https://graph.facebook.com/v20.0/me?fields=id,name,email,languages,location,feed{description,message},likes{about,bio,category},music{about,bio,category,name},posts{caption,description,message},favorite_athletes,friends,favorite_teams&access_token=${accessToken}`,
+                    {
+                        headers: {
+
+                            "Content-Type": "application/json",
+                        },
+                        timeout: 20000,
+                    }
+                );
+            } catch (error) {
+                if (error.code === 'ECONNABORTED') {
+                    Logger.error(`${FACEBOOK_APP}: Request timeout error in fetching userinfo: ${error.message}`);
+                } else {
+                    Logger.error(`${FACEBOOK_APP}: An error occurred: ${error.message}`);
+                }
+            }
+
+            const moreFeedData = await getPagingData(fbUser?.data?.feed?.paging?.next);
+            const moreLikesData = await getPagingData(fbUser?.data?.likes?.paging?.next);
+            const moreMusicData = await getPagingData(fbUser?.data?.music?.paging?.next);
+
+
+            fbUser?.data?.feed?.data = fbUser?.data?.feed?.data?.concat(moreFeedData)
+            fbUser?.data?.likes?.data = fbUser?.data?.likes?.data?.concat(moreLikesData)
+            fbUser?.data?.music?.data = fbUser?.data?.music?.data?.concat(moreMusicData)
+
+            const facebookProfile = new FacebookProfile(fbUser?.data);
+            const feed = sanitizeObject(facebookProfile?.feed);
+            const favorite_athletes = sanitizeObject(facebookProfile?.favorite_athletes);
+            const favorite_teams = sanitizeObject(facebookProfile?.favorite_teams);
+            const favorite_music = sanitizeObject(facebookProfile?.music);
+            const likes = sanitizeObject(facebookProfile?.likes);
+
+            const feedContent = extractContent(feed);
+            const favoriteAthletesContent = extractContent(favorite_athletes);
+            const favoriteTeamsContent = extractContent(favorite_teams);
+            const favoriteMusicContent = extractContent(favorite_music);
+            const likesContent = extractContent(likes);
+
+            const prompt1 = createPrompt(FACEBOOK_FETCH_INTEREST_PROMPT, feedContent + "\n" + likesContent);
+            const prompt2 = createPrompt(FACEBOOK_FETCH_INTEREST_FROM_NAMES_PROMPT, favoriteAthletesContent + "\n" + favoriteTeamsContent + "\n" + favoriteMusicContent);
+            const interests1 = await analyze(prompt1);
+            const interests2 = await analyze(prompt2);
+
+            facebookProfile.feed = feed;
+            facebookProfile.favorite_athletes = favorite_athletes;
+            facebookProfile.favorite_teams = favorite_teams;
+            facebookProfile.music = favorite_music;
+            facebookProfile.likes = likes;
+            facebookProfile.interests = (interests1?.Interests?.concat(interests2?.Interests));
+            facebookProfile.reputationScore = calculateReputation(facebookProfile);
+
+            req.session.destroy(err => {
+                activeConnections.delete(req.sessionID);
+                if (err) {
+                    Logger.error(`${FACEBOOK_APP}: Error during session destroy: ${err.message}`);
+                    return res.status(500).json({ app: FACEBOOK_APP, message: INTERNAL_SERVER_ERROR, error: err });
+                }
+                Logger.info(`${FACEBOOK_APP}: Session destroyed successfully`);
+                Logger.info(`${FACEBOOK_APP}: User information has been delivered successfully`);
+                return res.status(200).json({ app: FACEBOOK_APP, message: "success", facebookProfile: facebookProfile })
+            });
+        } else {
+            Logger.error(`${FACEBOOK_APP}: Token has been expired.`);
+            return res.status(500).json({ app: FACEBOOK_APP, message: INTERNAL_SERVER_ERROR });
+        }
+    } catch (error: any) {
+        if (error.code === 'ECONNABORTED') {
+            Logger.error(`${FACEBOOK_APP}: Request timeout error in fetching userinfo: ${error.message}`);
+            return res.status(408).json({ app: FACEBOOK_APP, message: TIMEOUT_ERROR });
+        }
+        else {
+            Logger.error(`${FACEBOOK_APP}: Error occurred in fetching user informantion: ${error.message}`);
+            return res.status(500).json({ app: FACEBOOK_APP, message: INTERNAL_SERVER_ERROR });
+        }
+    }
+});

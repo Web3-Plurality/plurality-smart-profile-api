@@ -4,11 +4,12 @@ import TikTokOAuth2Strategy from "../auth/OAuthTikTokStrategy"
 import passport from "passport";
 import axios from "axios";
 import { TikTokProfile } from "../entity/Tiktok";
-import { TIKTOK_APP, activeConnections } from "../utils/global";
+import { INTERNAL_SERVER_ERROR, TIKTOK_APP, activeConnections, createPrompt } from "../utils/global";
 import { isAuthenticated, isConnected } from "../middlewares/authMiddleware";
-import { analyzeTweet } from "../utils/groq";
+import { analyze } from "../utils/groq";
 import { calculateReputation } from "../utils/tiktok";
 import Logger from "../lib/logger";
+import { TIKTOK_FETCH_INTEREST_PROMPT } from "../utils/aiPrompts";
 
 dotenv.config();
 
@@ -41,11 +42,6 @@ passport.use("tiktok", new TikTokOAuth2Strategy(
 tiktokRouter.get('/', isConnected, async (req: Request, res: Response, next) => {
 
   Logger.info(`${TIKTOK_APP}: Request for Tiktok Oauth has been received successfully on session Id${req.sessionID}`)
-  req?.session?.redirectParams = {
-    isWidget: req?.query?.isWidget,
-    origin: req?.query?.origin,
-    apps: req?.query?.apps,
-  };
   const csrfState = Math.random().toString(36).substring(2);
   passport.authenticate('tiktok', { state: csrfState })(req, res, next);
 })
@@ -53,44 +49,30 @@ tiktokRouter.get('/', isConnected, async (req: Request, res: Response, next) => 
 tiktokRouter.get('/callback', passport.authenticate("tiktok", { session: false }), async (req, res) => {
   try {
     Logger.info(`${TIKTOK_APP}: Callback from Tiktok has been received successfully on session Id${req.sessionID}`);
-
-    let url: any;
     const serverSentEventResponse = activeConnections.get(req.sessionID);
-    const { isWidget, origin, apps } = req.session.redirectParams;
-
     req.session.user = {
       accessToken: req.user.accessToken,
       refreshToken: req.user.refreshToken
     }
 
-    if (isWidget == 'true')
-      url = `${process.env.WIDGET_UI_URL}?isWidget=${isWidget}&origin=${origin}&apps=${apps}`
-    else if (isWidget == 'false')
-      url = `${process.env.DASHBOARD_UI_URL}?isWidget=${isWidget}&origin=${origin}&apps=${apps}`
-    else {
-      Logger.info(`${TIKTOK_APP}: Did not find the isWidget parameter in callback. Redirecting to default dashboard`);
-      url = `${process.env.DASHBOARD_UI_URL}?isWidget=${isWidget}&origin=${origin}&apps=${apps}`
-    }
-
-    Logger.info(`${TIKTOK_APP}: Redirecting to ${url}`);
-
+    Logger.info(`${TIKTOK_APP}: Redirecting to ${process.env.WIDGET_UI_URL}`);
     // it will redirect to the dashboard or widget
-    res.redirect(url);
+    res.redirect(process.env.WIDGET_UI_URL);
     // it will send the url to the client, and it is for testing purpose
     // res.send(url);
 
     // Send a message to the client that the token has been received
     if (req.user.accessToken && serverSentEventResponse) {
       serverSentEventResponse.write(`data: {"message":"received", "app":"${TIKTOK_APP}"}\n\n`)
-      Logger.info(`${TIKTOK_APP}: Access token of Tiktok received successfully`);
+      Logger.info(`${TIKTOK_APP}: Access token has been received successfully`);
     } else {
       Logger.error(`${TIKTOK_APP}: Event source connection not found.`);
-      return res.status(401).json({ app: TIKTOK_APP, error: 'Unauthorized', message: 'Event source connection not found. Register Event' });
+      return res.status(500).json({ app: TIKTOK_APP, message: INTERNAL_SERVER_ERROR });
     }
 
   } catch (error: any) {
     Logger.error(`${TIKTOK_APP}: Error during callback:, ${error.message}`);
-    res.status(401).json({ app: TIKTOK_APP, error: 'Unauthorized', message: 'Error during callback' });
+    res.status(500).json({ app: TIKTOK_APP, message: INTERNAL_SERVER_ERROR });
   }
 });
 
@@ -161,7 +143,7 @@ tiktokRouter.get('/info', isAuthenticated, async (req, res) => {
         videoList = await axios.post(
           `https://open.tiktokapis.com/v2/video/list/?fields=${videoObjFields.join(",")}`,
           {
-            max_count: 5, // env variable put
+            max_count: 20, // env variable put
           },
           {
             headers: {
@@ -181,7 +163,8 @@ tiktokRouter.get('/info', isAuthenticated, async (req, res) => {
 
       const tiktokProfile = new TikTokProfile({ user: userData?.data?.data?.user, video: videoList?.data?.data?.videos });
       const vidDescription = tiktokProfile?.video?.length ? tiktokProfile?.video.map((vid: any) => vid?.title + " " + vid?.videoDescription).join(' ') : ""
-      const semanticObj = tiktokProfile?.user?.bioDescription ? await analyzeTweet(tiktokProfile?.user?.bioDescription + vidDescription) : {}
+      const prompt = createPrompt(TIKTOK_FETCH_INTEREST_PROMPT, tiktokProfile?.user?.bioDescription + vidDescription)
+      const semanticObj = tiktokProfile?.user?.bioDescription ? await analyze(prompt) : {}
       const reputationScore = calculateReputation(tiktokProfile);
       tiktokProfile.interests = semanticObj?.Interests || [];
       tiktokProfile.introTags = semanticObj?.IntroTags || [];
@@ -193,7 +176,7 @@ tiktokRouter.get('/info', isAuthenticated, async (req, res) => {
         activeConnections.delete(req.sessionID);
         if (err) {
           Logger.error(`${TIKTOK_APP}: Error during session destroy: ${err.message}`);
-          return res.status(500).json({ app: TIKTOK_APP, message: "Error during session destroy", error: err });
+          return res.status(500).json({ app: TIKTOK_APP, message: INTERNAL_SERVER_ERROR });
         }
         Logger.info(`${TIKTOK_APP}: Session destroyed successfully`);
         Logger.info(`${TIKTOK_APP}: User information has been delivered successfully`);
@@ -201,10 +184,10 @@ tiktokRouter.get('/info', isAuthenticated, async (req, res) => {
       });
     } else {
       Logger.error(`${TIKTOK_APP}: Token has been expired.`);
-      return res.status(401).json({ app: TIKTOK_APP, error: 'Unauthorized', message: 'Token has been expired or not found. Please log in again.' });
+      return res.status(500).json({ app: TIKTOK_APP, message: INTERNAL_SERVER_ERROR });
     }
   } catch (error: any) {
     Logger.error(`${TIKTOK_APP}: Error occurred in fetching user informantion: ${error.message}`);
-    return res.status(401).json({ app: TIKTOK_APP, error: 'Unauthorized', message: 'Session has expired. Please log in again.' });
+    return res.status(500).json({ app: TIKTOK_APP, message: INTERNAL_SERVER_ERROR });
   }
 });

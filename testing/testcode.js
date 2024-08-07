@@ -4,7 +4,7 @@ import axios from 'axios';
 
 
 const Axios = axios.create({
-  baseURL: "https://app.plurality.local:5000/",
+  baseURL: "https://app.plurality.local/",
   withCredentials: true,
 });
 
@@ -19,7 +19,7 @@ function App() {
   useEffect(() => {
     
     // axios.defaults.withCredentials = true;
-    Axios.get('https://app.plurality.local:5000/oauth-twitter/register',{
+    Axios.get('https://app.plurality.local/oauth-twitter/register',{
       headers: {
         "Content-Type": "application/json",
         "Access-Control-Allow-Credentials": true,
@@ -32,7 +32,7 @@ function App() {
       setupSSE()
     })
     // Call the /register API to establish SSE connection
-    // axios.get('https://app.plurality.local:5000/oauth-twitter/register')
+    // axios.get('https://app.plurality.local/oauth-twitter/register')
     //   .then(response => {
     //     console.log('Session registered:', response.data);
     //     setupSSE();
@@ -43,7 +43,7 @@ function App() {
   }, []);
 
   const setupSSE = () => {
-    const evtSource = new EventSource('https://app.plurality.local:5000/oauth-twitter/register-event');
+    const evtSource = new EventSource('https://app.plurality.local/oauth-twitter/register-event');
     evtSource.onmessage = function (event) {
       console.log('Message from server:', event.data);
       setSseMessage(event.data);
@@ -61,7 +61,7 @@ function App() {
   };
 
   const handleOAuth = () => {
-    const oauthWindow = window.open('https://app.plurality.local:5000/oauth-twitter?isWidget=true&origin=false&apps=false', 'oauth', 'width=500,height=600');
+    const oauthWindow = window.open('https://app.plurality.local/oauth-twitter?isWidget=true&origin=false&apps=false', 'oauth', 'width=500,height=600');
     setPopup(oauthWindow);
   };
 

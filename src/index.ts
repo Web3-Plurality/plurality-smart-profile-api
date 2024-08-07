@@ -3,7 +3,9 @@ import bodyParser from 'body-parser';
 import cors from "cors";
 import helmet from "helmet";
 import * as dotenv from 'dotenv';
+import { robloxRouter } from './controllers/OAuthRobloxController';
 import { twitterRouter } from './controllers/OAuthTwitterController';
+
 import session from 'express-session';
 import passport from "passport";
 import swaggerUi from "swagger-ui-express";
@@ -17,6 +19,9 @@ import { AppDataSource } from './data-source';
 import fs from "fs";
 import { initSSE } from './middlewares/authMiddleware';
 import { snapchatRouter } from './controllers/OAuthSnapChatController';
+import { instagramRouter } from './controllers/OAuthInstagramController';
+import { facebookRouter } from './controllers/OAuthFacebookController';
+import { fortniteRouter } from './controllers/OAuthFortniteController';
 
 
 dotenv.config();
@@ -33,6 +38,10 @@ app.use(session({ secret: 'keyboard cat', resave: false, saveUninitialized: true
 app.use(passport.session());
 app.use("/oauth-twitter", twitterRouter);
 app.use("/oauth-snapchat", snapchatRouter);
+app.use("/oauth-roblox", robloxRouter);
+app.use("/oauth-facebook", facebookRouter);
+app.use("/oauth-instagram", instagramRouter);
+app.use("/oauth-fortnite", fortniteRouter);
 app.use("/permaweb", permawebRouter);
 app.use("/oauth-tiktok", tiktokRouter);
 app.use("/subgraph", subgraphRouter);
@@ -52,23 +61,12 @@ app.post('/post', async (req: Request, res: Response): Promise<Response> => {
   });
 });
 
-// app.get('/register', async (req: Request, res: Response) => {
-//   console.log("register endpoint", req.sessionID)
-//   req.session.save(() => {
-//     return res.status(200).json({ "message": "register" });
-//   });
-// });
 
 app.get('/register-event', async (req: Request, res: Response) => {
-  //const connection = activeConnections.get(req.sessionID);
-  console.log(">>>>", req.sessionID)
-  // if (!connection) {
     req.session.save(() => {
     initSSE(req, res);
   });
-  // } else {
-  //   return res.status(400).json({ "message": "SSE connection already exists." });
-  // }
+
 });
 
 try {
@@ -97,4 +95,3 @@ try {
 } catch (error: any) {
   console.error(`Error occurred: ${error.message}`);
 }
-

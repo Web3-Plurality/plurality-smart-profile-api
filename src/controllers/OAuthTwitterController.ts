@@ -1,15 +1,13 @@
 import express, { Request, Response } from "express";
 import passport from "passport";
-// import { Strategy } from '@superfaceai/passport-twitter-oauth2';
 import OAuthTwitterStrategy from '../auth/OAuthTwitterStrategy';
 import * as dotenv from 'dotenv';
 import axios from "axios";
-import { scrape } from "../utils/scrape";
+import { scrape, calculateReputation } from "../utils/twitter";
 import { TwitterProfile } from "../entity/Twitter";
-import { calculateReputation } from "../utils/twitter";
 import { isAuthenticated, isConnected } from "../middlewares/authMiddleware";
 import Logger from "../lib/logger";
-import { TWITTER_APP, activeConnections } from "../utils/global";
+import { INTERNAL_SERVER_ERROR, TIMEOUT_ERROR, TWITTER_APP, activeConnections } from "../utils/global";
 
 dotenv.config();
 
@@ -17,13 +15,9 @@ export const twitterRouter = express.Router();
 
 // Serialization and deserialization
 passport.serializeUser(function (user, done) {
-  console.log("serialize")
-  console.log(user)
   done(null, user);
 });
 passport.deserializeUser(function (obj: any, done) {
-  console.log("deserialize")
-
   done(null, obj);
 });
 
@@ -43,7 +37,6 @@ passport.use(
     },
     // Verify callback
     (accessToken: any, refreshToken: any, profile: any, done: any) => {
-      console.log("Verify")
       return done(null, { accessToken, refreshToken, profile });
     }
   )
@@ -55,11 +48,6 @@ twitterRouter.get(
   isConnected,
   async (req: Request, res: Response, next) => {
     Logger.info(`${TWITTER_APP}: Request for Twitter Oauth has been received successfully on session Id${req.sessionID}`)
-    req?.session?.redirectParams = {
-      isWidget: req?.query?.isWidget,
-      origin: req?.query?.origin,
-      apps: req?.query?.apps,
-    };
     passport.authenticate('twitter')(req, res, next);
   });
 
@@ -68,42 +56,31 @@ twitterRouter.get('/callback', passport.authenticate('twitter', { session: false
   try {
     
     Logger.info(`${TWITTER_APP}: Callback from Twitter has been received successfully on session Id${req.sessionID}`);
-    let url: any;
-    const { isWidget, origin, apps } = req.session.redirectParams;
     const serverSentEventResponse = activeConnections.get(req.sessionID);
     req.session.user = {
-      accessToken: req.user.accessToken,
-      refreshToken: req.user.refreshToken
+      accessToken: req?.user?.accessToken,
+      refreshToken: req?.user?.refreshToken
     }
 
-    if (isWidget == 'true')
-      url = `${process.env.WIDGET_UI_URL}?isWidget=${isWidget}&origin=${origin}&apps=${apps}&id_platform=twitter`
-    else if (isWidget == 'false')
-      url = `${process.env.DASHBOARD_UI_URL}?isWidget=${isWidget}&origin=${origin}&apps=${apps}&id_platform=twitter`
-    else {
-      Logger.info(`${TWITTER_APP}: Did not find the isWidget parameter in callback. Redirecting to default dashboard`);
-      url = `${process.env.DASHBOARD_UI_URL}?isWidget=${isWidget}&origin=${origin}&apps=${apps}&id_platform=twitter`
-    }
-
-    Logger.info(`${TWITTER_APP}: Redirecting to ${url}`);
+    Logger.info(`${TWITTER_APP}: Redirecting to ${process.env.WIDGET_UI_URL}`);
     // it will redirect to the dashboard or widget
-    res.redirect(url);
+    res.redirect(process.env.WIDGET_UI_URL);
     // it will send the url to the client, and it is for testing purpose
     // res.send(url);
 
     // Send a message to the client that the token has been received
     if (req?.user?.accessToken && serverSentEventResponse) {
       serverSentEventResponse.write(`data: {"message":"received", "app":"${TWITTER_APP}"}\n\n`)
-      Logger.info(`${TWITTER_APP}: Access token of Twitter received successfully`);
+      Logger.info(`${TWITTER_APP}: Access token has been received successfully`);
     }
     else {
       Logger.error("An error occurred while accessing session"); 
-      return res.status(401).json({ app: TWITTER_APP, error: 'Unauthorized', message: 'Event source connection not found. Register Event' });
+      return res.status(500).json({ app: TWITTER_APP,  message: INTERNAL_SERVER_ERROR });
     }
 
   } catch (error: any) {
     Logger.error(`${TWITTER_APP}: Error during callback: ${error.message}`);
-    res.status(401).json({ app: TWITTER_APP, error: 'Unauthorized', message: 'Error during callback' });
+    res.status(500).json({ app: TWITTER_APP,  message: INTERNAL_SERVER_ERROR });
   }
 });
 
@@ -211,7 +188,7 @@ twitterRouter.get('/info', isAuthenticated, async (req, res) => {
         activeConnections.delete(req.sessionID);
         if (err) {
           Logger.error(`${TWITTER_APP}: Error during session destroy: ${err.message}`);
-          return res.status(500).json({ app: TWITTER_APP, message: "Error during session destroy", error: err });
+          return res.status(500).json({ app: TWITTER_APP, message: INTERNAL_SERVER_ERROR});
         }
         Logger.info(`${TWITTER_APP}: Session destroyed successfully`);
         Logger.info(`${TWITTER_APP}: User information has been delivered successfully`);
@@ -219,16 +196,16 @@ twitterRouter.get('/info', isAuthenticated, async (req, res) => {
       });
     } else {
       Logger.error(`${TWITTER_APP}: Token has been expired.`);
-      return res.status(401).json({ app: TWITTER_APP, error: 'Unauthorized', message: 'Token has been expired or not found. Please log in again.' });
+      return res.status(500).json({ app: TWITTER_APP,  message: INTERNAL_SERVER_ERROR });
     }
   } catch (error: any) {
     if (error.code === 'ECONNABORTED') {
       Logger.error(`${TWITTER_APP}: Request timeout error in fetching userinfo: ${error.message}`);
-      return res.status(408).json({ app: TWITTER_APP, error: 'Request Timeout', message: 'Session has expired. Please log in again.' });
+      return res.status(408).json({ app: TWITTER_APP, message: TIMEOUT_ERROR });
   }
   else{
     Logger.error(`${TWITTER_APP}: Error occurred in fetching user informantion: ${error.message}`);
-    return res.status(401).json({ app: TWITTER_APP, error: 'Unauthorized', message: 'Session has expired. Please log in again.' });
+    return res.status(500).json({ app: TWITTER_APP,  message: INTERNAL_SERVER_ERROR });
   }
   }
 });

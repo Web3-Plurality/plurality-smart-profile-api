@@ -38,3 +38,5 @@ yarn.lock
 dist
 
 testing/node_modules
+
+.vscode
