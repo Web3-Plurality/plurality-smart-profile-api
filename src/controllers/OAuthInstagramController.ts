@@ -4,12 +4,12 @@ import * as dotenv from 'dotenv';
 import axios from "axios";
 import { isAuthenticated, isConnected } from "../middlewares/authMiddleware";
 import Logger from "../lib/logger";
-import { INSTAGRAM_APP, INTERNAL_SERVER_ERROR, TIMEOUT_ERROR, activeConnections, createPrompt } from "../utils/global";
+import { INSTAGRAM_APP, INTERNAL_SERVER_ERROR, TIMEOUT_ERROR, memoryStore, createPrompt } from "../utils/global";
 import OAuthInstagramStrategy from "../auth/OAuthInstagramStrategy";
 import { InstaProfile } from "../entity/Instagram";
 import { analyze } from "../utils/groq";
 import { INSTA_FETCH_INTEREST_PROMPT } from "../utils/aiPrompts";
-
+import { v4 as uuidv4 } from 'uuid';
 dotenv.config();
 
 export const instagramRouter = express.Router();
@@ -48,47 +48,49 @@ instagramRouter.get(
     '/',
     isConnected,
     async (req: Request, res: Response, next) => {
-        Logger.info(`${INSTAGRAM_APP}: Request for Oauth has been received successfully on session Id ${req.sessionID}`)
+        Logger.info(`${INSTAGRAM_APP}: Request for Oauth has been received successfully on sse Id ${req.sseID}`)
         passport.authenticate('instagram')(req, res, next);
     });
+
 
 // Callback handler
 instagramRouter.get('/callback', passport.authenticate('instagram', { session: false }), async (req, res) => {
     try {
-
-        Logger.info(`${INSTAGRAM_APP}: Callback has been received successfully on session Id${req.sessionID}`);
-        const serverSentEventResponse = activeConnections.get(req.sessionID);
-        req.session.user = {
-            accessToken: req.user.accessToken,
-            refreshToken: req.user.refreshToken
-        }
-        
-        Logger.info(`${INSTAGRAM_APP}: Redirecting to ${process.env.WIDGET_UI_URL}`);
-        // it will redirect to the dashboard or widget
-        res.redirect(process.env.WIDGET_UI_URL);
-        // it will send the url to the client, and it is for testing purpose
-        // res.send(url);
-        // Send a message to the client that the token has been received
-        if (req?.user?.accessToken && serverSentEventResponse) {
-            serverSentEventResponse.write(`data: {"message":"received", "app":"${INSTAGRAM_APP}"}\n\n`)
-            Logger.info(`${INSTAGRAM_APP}: Access token has been received successfully`);
-        }
-        else {
-            Logger.error("An error occurred while accessing session");
-            return res.status(500).json({ app: INSTAGRAM_APP, message: INTERNAL_SERVER_ERROR });
-        }
-
-    } catch (error: any) {
+        const accessTokenId = uuidv4();
+        memoryStore.set(accessTokenId, req.user.accessToken);
+        const url = `${process.env.WIDGET_UI_URL}?token_id=${accessTokenId}`;
+        Logger.info(`${INSTAGRAM_APP}: Redirecting to ${url}`);
+        res.redirect(url);
+      } catch (error: any) {
         Logger.error(`${INSTAGRAM_APP}: Error during callback: ${error.message}`);
-        return res.status(500).json({ app: INSTAGRAM_APP, message: INTERNAL_SERVER_ERROR });
-    }
+        res.status(500).json({ app: INSTAGRAM_APP, message: 'Error during callback' });
+      }
 });
 
-// Callback handler
+
+instagramRouter.post(
+    '/event',
+    isAuthenticated,
+    async (req: Request, res: Response) => {
+      try {
+        Logger.info(`${INSTAGRAM_APP}: Request body tokenUUID ${req.accessTokenID}`);
+        Logger.info(`${INSTAGRAM_APP}: Request body sseUUID ${req?.sseID}`);
+        const serverSentEventResponse = memoryStore.get(req?.sseID);
+        serverSentEventResponse.write(`data: {"message":"received", "app":"${INSTAGRAM_APP}", "auth":"${req.accessTokenID}"}\n\n`)
+        Logger.info(`${INSTAGRAM_APP}: Server Side Event has been sent successfully`);
+        return res.status(200).json({ app: INSTAGRAM_APP, message: "success" });  
+      } catch (error) {
+        Logger.info(`${INSTAGRAM_APP}: error in getting sseID ${error.message}`);
+        return res.status(500).json({ app: INSTAGRAM_APP, message: "Internal Server error" }); 
+      }
+      
+    });
+
+
 instagramRouter.get('/info', isAuthenticated, async (req, res) => {
     try {
-        Logger.info(`${INSTAGRAM_APP}: Request for information has been received successfully on session Id ${req.sessionID}`);
-        const { accessToken }: any = req?.session?.user;
+        Logger.info(`${INSTAGRAM_APP}: Request for information has been received successfully on session Id ${req.sseID}`);
+        const accessToken = memoryStore.get(req.accessTokenID)
         let instaUser = { data: { data: {} } }
         let instaMedia = { data: { data: [] } }
 
@@ -134,16 +136,13 @@ instagramRouter.get('/info', isAuthenticated, async (req, res) => {
             const instaProfile = new InstaProfile(instaUser?.data);
             instaProfile.interests = interests?.Interests || [];
 
-            req.session.destroy(err => {
-                activeConnections.delete(req.sessionID);
-                if (err) {
-                    Logger.error(`${INSTAGRAM_APP}: Error during session destroy: ${err.message}`);
-                    return res.status(500).json({ app: INSTAGRAM_APP, message: "Error during session destroy", error: err });
-                }
-                Logger.info(`${INSTAGRAM_APP}: Session destroyed successfully`);
-                Logger.info(`${INSTAGRAM_APP}: User information has been delivered successfully`);
-                return res.status(200).json({ app: INSTAGRAM_APP, message: "success", instaProfile: instaProfile })
-            });
+            
+            memoryStore.delete(req?.sseID);
+            memoryStore.delete(req?.accessTokenID);
+            Logger.info(`${INSTAGRAM_APP}: Session destroyed successfully`);
+            Logger.info(`${INSTAGRAM_APP}: User information has been delivered successfully`);
+            return res.status(200).json({ app: INSTAGRAM_APP, message: "success", instaProfile: instaProfile })
+        
         } else {
             Logger.error(`${INSTAGRAM_APP}: Token has been expired.`);
             return res.status(500).json({ app: INSTAGRAM_APP, message: INTERNAL_SERVER_ERROR });

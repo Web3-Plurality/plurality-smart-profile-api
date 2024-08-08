@@ -4,10 +4,10 @@ import * as dotenv from 'dotenv';
 import axios from "axios";
 import { isAuthenticated, isConnected } from "../middlewares/authMiddleware";
 import Logger from "../lib/logger";
-import { activeConnections, FORTNITE_APP, INTERNAL_SERVER_ERROR, TIMEOUT_ERROR } from "../utils/global";
+import { memoryStore, FORTNITE_APP, INTERNAL_SERVER_ERROR, TIMEOUT_ERROR } from "../utils/global";
 import OAuthFortniteStrategy from "../auth/OAuthFortniteStrategy"
-import jwt from 'jsonwebtoken'
 import { FortniteProfile } from "../entity/Fortnite";
+import { v4 as uuidv4 } from 'uuid';
 dotenv.config();
 
 export const fortniteRouter = express.Router();
@@ -46,43 +46,42 @@ fortniteRouter.get(
   '/',
   isConnected,
   async (req: Request, res: Response, next) => {
-    Logger.info(`${FORTNITE_APP}: Request for Oauth has been received successfully on session Id ${req.sessionID}`)
+    Logger.info(`${FORTNITE_APP}: Request for Oauth has been received successfully on sse Id ${req.sseID}`)
     passport.authenticate('fortnite')(req, res, next);
   });
+
 
 // Callback handler
 fortniteRouter.get('/callback', passport.authenticate('fortnite', { session: false }), async (req, res) => {
   try {
-
-    Logger.info(`${FORTNITE_APP}: Callback has been received successfully on session Id${req.sessionID}`);
-    const serverSentEventResponse = activeConnections.get(req.sessionID);
-    req.session.user = {
-      accessToken: req.user.accessToken,
-      refreshToken: req.user.refreshToken,
-      account_id: req.user.account_id
-    }
-
-    Logger.info(`${FORTNITE_APP}: Redirecting to ${process.env.WIDGET_UI_URL}`);
-    // it will redirect to the dashboard or widget
-    res.redirect(process.env.WIDGET_UI_URL);
-    // it will send the url to the client, and it is for testing purpose
-    // res.send(url);
-
-    // Send a message to the client that the token has been received
-    if (req?.user?.accessToken && serverSentEventResponse) {
-      serverSentEventResponse.write(`data: {"message":"received", "app":"${FORTNITE_APP}"}\n\n`)
-      Logger.info(`${FORTNITE_APP}: Access token has been received successfully`);
-    }
-    else {
-      Logger.error("An error occurred while accessing session");
-      return res.status(500).json({ app: FORTNITE_APP, error: 'Unauthorized', message: INTERNAL_SERVER_ERROR });
-    }
-
+    const accessTokenId = uuidv4();
+    memoryStore.set(accessTokenId, req.user.accessToken);
+    const url = `${process.env.WIDGET_UI_URL}?token_id=${accessTokenId}`;
+    Logger.info(`${FORTNITE_APP}: Redirecting to ${url}`);
+    res.redirect(url);
   } catch (error: any) {
     Logger.error(`${FORTNITE_APP}: Error during callback: ${error.message}`);
-    res.status(500).json({ app: FORTNITE_APP, error: 'Unauthorized', message: 'Error during callback' });
+    res.status(500).json({ app: FORTNITE_APP, message: 'Error during callback' });
   }
 });
+
+fortniteRouter.post(
+  '/event',
+  isAuthenticated,
+  async (req: Request, res: Response) => {
+    try {
+      Logger.info(`${FORTNITE_APP}: Request body tokenUUID ${req.accessTokenID}`);
+      Logger.info(`${FORTNITE_APP}: Request body sseUUID ${req?.sseID}`);
+      const serverSentEventResponse = memoryStore.get(req?.sseID);
+      serverSentEventResponse.write(`data: {"message":"received", "app":"${FORTNITE_APP}", "auth":"${req.accessTokenID}"}\n\n`)
+      Logger.info(`${FORTNITE_APP}: Server Side Event has been sent successfully`);
+      return res.status(200).json({ app: FORTNITE_APP, message: "success" });
+    } catch (error) {
+      Logger.info(`${FORTNITE_APP}: error in getting sseID ${error.message}`);
+      return res.status(500).json({ app: FORTNITE_APP, message: "Internal Server error" });
+    }
+
+  });
 
 // Callback handler
 fortniteRouter.get('/info', isAuthenticated, async (req, res) => {
@@ -114,28 +113,24 @@ fortniteRouter.get('/info', isAuthenticated, async (req, res) => {
 
       const fortniteProfile = new FortniteProfile(userFortnite?.data[0]);
 
-      req.session.destroy(err => {
-        activeConnections.delete(req.sessionID);
-        if (err) {
-          Logger.error(`${FORTNITE_APP}: Error during session destroy: ${err.message}`);
-          return res.status(500).json({ app: FORTNITE_APP, message: INTERNAL_SERVER_ERROR, error: err });
-        }
-        Logger.info(`${FORTNITE_APP}: Session destroyed successfully`);
-        Logger.info(`${FORTNITE_APP}: User information has been delivered successfully`);
-        return res.status(200).json({ app: FORTNITE_APP, message: "success", fortniteProfile: fortniteProfile })
-      });
+
+      memoryStore.delete(req?.sseID);
+      memoryStore.delete(req?.accessTokenID);
+      Logger.info(`${FORTNITE_APP}: User information has been delivered successfully`);
+      return res.status(200).json({ app: FORTNITE_APP, message: "success", fortniteProfile: fortniteProfile })
+
     } else {
-      Logger.error(`${FORTNITE_APP}: Token has been expired.`);
-      return res.status(500).json({ app: FORTNITE_APP, error: 'Unauthorized', message: INTERNAL_SERVER_ERROR });
-    }
+  Logger.error(`${FORTNITE_APP}: Token has been expired.`);
+  return res.status(500).json({ app: FORTNITE_APP, error: 'Unauthorized', message: INTERNAL_SERVER_ERROR });
+}
   } catch (error: any) {
-    if (error.code === 'ECONNABORTED') {
-      Logger.error(`${FORTNITE_APP}: Request timeout error in fetching userinfo: ${error.message}`);
-      return res.status(408).json({ app: FORTNITE_APP, message: TIMEOUT_ERROR });
-    }
-    else {
-      Logger.error(`${FORTNITE_APP}: Error occurred in fetching user informantion: ${error.message}`);
-      return res.status(500).json({ app: FORTNITE_APP, error: 'Unauthorized', message: INTERNAL_SERVER_ERROR });
-    }
+  if (error.code === 'ECONNABORTED') {
+    Logger.error(`${FORTNITE_APP}: Request timeout error in fetching userinfo: ${error.message}`);
+    return res.status(408).json({ app: FORTNITE_APP, message: TIMEOUT_ERROR });
   }
+  else {
+    Logger.error(`${FORTNITE_APP}: Error occurred in fetching user informantion: ${error.message}`);
+    return res.status(500).json({ app: FORTNITE_APP, error: 'Unauthorized', message: INTERNAL_SERVER_ERROR });
+  }
+}
 });

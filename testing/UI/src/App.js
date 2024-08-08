@@ -36,7 +36,7 @@ const handleAPI = ()=>{
     evtSource.onmessage = function (event) {
       console.log('Message from server:', JSON.parse(event?.data)?.message);
       setSseMessage(event.data);
-      // setSessionID(JSON.parse(event?.data)?.sessionId);
+      //set sse id
       setSSEID(JSON.parse(event?.data)?.id);
       // Enable the button if the message is "received"
       if (JSON.parse(event?.data)?.message ==="received") {
@@ -63,7 +63,7 @@ const handleAPI = ()=>{
 
   const handleOAuth = () => {
     localStorage.setItem('sseUUID', sseID);
-    const oauthWindow = window.open(`https://app.plurality.local/oauth-roblox?sseID=${sseID}`, 'oauth', 'width=500,height=600');
+    const oauthWindow = window.open(`https://app.plurality.local/oauth-facebook?sse_id=${sseID}`, 'oauth', 'width=500,height=600');
     if (oauthWindow) {
       setPopup(oauthWindow);
       console.log('Window opened:', oauthWindow);
@@ -76,7 +76,7 @@ const handleAPI = ()=>{
 
 
   const handleInfoRequest = () => {
-    axios.get('https://app.plurality.local/oauth-roblox/info',{
+    axios.get('https://app.plurality.local/oauth-facebook/info',{
       headers: {
         'X-Sse-ID': localStorage.getItem('sseUUID'),
         'X-Token-ID':localStorage.getItem('tokenID')
@@ -93,8 +93,8 @@ const handleAPI = ()=>{
   const handleSession = () => {
     // console.log("session id is:");
     // console.log(sessionID);
-    // // axios.post('https://app.plurality.local/oauth-roblox/test',{sessionID:sessionID})
-    // // axios.get('https://app.plurality.local/oauth-roblox/info',{
+    // // axios.post('https://app.plurality.local/oauth-facebook/test',{sessionID:sessionID})
+    // // axios.get('https://app.plurality.local/oauth-facebook/info',{
     // //   headers: {
     // //     Authorization: `Bearer ${token}`
     // //   }

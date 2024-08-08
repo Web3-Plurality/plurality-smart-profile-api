@@ -62,16 +62,11 @@ app.post('/post', async (req: Request, res: Response): Promise<Response> => {
 
 
 app.get('/register-event', async (req: Request, res: Response) => {
-  // TODO: dont create session here.. we will delete sessions entirely in this branch
-    // req.session.save(() => {
-    initSSE(req, res);
-  // });
-
-});
+  initSSE(req, res)});
 
 try {
   // Only for development 
-  if (process.env.NODE_ENV==='development') {
+  if (process.env.NODE_ENV === 'development') {
     const options = {
       key: fs.readFileSync('./local-certificates/key.pem'),
       cert: fs.readFileSync('./local-certificates/cert.pem')
@@ -86,10 +81,10 @@ try {
   else {
     console.log(process.env.VERIFIER_UI_URL);
     app.set('trust proxy', 1);
-    AppDataSource.initialize().then(async () => {  
+    AppDataSource.initialize().then(async () => {
       app.listen(PORT, (): void => {
         console.log(`Connected successfully on http port ${PORT}`);
-        });
+      });
     }).catch((error) => console.log(error));
   }
 } catch (error: any) {

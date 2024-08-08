@@ -5,18 +5,20 @@ import { useSearchParams } from 'react-router-dom';
 
 function Test() {
     const [searchParams] = useSearchParams();
-    const accessTokenID = searchParams.get('accessTokenID');
+    const accessTokenID = searchParams.get('token_id');
 
 
 
     useEffect(() => {
         if (accessTokenID) {
-            
-            const sseUUID = localStorage.getItem('sseUUID');
-   console.log("accessTokenID",accessTokenID)
-   console.log("sseUUID",sseUUID)
-
-        axios.post('https://app.plurality.local/oauth-roblox/send-event',{sseUUID:sseUUID, accessTokenUUID: accessTokenID})
+        
+        console.log(accessTokenID)
+        console.log(localStorage.getItem('sseUUID')) 
+        axios.post('https://app.plurality.local/oauth-facebook/event',{},{
+            headers: {
+            'X-Sse-ID': localStorage.getItem('sseUUID'),
+            'X-Token-ID':accessTokenID
+          }})
         .then(response => {
           console.log('Info:', response.data);
         })

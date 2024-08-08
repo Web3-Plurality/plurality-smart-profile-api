@@ -68,7 +68,6 @@
     "mongodb": "^5.5.0",
     "mongoose": "^7.1.1",
     "passport": "^0.6.0",
-    "passport-jwt": "^4.0.1",
     "passport-oauth2": "^1.8.0",
     "pg": "^8.11.5",
     "puppeteer": "^22.8.0",
