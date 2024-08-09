@@ -6,10 +6,15 @@ import { User } from "../entity/User";
 import Logger from "../lib/logger";
 import { v2 as cloudinary } from 'cloudinary';
 import { faker } from '@faker-js/faker';
+import { ethers } from "ethers";
+import jwt from 'jsonwebtoken';
+import { authenticateUser } from "../middlewares/authMiddleware";
 
 export const userRouter = express.Router();
 dotenv.config();
 const userRepository = AppDataSource.getRepository(User);
+
+let challenges = {}; // Store challenge messages temporarily
 
 // Configuration
 cloudinary.config({
@@ -30,7 +35,9 @@ const validateEmail = (value: string) => {
 userRouter.post("/", [
     body('data.email').trim().custom(validateEmail),
     body('data.address').trim().escape(),
-    body('data.subscribe').trim().escape()
+    body('data.subscribe').trim().escape(),
+    body('data.signature').trim().escape()
+
 ], async (req: Request, res: Response) => {
     try {
         let dbUser;
@@ -75,6 +82,21 @@ userRouter.post("/", [
         // User registered via address and skipped email verification
         if (!user.data.email && !!user.data.address) {
             Logger.info(`User register via metamask address: ${user.data.address}`);
+
+            const challenge = challenges[user.data.address];
+            if (!challenge) {
+                return res.status(400).send('Invalid challenge');
+            }
+        
+            // Verify signature
+            const signerAddress = ethers.utils.verifyMessage(challenge, user?.data?.signature);
+        
+            if (signerAddress.toLowerCase() !== user.data.address.toLowerCase()) {
+                return res.status(400).send('Invalid signature');
+            }
+                // Signature is valid, issue JWT token
+                delete challenges[user.data.address]; // Optionally delete the used challenge
+               
             // Check if the user with the given address already exists
             const existingUser = await userRepository.findOne({
                 where: {
@@ -99,7 +121,8 @@ userRouter.post("/", [
             }
         }
         Logger.info(`All done! Returning...`);
-        res.json({ success: true, user: dbUser });
+        const token = jwt.sign({ address:user.data.address,id:dbUser?.id }, process.env.JWT_SECRET, { expiresIn: "1d" });
+        res.json({ success: true, user: dbUser, token:token });
     } catch (e) {
         Logger.error(`Fatal error due to unknown reason: ${JSON.stringify(e)}`);
         res.status(500).json({ error: "An error occurred while processing your request" });;
@@ -144,7 +167,7 @@ userRouter.get("/check-address", [
 });
 // We authentication check here
 // GET endpoint to get user object
-userRouter.put("/", [
+userRouter.put("/", authenticateUser, [
     body('data.id').optional().trim().isUUID(4).withMessage('Invalid UUID format'),
     body('data.username').optional().trim().isLength({ min: 3 }).withMessage('Username must be at least 3 characters long'),
     body('data.profileImg').optional()
@@ -166,10 +189,11 @@ userRouter.put("/", [
             return res.status(400).json({ errors: errors.array() });
         }
 
-        const user = JSON.parse(JSON.stringify(req.body));
+        const user = JSON.parse(JSON.stringify(req.body.data));
 
-        const { id, username, profileImg } = user;
-
+        const { username, profileImg } = user;
+        const id = req?.user?.id;
+        // agr sirf id se user access kren ge to me apne ap ko authenticate kraa kr kisi or ki cheezen change kr skta hun
         const existingUser = await userRepository.findOne({
             where: {
                 id: id,
@@ -195,6 +219,7 @@ userRouter.put("/", [
                 username: username ? username : existingUser?.username, 
                 profileImg: uploadResult?.secure_url ? uploadResult?.secure_url : existingUser?.profileImg
             }
+
             await userRepository.update({ id: id }, updatedUser);
             return res.status(200).json({ success: true , user: { email: user?.data?.email, ...updatedUser}});
         } else {
@@ -209,6 +234,17 @@ userRouter.put("/", [
         return res.status(500).json({ error: "An error occurred while processing your request" });
     }
 });
+
+
+userRouter.get('/challenge', (req, res) => {
+    const walletAddress = req.query.address;
+    const challenge = ethers.utils.hexlify(ethers.utils.randomBytes(32));
+    challenges[walletAddress] = challenge;
+    return res.status(200).json({ message:"success", challenge});
+   
+});
+
+
 
 // // GET endpoint to check if a user exists by email
 // userRouter.get("/check-email", [

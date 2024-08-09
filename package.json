@@ -16,6 +16,7 @@
   "devDependencies": {
     "@commitlint/cli": "^18.4.3",
     "@commitlint/config-conventional": "^18.4.3",
+    "@faker-js/faker": "^8.4.1",
     "@semantic-release/exec": "^6.0.3",
     "@semantic-release/git": "^10.0.1",
     "@semantic-release/github": "^9.2.6",
@@ -52,7 +53,6 @@
   },
   "dependencies": {
     "@bundlr-network/client": "^0.11.17",
-    "@faker-js/faker": "github:faker-js/faker",
     "@superfaceai/passport-twitter-oauth2": "^1.2.3",
     "arweave": "^1.14.4",
     "axios": "^1.5.0",
@@ -60,6 +60,7 @@
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
     "dotenv": "^16.0.3",
+    "ethers": "^5.7.2",
     "express": "^4.18.2",
     "express-session": "^1.17.3",
     "express-validator": "^7.0.1",

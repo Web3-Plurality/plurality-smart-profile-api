@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { memoryStore } from "../utils/global";
 import Logger from "../lib/logger";
+import jwt from 'jsonwebtoken';
 
 export function hasValidAccessTokenHeader(req: Request, res: Response, next) {
   const accessTokenID = req.headers['x-token-id'];
@@ -58,3 +59,31 @@ export function hasValidEventParam(req: Request, res: Response, next) {
   req.sseID = sseID;
   return next();
 }
+  
+  export function initSSE(req: Request, res: Response) {
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+    });
+    res.write(`data: {"message":"Connection established"}\n\n`);
+    memoryStore.set(req.sessionID, res);
+  }
+
+
+// Middleware to authenticate JWT
+export const authenticateUser = (req, res, next) => {
+  const token = req.headers.authorization && req.headers.authorization.split(' ')[1];
+
+  if (!token) {
+      return res.status(401).send('Token is missing');
+  }
+
+  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+      if (err) {
+          return res.status(403).send('Invalid token');
+      }
+      req.user = user;
+      next();
+  });
+};
