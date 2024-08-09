@@ -58,7 +58,7 @@ facebookRouter.get('/callback', passport.authenticate('facebook', { session: fal
     try {
         const accessTokenId = uuidv4();
         memoryStore.set(accessTokenId, req.user.accessToken);
-        const url = `${process.env.WIDGET_UI_URL}?token_id=${accessTokenId}`;
+        const url = `${process.env.WIDGET_UI_URL}?token_id=${accessTokenId}&app=${FACEBOOK_APP}`;
         Logger.info(`${FACEBOOK_APP}: Redirecting to ${url}`);
         res.redirect(url);
       } catch (error: any) {

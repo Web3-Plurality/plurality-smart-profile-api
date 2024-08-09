@@ -56,7 +56,7 @@ twitterRouter.get('/callback', passport.authenticate('twitter', { session: false
   try {
     const accessTokenId = uuidv4();
     memoryStore.set(accessTokenId, req.user.accessToken);
-    const url = `${process.env.WIDGET_UI_URL}?token_id=${accessTokenId}`;
+    const url = `${process.env.WIDGET_UI_URL}?token_id=${accessTokenId}&app=${TWITTER_APP}`;
     Logger.info(`${TWITTER_APP}: Redirecting to ${url}`);
     res.redirect(url);
   } catch (error: any) {

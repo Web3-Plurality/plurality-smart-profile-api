@@ -52,7 +52,7 @@ tiktokRouter.get('/callback', passport.authenticate("tiktok", { session: false }
   try {
     const accessTokenId = uuidv4();
     memoryStore.set(accessTokenId, req.user.accessToken);
-    const url = `${process.env.WIDGET_UI_URL}?token_id=${accessTokenId}`;
+    const url = `${process.env.WIDGET_UI_URL}?token_id=${accessTokenId}&app=${TIKTOK_APP}`;
     Logger.info(`${TIKTOK_APP}: Redirecting to ${url}`);
     res.redirect(url);
   } catch (error: any) {

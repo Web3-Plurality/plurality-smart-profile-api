@@ -60,7 +60,7 @@ fortniteRouter.get('/callback', passport.authenticate('fortnite', { session: fal
       accessToken: req.user.accessToken,
       account_id: req.user.account_id
     });
-    const url = `${process.env.WIDGET_UI_URL}?token_id=${accessTokenId}`;
+    const url = `${process.env.WIDGET_UI_URL}?token_id=${accessTokenId}&app=${FORTNITE_APP}`;
     Logger.info(`${FORTNITE_APP}: Redirecting to ${url}`);
     res.redirect(url);
   } catch (error: any) {

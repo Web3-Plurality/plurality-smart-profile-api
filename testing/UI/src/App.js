@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
 
+
+// const REACT_APP_OAuth_Endpoint = "https://app.plurality.local";
 axios.defaults.withCredentials = true;
 
 
@@ -95,7 +97,7 @@ const handleAPI = ()=>{
     <div className="App">
       <h1>SSE and OAuth Example</h1>
       <button onClick={handleOAuth}>Start OAuth</button>
-      {/*<button onClick={handleInfoRequest} disabled={!isInfoButtonEnabled}>Get Info</button>}
+      {/* <button onClick={handleInfoRequest} disabled={!isInfoButtonEnabled}>Get Info</button>}
       {/* <button onClick={handle} >register</button> */}
       <button onClick={handleAPI} >register event</button>
       <div>
