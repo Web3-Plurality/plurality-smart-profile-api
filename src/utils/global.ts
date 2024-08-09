@@ -1,3 +1,5 @@
+import { v4 as uuidv4 } from 'uuid';
+
 export const memoryStore = new Map();
 export const TIKTOK_APP = "tiktok";
 export const TWITTER_APP = "twitter";
@@ -11,6 +13,17 @@ export const FORTNITE_APP = "fortnite";
 export const INTERNAL_SERVER_ERROR = "Internal Server Error";
 export const TIMEOUT_ERROR = 'Request timeout error in fetching userinfo';
 
+
+export function initSSE(req: Request, res: Response) {
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive',
+  });
+  const id = uuidv4();
+  memoryStore.set(id, res);
+  res.write(`data: {"message":"Connection established", "id":"${id}"}\n\n`);
+}
 
 export function parseQueryString(query: string) {
   let params: any = {};

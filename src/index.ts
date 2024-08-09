@@ -17,7 +17,7 @@ import https from "https"
 import { stytchRouter } from './controllers/StytchController';
 import { AppDataSource } from './data-source';
 import fs from "fs";
-import { initSSE } from './middlewares/authMiddleware';
+import { initSSE } from './utils/global';
 import { snapchatRouter } from './controllers/OAuthSnapChatController';
 import { instagramRouter } from './controllers/OAuthInstagramController';
 import { facebookRouter } from './controllers/OAuthFacebookController';
@@ -33,7 +33,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(helmet());
 app.use(cors({ origin: true, credentials: true }));
 app.use(passport.initialize());
-app.use(session({ secret: 'keyboard cat', resave: false, saveUninitialized: true, cookie: { secure: true, sameSite: 'none', httpOnly: true } }));
+app.use(session({ secret: 'keyboard cat', resave: false, saveUninitialized: false }));
 app.use(passport.session());
 app.use("/oauth-twitter", twitterRouter);
 app.use("/oauth-snapchat", snapchatRouter);
@@ -62,7 +62,8 @@ app.post('/post', async (req: Request, res: Response): Promise<Response> => {
 
 
 app.get('/register-event', async (req: Request, res: Response) => {
-  initSSE(req, res)});
+  initSSE(req, res)
+});
 
 try {
   // Only for development 

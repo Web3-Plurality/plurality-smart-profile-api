@@ -2,7 +2,7 @@ import express, { Request, Response } from "express";
 import passport from "passport";
 import * as dotenv from 'dotenv';
 import axios from "axios";
-import { isAuthenticated, isConnected } from "../middlewares/authMiddleware";
+import { hasValidAccessTokenHeader, hasValidEventHeader, hasValidEventParam } from "../middlewares/authMiddleware";
 import Logger from "../lib/logger";
 import { INSTAGRAM_APP, INTERNAL_SERVER_ERROR, TIMEOUT_ERROR, memoryStore, createPrompt } from "../utils/global";
 import OAuthInstagramStrategy from "../auth/OAuthInstagramStrategy";
@@ -46,7 +46,7 @@ passport.use(
 // Start authentication flow
 instagramRouter.get(
     '/',
-    isConnected,
+    hasValidEventParam,
     async (req: Request, res: Response, next) => {
         Logger.info(`${INSTAGRAM_APP}: Request for Oauth has been received successfully on sse Id ${req.sseID}`)
         passport.authenticate('instagram')(req, res, next);
@@ -67,29 +67,31 @@ instagramRouter.get('/callback', passport.authenticate('instagram', { session: f
       }
 });
 
-
+// Send Event to Iframe
 instagramRouter.post(
     '/event',
-    isAuthenticated,
+    hasValidEventHeader,
+    hasValidAccessTokenHeader,
     async (req: Request, res: Response) => {
       try {
-        Logger.info(`${INSTAGRAM_APP}: Request body tokenUUID ${req.accessTokenID}`);
+        Logger.info(`${INSTAGRAM_APP}: Request body tokenUUID ${req?.accessTokenID}`);
         Logger.info(`${INSTAGRAM_APP}: Request body sseUUID ${req?.sseID}`);
         const serverSentEventResponse = memoryStore.get(req?.sseID);
-        serverSentEventResponse.write(`data: {"message":"received", "app":"${INSTAGRAM_APP}", "auth":"${req.accessTokenID}"}\n\n`)
+        serverSentEventResponse.write(`data: {"message":"received", "app":"${INSTAGRAM_APP}", "auth":"${req?.accessTokenID}"}\n\n`)
         Logger.info(`${INSTAGRAM_APP}: Server Side Event has been sent successfully`);
+        memoryStore.delete(req?.sseID);
         return res.status(200).json({ app: INSTAGRAM_APP, message: "success" });  
       } catch (error) {
-        Logger.info(`${INSTAGRAM_APP}: error in getting sseID ${error.message}`);
+        Logger.info(`${INSTAGRAM_APP}:  Error in sending SSE ${error.message}`);
         return res.status(500).json({ app: INSTAGRAM_APP, message: "Internal Server error" }); 
       }
       
     });
 
-
-instagramRouter.get('/info', isAuthenticated, async (req, res) => {
+// Return User Object
+instagramRouter.get('/info', hasValidAccessTokenHeader, async (req, res) => {
     try {
-        Logger.info(`${INSTAGRAM_APP}: Request for information has been received successfully on session Id ${req.sseID}`);
+        Logger.info(`${INSTAGRAM_APP}: Request for information has been received successfully with id ${req.accessTokenID}`);
         const accessToken = memoryStore.get(req.accessTokenID)
         let instaUser = { data: { data: {} } }
         let instaMedia = { data: { data: [] } }
@@ -137,7 +139,6 @@ instagramRouter.get('/info', isAuthenticated, async (req, res) => {
             instaProfile.interests = interests?.Interests || [];
 
             
-            memoryStore.delete(req?.sseID);
             memoryStore.delete(req?.accessTokenID);
             Logger.info(`${INSTAGRAM_APP}: Session destroyed successfully`);
             Logger.info(`${INSTAGRAM_APP}: User information has been delivered successfully`);

@@ -5,7 +5,7 @@ import passport from "passport";
 import axios from "axios";
 import { TikTokProfile } from "../entity/Tiktok";
 import { INTERNAL_SERVER_ERROR, TIKTOK_APP, memoryStore, createPrompt } from "../utils/global";
-import { isAuthenticated, isConnected } from "../middlewares/authMiddleware";
+import { hasValidAccessTokenHeader, hasValidEventHeader, hasValidEventParam } from "../middlewares/authMiddleware";
 import { analyze } from "../utils/groq";
 import { calculateReputation } from "../utils/tiktok";
 import Logger from "../lib/logger";
@@ -39,13 +39,15 @@ passport.use("tiktok", new TikTokOAuth2Strategy(
   }
 ));
 
-tiktokRouter.get('/', isConnected, async (req: Request, res: Response, next) => {
+// Start authentication flow
+tiktokRouter.get('/', hasValidEventParam, async (req: Request, res: Response, next) => {
 
   Logger.info(`${TIKTOK_APP}: Request for Tiktok Oauth has been received successfully on sse Id ${req.sseID}`)
   const csrfState = Math.random().toString(36).substring(2);
   passport.authenticate('tiktok', { state: csrfState })(req, res, next);
 })
 
+// Callback handler
 tiktokRouter.get('/callback', passport.authenticate("tiktok", { session: false }), async (req, res) => {
   try {
     const accessTokenId = uuidv4();
@@ -59,28 +61,32 @@ tiktokRouter.get('/callback', passport.authenticate("tiktok", { session: false }
   }
 });
 
+// Send Event to Iframe
 tiktokRouter.post(
   '/event',
-  isAuthenticated,
+  hasValidEventHeader,
+  hasValidAccessTokenHeader,
   async (req: Request, res: Response) => {
     try {
-      Logger.info(`${TIKTOK_APP}: Request body tokenUUID ${req.accessTokenID}`);
+      Logger.info(`${TIKTOK_APP}: Request body tokenUUID ${req?.accessTokenID}`);
       Logger.info(`${TIKTOK_APP}: Request body sseUUID ${req?.sseID}`);
       const serverSentEventResponse = memoryStore.get(req?.sseID);
-      serverSentEventResponse.write(`data: {"message":"received", "app":"${TIKTOK_APP}", "auth":"${req.accessTokenID}"}\n\n`)
+      serverSentEventResponse.write(`data: {"message":"received", "app":"${TIKTOK_APP}", "auth":"${req?.accessTokenID}"}\n\n`)
       Logger.info(`${TIKTOK_APP}: Server Side Event has been sent successfully`);
+      memoryStore.delete(req?.sseID);
       return res.status(200).json({ app: TIKTOK_APP, message: "success" });
     } catch (error) {
-      Logger.info(`${TIKTOK_APP}: error in getting sseID ${error.message}`);
+      Logger.info(`${TIKTOK_APP}: Error in sending event ${error.message}`);
       return res.status(500).json({ app: TIKTOK_APP, message: "Internal Server error" });
     }
 
   });
 
-tiktokRouter.get('/info', isAuthenticated, async (req, res) => {
+// Return User Object
+tiktokRouter.get('/info', hasValidAccessTokenHeader, async (req, res) => {
   try {
 
-    Logger.info(`${TIKTOK_APP}: Request for information has been received successfully on session Id ${req.sseID}`);
+    Logger.info(`${TIKTOK_APP}: Request for information has been received successfully with id ${req.accessTokenID}`);
     const accessToken = memoryStore.get(req.accessTokenID)
 
     if (accessToken) {
@@ -172,7 +178,6 @@ tiktokRouter.get('/info', isAuthenticated, async (req, res) => {
 
       tiktokProfile.reputationScore = reputationScore;
 
-      memoryStore.delete(req?.sseID);
       memoryStore.delete(req?.accessTokenID);
       Logger.info(`${TIKTOK_APP}: Session destroyed successfully`);
       Logger.info(`${TIKTOK_APP}: User information has been delivered successfully`);

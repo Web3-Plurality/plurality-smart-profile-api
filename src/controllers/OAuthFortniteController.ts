@@ -2,10 +2,11 @@ import express, { Request, Response } from "express";
 import passport from "passport";
 import * as dotenv from 'dotenv';
 import axios from "axios";
-import { isAuthenticated, isConnected } from "../middlewares/authMiddleware";
+import { hasValidAccessTokenHeader, hasValidEventHeader, hasValidEventParam } from "../middlewares/authMiddleware";
 import Logger from "../lib/logger";
 import { memoryStore, FORTNITE_APP, INTERNAL_SERVER_ERROR, TIMEOUT_ERROR } from "../utils/global";
 import OAuthFortniteStrategy from "../auth/OAuthFortniteStrategy"
+import jwt from 'jsonwebtoken'
 import { FortniteProfile } from "../entity/Fortnite";
 import { v4 as uuidv4 } from 'uuid';
 dotenv.config();
@@ -44,7 +45,7 @@ passport.use(
 // Start authentication flow
 fortniteRouter.get(
   '/',
-  isConnected,
+  hasValidEventParam,
   async (req: Request, res: Response, next) => {
     Logger.info(`${FORTNITE_APP}: Request for Oauth has been received successfully on sse Id ${req.sseID}`)
     passport.authenticate('fortnite')(req, res, next);
@@ -55,7 +56,10 @@ fortniteRouter.get(
 fortniteRouter.get('/callback', passport.authenticate('fortnite', { session: false }), async (req, res) => {
   try {
     const accessTokenId = uuidv4();
-    memoryStore.set(accessTokenId, req.user.accessToken);
+    memoryStore.set(accessTokenId, {
+      accessToken: req.user.accessToken,
+      account_id: req.user.account_id
+    });
     const url = `${process.env.WIDGET_UI_URL}?token_id=${accessTokenId}`;
     Logger.info(`${FORTNITE_APP}: Redirecting to ${url}`);
     res.redirect(url);
@@ -65,29 +69,32 @@ fortniteRouter.get('/callback', passport.authenticate('fortnite', { session: fal
   }
 });
 
+// Send Event to Iframe
 fortniteRouter.post(
   '/event',
-  isAuthenticated,
+  hasValidEventHeader,
+  hasValidAccessTokenHeader,
   async (req: Request, res: Response) => {
     try {
-      Logger.info(`${FORTNITE_APP}: Request body tokenUUID ${req.accessTokenID}`);
+      Logger.info(`${FORTNITE_APP}: Request body tokenUUID ${req?.accessTokenID}`);
       Logger.info(`${FORTNITE_APP}: Request body sseUUID ${req?.sseID}`);
       const serverSentEventResponse = memoryStore.get(req?.sseID);
-      serverSentEventResponse.write(`data: {"message":"received", "app":"${FORTNITE_APP}", "auth":"${req.accessTokenID}"}\n\n`)
+      serverSentEventResponse.write(`data: {"message":"received", "app":"${FORTNITE_APP}", "auth":"${req?.accessTokenID}"}\n\n`)
       Logger.info(`${FORTNITE_APP}: Server Side Event has been sent successfully`);
+      memoryStore.delete(req?.sseID);
       return res.status(200).json({ app: FORTNITE_APP, message: "success" });
     } catch (error) {
-      Logger.info(`${FORTNITE_APP}: error in getting sseID ${error.message}`);
+      Logger.info(`${FORTNITE_APP}: Error in sending SSE ${error.message}`);
       return res.status(500).json({ app: FORTNITE_APP, message: "Internal Server error" });
     }
 
   });
 
-// Callback handler
-fortniteRouter.get('/info', isAuthenticated, async (req, res) => {
+// Return User Object
+fortniteRouter.get('/info', hasValidAccessTokenHeader, async (req, res) => {
   try {
-    Logger.info(`${FORTNITE_APP}: Request for information has been received successfully on session Id ${req.sessionID}`);
-    const { accessToken, account_id }: any = req?.session?.user;
+    Logger.info(`${FORTNITE_APP}: Request for information has been received successfully with id ${req.accessTokenID}`);
+    const { accessToken, account_id }: any = memoryStore.get(req.accessTokenID);
     let userFortnite = { data: {} }
 
     if (accessToken) {
@@ -114,7 +121,6 @@ fortniteRouter.get('/info', isAuthenticated, async (req, res) => {
       const fortniteProfile = new FortniteProfile(userFortnite?.data[0]);
 
 
-      memoryStore.delete(req?.sseID);
       memoryStore.delete(req?.accessTokenID);
       Logger.info(`${FORTNITE_APP}: User information has been delivered successfully`);
       return res.status(200).json({ app: FORTNITE_APP, message: "success", fortniteProfile: fortniteProfile })

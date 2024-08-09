@@ -5,7 +5,7 @@ import * as dotenv from 'dotenv';
 import axios from "axios";
 import { scrape, calculateReputation } from "../utils/twitter";
 import { TwitterProfile } from "../entity/Twitter";
-import { isAuthenticated, isConnected } from "../middlewares/authMiddleware";
+import { hasValidAccessTokenHeader, hasValidEventHeader, hasValidEventParam } from "../middlewares/authMiddleware";
 import Logger from "../lib/logger";
 import { INTERNAL_SERVER_ERROR, TIMEOUT_ERROR, TWITTER_APP, memoryStore } from "../utils/global";
 import { v4 as uuidv4 } from 'uuid';
@@ -45,7 +45,7 @@ passport.use(
 // Start authentication flow
 twitterRouter.get(
   '/',
-  isConnected,
+  hasValidEventParam,
   async (req: Request, res: Response, next) => {
     Logger.info(`${TWITTER_APP}: Request for Twitter Oauth has been received successfully on sse Id ${req.sseID}`)
     passport.authenticate('twitter')(req, res, next);
@@ -65,28 +65,31 @@ twitterRouter.get('/callback', passport.authenticate('twitter', { session: false
   }
 });
 
+// Send Event to Iframe
 twitterRouter.post(
   '/event',
-  isAuthenticated,
+  hasValidEventHeader,
+  hasValidAccessTokenHeader,
   async (req: Request, res: Response) => {
     try {
-      Logger.info(`${TWITTER_APP}: Request body tokenUUID ${req.accessTokenID}`);
+      Logger.info(`${TWITTER_APP}: Request body tokenUUID ${req?.accessTokenID}`);
       Logger.info(`${TWITTER_APP}: Request body sseUUID ${req?.sseID}`);
       const serverSentEventResponse = memoryStore.get(req?.sseID);
-      serverSentEventResponse.write(`data: {"message":"received", "app":"${TWITTER_APP}", "auth":"${req.accessTokenID}"}\n\n`)
+      serverSentEventResponse.write(`data: {"message":"received", "app":"${TWITTER_APP}", "auth":"${req?.accessTokenID}"}\n\n`)
       Logger.info(`${TWITTER_APP}: Server Side Event has been sent successfully`);
+      memoryStore.delete(req?.sseID);
       return res.status(200).json({ app: TWITTER_APP, message: "success" });  
     } catch (error) {
-      Logger.info(`${TWITTER_APP}: error in getting sseID ${error.message}`);
+      Logger.info(`${TWITTER_APP}: Error in sending event ${error.message}`);
       return res.status(500).json({ app: TWITTER_APP, message: "Internal Server error" }); 
     }
     
   });
 
-// Callback handler
-twitterRouter.get('/info', isAuthenticated, async (req, res) => {
+// Return User Object
+twitterRouter.get('/info', hasValidAccessTokenHeader, async (req, res) => {
   try {
-    Logger.info(`${TWITTER_APP}: Request for information has been received successfully on sseId ${req.sseID}`);
+    Logger.info(`${TWITTER_APP}: Request for information has been received successfully with id ${req.accessTokenID}`);
     const accessToken = memoryStore.get(req.accessTokenID)
     let userTweet = { data: { data: {  } } }
 
@@ -183,7 +186,6 @@ twitterRouter.get('/info', isAuthenticated, async (req, res) => {
       const reputationScore = calculateReputation(twitterProfile);
       twitterProfile.reputationScore = reputationScore;
      
-      memoryStore.delete(req?.sseID);
       memoryStore.delete(req?.accessTokenID);
       Logger.info(`${TWITTER_APP}: Session destroyed successfully`);
       Logger.info(`${TWITTER_APP}: User information has been delivered successfully`);

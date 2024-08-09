@@ -14,13 +14,14 @@ function Test() {
         
         console.log(accessTokenID)
         console.log(localStorage.getItem('sseUUID')) 
-        axios.post('https://app.plurality.local/oauth-facebook/event',{},{
+        axios.post(`${process.env.REACT_APP_OAuth_Endpoint}/event`,{},{
             headers: {
-            'X-Sse-ID': localStorage.getItem('sseUUID'),
-            'X-Token-ID':accessTokenID
+            'x-sse-id': localStorage.getItem('sseUUID'),
+            'x-token-id':accessTokenID
           }})
         .then(response => {
           console.log('Info:', response.data);
+          window.close();
         })
         .catch(error => {
           console.error('Error getting info:', error);

@@ -2,7 +2,7 @@ import express, { Request, Response } from "express";
 import passport from "passport";
 import * as dotenv from 'dotenv';
 import axios from "axios";
-import { isAuthenticated, isConnected } from "../middlewares/authMiddleware";
+import { hasValidAccessTokenHeader, hasValidEventHeader, hasValidEventParam } from "../middlewares/authMiddleware";
 import Logger from "../lib/logger";
 import { FACEBOOK_APP, INTERNAL_SERVER_ERROR, TIMEOUT_ERROR, memoryStore, createPrompt } from "../utils/global";
 import OAuthFacebookStrategy from "../auth/OAuthFacebookStrategy";
@@ -47,7 +47,7 @@ passport.use(
 // Start authentication flow
 facebookRouter.get(
     '/',
-    isConnected,
+    hasValidEventParam,
     async (req: Request, res: Response, next) => {
         Logger.info(`${FACEBOOK_APP}: Request for Oauth has been received successfully on sse Id ${req.sseID}`)
         passport.authenticate('facebook')(req, res, next);
@@ -67,30 +67,32 @@ facebookRouter.get('/callback', passport.authenticate('facebook', { session: fal
       }
 });
 
-
+// Send Event to Iframe
 facebookRouter.post(
     '/event',
-    isAuthenticated,
+    hasValidEventHeader,
+    hasValidAccessTokenHeader,
     async (req: Request, res: Response) => {
         try {
-            Logger.info(`${FACEBOOK_APP}: Request body tokenUUID ${req.accessTokenID}`);
+            Logger.info(`${FACEBOOK_APP}: Request body tokenUUID ${req?.accessTokenID}`);
             Logger.info(`${FACEBOOK_APP}: Request body sseUUID ${req?.sseID}`);
             const serverSentEventResponse = memoryStore.get(req?.sseID);
-            serverSentEventResponse.write(`data: {"message":"received", "app":"${FACEBOOK_APP}", "auth":"${req.accessTokenID}"}\n\n`)
+            serverSentEventResponse.write(`data: {"message":"received", "app":"${FACEBOOK_APP}", "auth":"${req?.accessTokenID}"}\n\n`)
             Logger.info(`${FACEBOOK_APP}: Server Side Event has been sent successfully`);
+            memoryStore.delete(req?.sseID);
             return res.status(200).json({ app: FACEBOOK_APP, message: "success" });
         } catch (error) {
-            Logger.info(`${FACEBOOK_APP}: error in getting sseID ${error.message}`);
+            Logger.info(`${FACEBOOK_APP}: Error in sending SSE ${error.message}`);
             return res.status(500).json({ app: FACEBOOK_APP, message: "Internal Server error" });
         }
 
     });
 
 
-// Callback handler
-facebookRouter.get('/info', isAuthenticated, async (req, res) => {
+// Return User Object
+facebookRouter.get('/info', hasValidAccessTokenHeader, async (req, res) => {
     try {
-        Logger.info(`${FACEBOOK_APP}: Request for information has been received successfully on Id ${req.sseID}`);
+        Logger.info(`${FACEBOOK_APP}: Request for information has been received successfully with id ${req.accessTokenID}`);
         const accessToken = memoryStore.get(req.accessTokenID)
         let fbUser = { data: { data: {} } }
         if (accessToken) {
@@ -149,7 +151,6 @@ facebookRouter.get('/info', isAuthenticated, async (req, res) => {
             facebookProfile.interests = (interests1?.Interests?.concat(interests2?.Interests));
             facebookProfile.reputationScore = calculateReputation(facebookProfile);
 
-            memoryStore.delete(req?.sseID);
             memoryStore.delete(req?.accessTokenID);
             Logger.info(`${FACEBOOK_APP}: User information has been delivered successfully`);
             return res.status(200).json({ app: FACEBOOK_APP, message: "success", facebookProfile: facebookProfile })

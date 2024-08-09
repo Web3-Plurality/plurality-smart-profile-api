@@ -8,7 +8,7 @@ function Rout () {
     return ( <Router>
         <Routes>
           <Route path="/" element={<App />} />
-          <Route path="/test" element={<Test />} />
+          <Route path="/auth-callback" element={<Test />} />
          
         </Routes>
       </Router> );

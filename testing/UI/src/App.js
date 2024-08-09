@@ -41,17 +41,29 @@ const handleAPI = ()=>{
       // Enable the button if the message is "received"
       if (JSON.parse(event?.data)?.message ==="received") {
         console.log(JSON.parse(event?.data)?.auth)
-        localStorage.setItem('tokenID', JSON.parse(event?.data)?.auth);
+        //localStorage.setItem('tokenID', JSON.parse(event?.data)?.auth);
 
-        if (popup) {
+        /*if (popup) {
           popup.close();
           setPopup(null);
           console.log('Window closed.');
         } else {
           console.log('No window to close or window already closed.');
-        }
+        }*/
 
-        setIsInfoButtonEnabled(true);
+          axios.get(`${process.env.REACT_APP_OAuth_Endpoint}/info`,{
+            headers: {
+              'x-token-id': JSON.parse(event?.data)?.auth
+            }
+          })
+            .then(response => {
+              console.log('Info:', response.data);
+            })
+            .catch(error => {
+              console.error('Error getting info:', error);
+            });
+
+        //setIsInfoButtonEnabled(true);
       }
     };
 
@@ -63,7 +75,7 @@ const handleAPI = ()=>{
 
   const handleOAuth = () => {
     localStorage.setItem('sseUUID', sseID);
-    const oauthWindow = window.open(`https://app.plurality.local/oauth-facebook?sse_id=${sseID}`, 'oauth', 'width=500,height=600');
+    const oauthWindow = window.open(`${process.env.REACT_APP_OAuth_Endpoint}?sse_id=${sseID}`, 'oauth', 'width=500,height=600');
     if (oauthWindow) {
       setPopup(oauthWindow);
       console.log('Window opened:', oauthWindow);
@@ -76,45 +88,16 @@ const handleAPI = ()=>{
 
 
   const handleInfoRequest = () => {
-    axios.get('https://app.plurality.local/oauth-facebook/info',{
-      headers: {
-        'X-Sse-ID': localStorage.getItem('sseUUID'),
-        'X-Token-ID':localStorage.getItem('tokenID')
-      }
-    })
-      .then(response => {
-        console.log('Info:', response.data);
-      })
-      .catch(error => {
-        console.error('Error getting info:', error);
-      });
-  };
-
-  const handleSession = () => {
-    // console.log("session id is:");
-    // console.log(sessionID);
-    // // axios.post('https://app.plurality.local/oauth-facebook/test',{sessionID:sessionID})
-    // // axios.get('https://app.plurality.local/oauth-facebook/info',{
-    // //   headers: {
-    // //     Authorization: `Bearer ${token}`
-    // //   }
-    // // })
-    //   .then(response => {
-    //     console.log('Info:', response.data);
-    //   })
-    //   .catch(error => {
-    //     console.error('Error getting info:', error);
-    //   });
+    
   };
 
   return (
     <div className="App">
       <h1>SSE and OAuth Example</h1>
       <button onClick={handleOAuth}>Start OAuth</button>
-      <button onClick={handleInfoRequest} disabled={!isInfoButtonEnabled}>Get Info</button>
+      {/*<button onClick={handleInfoRequest} disabled={!isInfoButtonEnabled}>Get Info</button>}
       {/* <button onClick={handle} >register</button> */}
       <button onClick={handleAPI} >register event</button>
-      <button onClick={handleSession} >test session</button>
       <div>
         <h2>SSE Message:</h2>
         <p>{sseMessage}</p>

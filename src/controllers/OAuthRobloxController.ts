@@ -2,7 +2,7 @@ import express, { Request, Response } from "express";
 import passport from "passport";
 import * as dotenv from 'dotenv';
 import axios from "axios";
-import { isAuthenticated, isConnected } from "../middlewares/authMiddleware";
+import { hasValidAccessTokenHeader, hasValidEventHeader, hasValidEventParam } from "../middlewares/authMiddleware";
 import Logger from "../lib/logger";
 import { INTERNAL_SERVER_ERROR, ROBLOX_APP, TIMEOUT_ERROR, memoryStore, createPrompt } from "../utils/global";
 import OAuthRobloxStrategy from "../auth/OAuthRobloxStrategy";
@@ -50,7 +50,7 @@ passport.use(
 // Start authentication flow
 robloxRouter.get(
   '/',
-  isConnected,
+  hasValidEventParam,
   async (req: Request, res: Response, next) => {
     Logger.info(`${ROBLOX_APP}: Request for Oauth has been received successfully on sse Id ${req.sseID}`)
     passport.authenticate('roblox')(req, res, next);
@@ -70,28 +70,31 @@ robloxRouter.get('/callback', passport.authenticate('roblox', { session: false }
   }
 });
 
+// Send Event to Iframe
 robloxRouter.post(
   '/event',
-  isAuthenticated,
+  hasValidEventHeader,
+  hasValidAccessTokenHeader,
   async (req: Request, res: Response) => {
     try {
-      Logger.info(`${ROBLOX_APP}: Request body tokenUUID ${req.accessTokenID}`);
+      Logger.info(`${ROBLOX_APP}: Request body tokenUUID ${req?.accessTokenID}`);
       Logger.info(`${ROBLOX_APP}: Request body sseUUID ${req?.sseID}`);
       const serverSentEventResponse = memoryStore.get(req?.sseID);
-      serverSentEventResponse.write(`data: {"message":"received", "app":"${ROBLOX_APP}", "auth":"${req.accessTokenID}"}\n\n`)
+      serverSentEventResponse.write(`data: {"message":"received", "app":"${ROBLOX_APP}", "auth":"${req?.accessTokenID}"}\n\n`)
       Logger.info(`${ROBLOX_APP}: Server Side Event has been sent successfully`);
+      memoryStore.delete(req?.sseID);
       return res.status(200).json({ app: ROBLOX_APP, message: "success" });  
     } catch (error) {
-      Logger.info(`${ROBLOX_APP}: error in getting sseID ${error.message}`);
+      Logger.info(`${ROBLOX_APP}: Error in sending SSE ${error.message}`);
       return res.status(500).json({ app: ROBLOX_APP, message: "Internal Server error" }); 
     }
     
   });
 
-// Callback handler
-robloxRouter.get('/info', isAuthenticated, async (req, res) => {
+// Return User Object
+robloxRouter.get('/info', hasValidAccessTokenHeader, async (req, res) => {
   try {
-    Logger.info(`${ROBLOX_APP}: Request for information has been received successfully on session Id ${req.sseID}`);
+    Logger.info(`${ROBLOX_APP}: Request for information has been received successfully with id ${req.accessTokenID}`);
     const accessToken = memoryStore.get(req.accessTokenID)
     let userRoblox = { data: {} }
     let inventoryData = []
@@ -207,7 +210,7 @@ robloxRouter.get('/info', isAuthenticated, async (req, res) => {
       }
 
       robloxProfile.reputationScore += calculateReputation(robloxProfile);
-      memoryStore.delete(req?.sseID);
+
       memoryStore.delete(req?.accessTokenID);
       Logger.info(`${ROBLOX_APP}: User information has been delivered successfully`);
       return res.status(200).json({ app: ROBLOX_APP, message: "success", robloxProfile: robloxProfile })
