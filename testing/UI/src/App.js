@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
+
+
+// const REACT_APP_OAuth_Endpoint = "https://app.plurality.local";
 axios.defaults.withCredentials = true;
 
 
@@ -9,24 +12,16 @@ function App() {
   const [sseMessage, setSseMessage] = useState('');
   const [isInfoButtonEnabled, setIsInfoButtonEnabled] = useState(false);
   const [popup, setPopup] = useState(null);
+  const [sseID, setSSEID] = useState("");
+  const [tokenID, setTokenID] = useState("null");
 
 
 
 
-  useEffect(() => {
-    
-    // axios.defaults.withCredentials = true;
 
-    // Call the /register API to establish SSE connection
-    // axios.get('https://app.plurality.local/oauth-twitter/register')
-    //   .then(response => {
-    //     console.log('Session registered:', response.data);
-    //     setupSSE();
-    //   })
-    //   .catch(error => {
-    //     console.error('Error registering session:', error);
-    //   });
-  }, []);
+
+
+
 
 // const handle = ()=>{
 //   axios.get('http://localhost:5000/register').then((res)=>{
@@ -43,20 +38,34 @@ const handleAPI = ()=>{
     evtSource.onmessage = function (event) {
       console.log('Message from server:', JSON.parse(event?.data)?.message);
       setSseMessage(event.data);
-
+      //set sse id
+      setSSEID(JSON.parse(event?.data)?.id);
       // Enable the button if the message is "received"
       if (JSON.parse(event?.data)?.message ==="received") {
-        console.log("Innnnnnn received")
-       
-        if (popup) {
+        console.log(JSON.parse(event?.data)?.auth)
+        //localStorage.setItem('tokenID', JSON.parse(event?.data)?.auth);
+
+        /*if (popup) {
           popup.close();
           setPopup(null);
           console.log('Window closed.');
         } else {
           console.log('No window to close or window already closed.');
-        }
+        }*/
 
-        setIsInfoButtonEnabled(true);
+          axios.get(`${process.env.REACT_APP_OAuth_Endpoint}/info`,{
+            headers: {
+              'x-token-id': JSON.parse(event?.data)?.auth
+            }
+          })
+            .then(response => {
+              console.log('Info:', response.data);
+            })
+            .catch(error => {
+              console.error('Error getting info:', error);
+            });
+
+        //setIsInfoButtonEnabled(true);
       }
     };
 
@@ -67,7 +76,8 @@ const handleAPI = ()=>{
   };
 
   const handleOAuth = () => {
-    const oauthWindow = window.open('https://app.plurality.local/oauth-roblox?isWidget=true&origin=false&apps=false', 'oauth', 'width=500,height=600');
+    localStorage.setItem('sseUUID', sseID);
+    const oauthWindow = window.open(`${process.env.REACT_APP_OAuth_Endpoint}?sse_id=${sseID}`, 'oauth', 'width=500,height=600');
     if (oauthWindow) {
       setPopup(oauthWindow);
       console.log('Window opened:', oauthWindow);
@@ -78,33 +88,16 @@ const handleAPI = ()=>{
    
   };
 
-  // useEffect(() => {
-  //   const checkPopup = setInterval(() => {
-  //     if (popup && popup.closed) {
-  //       console.log('Popup closed');
-  //       setPopup(null);
-  //       clearInterval(checkPopup);
-  //     }
-  //   }, 1000);
-
-  //   return () => clearInterval(checkPopup);
-  // }, [popup]);
 
   const handleInfoRequest = () => {
-    axios.get('https://app.plurality.local/oauth-roblox/info')
-      .then(response => {
-        console.log('Info:', response.data);
-      })
-      .catch(error => {
-        console.error('Error getting info:', error);
-      });
+    
   };
 
   return (
     <div className="App">
       <h1>SSE and OAuth Example</h1>
       <button onClick={handleOAuth}>Start OAuth</button>
-      <button onClick={handleInfoRequest} disabled={!isInfoButtonEnabled}>Get Info</button>
+      {/* <button onClick={handleInfoRequest} disabled={!isInfoButtonEnabled}>Get Info</button>}
       {/* <button onClick={handle} >register</button> */}
       <button onClick={handleAPI} >register event</button>
       <div>

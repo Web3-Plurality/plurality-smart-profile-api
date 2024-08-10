@@ -17,12 +17,11 @@ import https from "https"
 import { stytchRouter } from './controllers/StytchController';
 import { AppDataSource } from './data-source';
 import fs from "fs";
-import { initSSE } from './middlewares/authMiddleware';
+import { initSSE } from './utils/global';
 import { snapchatRouter } from './controllers/OAuthSnapChatController';
 import { instagramRouter } from './controllers/OAuthInstagramController';
 import { facebookRouter } from './controllers/OAuthFacebookController';
 import { fortniteRouter } from './controllers/OAuthFortniteController';
-
 
 dotenv.config();
 
@@ -34,7 +33,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(helmet());
 app.use(cors({ origin: true, credentials: true }));
 app.use(passport.initialize());
-app.use(session({ secret: 'keyboard cat', resave: false, saveUninitialized: true, cookie: { secure: true, sameSite: 'none', httpOnly: true } }));
+app.use(session({ secret: 'keyboard cat', resave: false, saveUninitialized: false }));
 app.use(passport.session());
 app.use("/oauth-twitter", twitterRouter);
 app.use("/oauth-snapchat", snapchatRouter);
@@ -63,15 +62,12 @@ app.post('/post', async (req: Request, res: Response): Promise<Response> => {
 
 
 app.get('/register-event', async (req: Request, res: Response) => {
-    req.session.save(() => {
-    initSSE(req, res);
-  });
-
+  initSSE(req, res)
 });
 
 try {
   // Only for development 
-  if (process.env.NODE_ENV==='development') {
+  if (process.env.NODE_ENV === 'development') {
     const options = {
       key: fs.readFileSync('./local-certificates/key.pem'),
       cert: fs.readFileSync('./local-certificates/cert.pem')
@@ -86,10 +82,10 @@ try {
   else {
     console.log(process.env.VERIFIER_UI_URL);
     app.set('trust proxy', 1);
-    AppDataSource.initialize().then(async () => {  
+    AppDataSource.initialize().then(async () => {
       app.listen(PORT, (): void => {
         console.log(`Connected successfully on http port ${PORT}`);
-        });
+      });
     }).catch((error) => console.log(error));
   }
 } catch (error: any) {

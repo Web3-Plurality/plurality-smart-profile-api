@@ -4,13 +4,13 @@ import TikTokOAuth2Strategy from "../auth/OAuthTikTokStrategy"
 import passport from "passport";
 import axios from "axios";
 import { TikTokProfile } from "../entity/Tiktok";
-import { INTERNAL_SERVER_ERROR, TIKTOK_APP, activeConnections, createPrompt } from "../utils/global";
-import { isAuthenticated, isConnected } from "../middlewares/authMiddleware";
+import { INTERNAL_SERVER_ERROR, TIKTOK_APP, memoryStore, createPrompt } from "../utils/global";
+import { hasValidAccessTokenHeader, hasValidEventHeader, hasValidEventParam } from "../middlewares/authMiddleware";
 import { analyze } from "../utils/groq";
 import { calculateReputation } from "../utils/tiktok";
 import Logger from "../lib/logger";
 import { TIKTOK_FETCH_INTEREST_PROMPT } from "../utils/aiPrompts";
-
+import { v4 as uuidv4 } from 'uuid';
 dotenv.config();
 
 export const tiktokRouter = express.Router();
@@ -39,48 +39,55 @@ passport.use("tiktok", new TikTokOAuth2Strategy(
   }
 ));
 
-tiktokRouter.get('/', isConnected, async (req: Request, res: Response, next) => {
+// Start authentication flow
+tiktokRouter.get('/', hasValidEventParam, async (req: Request, res: Response, next) => {
 
-  Logger.info(`${TIKTOK_APP}: Request for Tiktok Oauth has been received successfully on session Id${req.sessionID}`)
+  Logger.info(`${TIKTOK_APP}: Request for Tiktok Oauth has been received successfully on sse Id ${req.sseID}`)
   const csrfState = Math.random().toString(36).substring(2);
   passport.authenticate('tiktok', { state: csrfState })(req, res, next);
 })
 
+// Callback handler
 tiktokRouter.get('/callback', passport.authenticate("tiktok", { session: false }), async (req, res) => {
   try {
-    Logger.info(`${TIKTOK_APP}: Callback from Tiktok has been received successfully on session Id${req.sessionID}`);
-    const serverSentEventResponse = activeConnections.get(req.sessionID);
-    req.session.user = {
-      accessToken: req.user.accessToken,
-      refreshToken: req.user.refreshToken
-    }
-
-    Logger.info(`${TIKTOK_APP}: Redirecting to ${process.env.WIDGET_UI_URL}`);
-    // it will redirect to the dashboard or widget
-    res.redirect(process.env.WIDGET_UI_URL);
-    // it will send the url to the client, and it is for testing purpose
-    // res.send(url);
-
-    // Send a message to the client that the token has been received
-    if (req.user.accessToken && serverSentEventResponse) {
-      serverSentEventResponse.write(`data: {"message":"received", "app":"${TIKTOK_APP}"}\n\n`)
-      Logger.info(`${TIKTOK_APP}: Access token has been received successfully`);
-    } else {
-      Logger.error(`${TIKTOK_APP}: Event source connection not found.`);
-      return res.status(500).json({ app: TIKTOK_APP, message: INTERNAL_SERVER_ERROR });
-    }
-
+    const accessTokenId = uuidv4();
+    memoryStore.set(accessTokenId, req.user.accessToken);
+    const url = `${process.env.WIDGET_UI_URL}?token_id=${accessTokenId}&app=${TIKTOK_APP}`;
+    Logger.info(`${TIKTOK_APP}: Redirecting to ${url}`);
+    res.redirect(url);
   } catch (error: any) {
-    Logger.error(`${TIKTOK_APP}: Error during callback:, ${error.message}`);
-    res.status(500).json({ app: TIKTOK_APP, message: INTERNAL_SERVER_ERROR });
+    Logger.error(`${TIKTOK_APP}: Error during callback: ${error.message}`);
+    res.status(500).json({ app: TIKTOK_APP, message: 'Error during callback' });
   }
 });
 
-tiktokRouter.get('/info', isAuthenticated, async (req, res) => {
+// Send Event to Iframe
+tiktokRouter.post(
+  '/event',
+  hasValidEventHeader,
+  hasValidAccessTokenHeader,
+  async (req: Request, res: Response) => {
+    try {
+      Logger.info(`${TIKTOK_APP}: Request body tokenUUID ${req?.accessTokenID}`);
+      Logger.info(`${TIKTOK_APP}: Request body sseUUID ${req?.sseID}`);
+      const serverSentEventResponse = memoryStore.get(req?.sseID);
+      serverSentEventResponse.write(`data: {"message":"received", "app":"${TIKTOK_APP}", "auth":"${req?.accessTokenID}"}\n\n`)
+      Logger.info(`${TIKTOK_APP}: Server Side Event has been sent successfully`);
+      memoryStore.delete(req?.sseID);
+      return res.status(200).json({ app: TIKTOK_APP, message: "success" });
+    } catch (error) {
+      Logger.info(`${TIKTOK_APP}: Error in sending event ${error.message}`);
+      return res.status(500).json({ app: TIKTOK_APP, message: "Internal Server error" });
+    }
+
+  });
+
+// Return User Object
+tiktokRouter.get('/info', hasValidAccessTokenHeader, async (req, res) => {
   try {
 
-    Logger.info(`${TIKTOK_APP}: Request for information has been received successfully on session Id ${req.sessionID}`);
-    const { accessToken }: any = req?.session?.user;
+    Logger.info(`${TIKTOK_APP}: Request for information has been received successfully with id ${req.accessTokenID}`);
+    const accessToken = memoryStore.get(req.accessTokenID)
 
     if (accessToken) {
       let userData = { data: { data: { user: {} } } }
@@ -171,17 +178,11 @@ tiktokRouter.get('/info', isAuthenticated, async (req, res) => {
 
       tiktokProfile.reputationScore = reputationScore;
 
-      // Destroy the session data
-      req.session.destroy(err => {
-        activeConnections.delete(req.sessionID);
-        if (err) {
-          Logger.error(`${TIKTOK_APP}: Error during session destroy: ${err.message}`);
-          return res.status(500).json({ app: TIKTOK_APP, message: INTERNAL_SERVER_ERROR });
-        }
-        Logger.info(`${TIKTOK_APP}: Session destroyed successfully`);
-        Logger.info(`${TIKTOK_APP}: User information has been delivered successfully`);
-        return res.status(200).json({ app: TIKTOK_APP, message: "success",tiktokProfile: tiktokProfile })
-      });
+      memoryStore.delete(req?.accessTokenID);
+      Logger.info(`${TIKTOK_APP}: Session destroyed successfully`);
+      Logger.info(`${TIKTOK_APP}: User information has been delivered successfully`);
+      return res.status(200).json({ app: TIKTOK_APP, message: "success", tiktokProfile: tiktokProfile })
+
     } else {
       Logger.error(`${TIKTOK_APP}: Token has been expired.`);
       return res.status(500).json({ app: TIKTOK_APP, message: INTERNAL_SERVER_ERROR });

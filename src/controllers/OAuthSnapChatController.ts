@@ -2,12 +2,12 @@ import express, { Request, Response } from "express";
 import passport from "passport";
 import * as dotenv from 'dotenv';
 import axios from "axios";
-import { isAuthenticated, isConnected } from "../middlewares/authMiddleware";
+import { hasValidAccessTokenHeader, hasValidEventHeader, hasValidEventParam } from "../middlewares/authMiddleware";
 import Logger from "../lib/logger";
-import { INTERNAL_SERVER_ERROR, SNAPCHAT_APP, TIMEOUT_ERROR, activeConnections } from "../utils/global";
+import { INTERNAL_SERVER_ERROR, SNAPCHAT_APP, TIMEOUT_ERROR, memoryStore } from "../utils/global";
 import OAuthSnapChatStrategy from "../auth/OAuthSnapChatStrategy";
 import { SnapChatProfile } from "../entity/Snapchat";
-
+import { v4 as uuidv4 } from 'uuid';
 dotenv.config();
 
 export const snapchatRouter = express.Router();
@@ -44,50 +44,52 @@ passport.use(
 // Start authentication flow
 snapchatRouter.get(
   '/',
-  isConnected,
+  hasValidEventParam,
   async (req: Request, res: Response, next) => {
-    Logger.info(`${SNAPCHAT_APP}: Request for Oauth has been received successfully on session Id${req.sessionID}`)
+    Logger.info(`${SNAPCHAT_APP}: Request for Oauth has been received successfully on sse Id ${req.sseID}`)
     passport.authenticate('snapchat')(req, res, next);
   });
 
 // Callback handler
 snapchatRouter.get('/callback', passport.authenticate('snapchat', { session: false }), async (req, res) => {
   try {
-
-    Logger.info(`${SNAPCHAT_APP}: Callback has been received successfully on session Id${req.sessionID}`);
-    const serverSentEventResponse = activeConnections.get(req.sessionID);
-    req.session.user = {
-      accessToken: req?.user?.accessToken,
-      refreshToken: req?.user?.refreshToken
-    }
-
-    Logger.info(`${SNAPCHAT_APP}: Redirecting to ${process.env.WIDGET_UI_URL}`);
-    // it will redirect to the dashboard or widget
-    res.redirect(process.env.WIDGET_UI_URL);
-    // it will send the url to the client, and it is for testing purpose
-    // res.send(url);
-
-    // Send a message to the client that the token has been received
-    if (req?.user?.accessToken && serverSentEventResponse) {
-      serverSentEventResponse.write(`data: {"message":"received", "app":"${SNAPCHAT_APP}"}\n\n`)
-      Logger.info(`${SNAPCHAT_APP}: Access token has been received successfully`);
-    }
-    else {
-      Logger.error("An error occurred while accessing session");
-      return res.status(500).json({ app: SNAPCHAT_APP, message: INTERNAL_SERVER_ERROR });
-    }
-
+    const accessTokenId = uuidv4();
+    memoryStore.set(accessTokenId, req.user.accessToken);
+    const url = `${process.env.WIDGET_UI_URL}?token_id=${accessTokenId}&app=${SNAPCHAT_APP}`;
+    Logger.info(`${SNAPCHAT_APP}: Redirecting to ${url}`);
+    res.redirect(url);
   } catch (error: any) {
     Logger.error(`${SNAPCHAT_APP}: Error during callback: ${error.message}`);
-    res.status(500).json({ app: SNAPCHAT_APP, message: INTERNAL_SERVER_ERROR });
+    res.status(500).json({ app: SNAPCHAT_APP, message: 'Error during callback' });
   }
 });
 
-// Callback handler
-snapchatRouter.get('/info', isAuthenticated, async (req, res) => {
+// Send Event to Iframe
+snapchatRouter.post(
+  '/event',
+  hasValidEventHeader,
+  hasValidAccessTokenHeader,
+  async (req: Request, res: Response) => {
+    try {
+      Logger.info(`${SNAPCHAT_APP}: Request body tokenUUID ${req?.accessTokenID}`);
+      Logger.info(`${SNAPCHAT_APP}: Request body sseUUID ${req?.sseID}`);
+      const serverSentEventResponse = memoryStore.get(req?.sseID);
+      serverSentEventResponse.write(`data: {"message":"received", "app":"${SNAPCHAT_APP}", "auth":"${req?.accessTokenID}"}\n\n`)
+      Logger.info(`${SNAPCHAT_APP}: Server Side Event has been sent successfully`);
+      memoryStore.delete(req?.sseID);
+      return res.status(200).json({ app: SNAPCHAT_APP, message: "success" });
+    } catch (error) {
+      Logger.info(`${SNAPCHAT_APP}: Error in sending event ${error.message}`);
+      return res.status(500).json({ app: SNAPCHAT_APP, message: "Internal Server error" });
+    }
+
+  });
+
+// Return User Object
+snapchatRouter.get('/info', hasValidAccessTokenHeader, async (req, res) => {
   try {
-    Logger.info(`${SNAPCHAT_APP}: Request for information has been received successfully on session Id ${req.sessionID}`);
-    const { accessToken }: any = req?.session?.user;
+    Logger.info(`${SNAPCHAT_APP}: Request for information has been received successfully with id ${req.accessTokenID}`);
+    const accessToken = memoryStore.get(req.accessTokenID)
     let snapUser = { data: { data: {} } }
 
     if (accessToken) {
@@ -113,17 +115,11 @@ snapchatRouter.get('/info', isAuthenticated, async (req, res) => {
         }
       }
       const snapChatProfile = new SnapChatProfile(snapUser?.data?.data);
-      // Destroy the session data
-      req.session.destroy(err => {
-        activeConnections.delete(req.sessionID);
-        if (err) {
-          Logger.error(`${SNAPCHAT_APP}: Error during session destroy: ${err.message}`);
-          return res.status(500).json({ app: SNAPCHAT_APP, message: INTERNAL_SERVER_ERROR, error: err });
-        }
-        Logger.info(`${SNAPCHAT_APP}: Session destroyed successfully`);
-        Logger.info(`${SNAPCHAT_APP}: User information has been delivered successfully`);
-        return res.status(200).json({ app: SNAPCHAT_APP, message: "success", snapchatProfile: snapChatProfile })
-      });
+      
+      memoryStore.delete(req?.accessTokenID);
+      Logger.info(`${SNAPCHAT_APP}: User information has been delivered successfully`);
+      return res.status(200).json({ app: SNAPCHAT_APP, message: "success", snapchatProfile: snapChatProfile })
+
     } else {
       Logger.error(`${SNAPCHAT_APP}: Token has been expired.`);
       return res.status(500).json({ app: SNAPCHAT_APP, message: INTERNAL_SERVER_ERROR });
