@@ -22,6 +22,7 @@ import { snapchatRouter } from './controllers/OAuthSnapChatController';
 import { instagramRouter } from './controllers/OAuthInstagramController';
 import { facebookRouter } from './controllers/OAuthFacebookController';
 import { fortniteRouter } from './controllers/OAuthFortniteController';
+import cookieParser from 'cookie-parser';
 
 dotenv.config();
 
@@ -30,6 +31,7 @@ const PORT = process.env.PORT;
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(cookieParser());
 app.use(helmet());
 app.use(cors({ origin: true, credentials: true }));
 app.use(passport.initialize());

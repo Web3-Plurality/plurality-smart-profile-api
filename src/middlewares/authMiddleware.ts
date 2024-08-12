@@ -3,6 +3,7 @@ import { memoryStore } from "../utils/global";
 import Logger from "../lib/logger";
 import jwt from 'jsonwebtoken';
 
+
 export function hasValidAccessTokenHeader(req: Request, res: Response, next) {
   const accessTokenID = req.headers['x-token-id'];
   if (accessTokenID)
@@ -87,3 +88,15 @@ export const authenticateUser = (req, res, next) => {
       next();
   });
 };
+
+
+// const authenticateStytchSession = (req, res, next) => {
+//   return client.sessions.authenticate({
+//     session_token: req.cookies['stytch_session'],
+//   })
+//     .then(session => {
+//       req.stytchSession = session;
+//       return next();
+//     })
+//     .catch(next)
+// };

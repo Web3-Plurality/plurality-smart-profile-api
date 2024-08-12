@@ -9,10 +9,17 @@ import { faker } from '@faker-js/faker';
 import { ethers } from "ethers";
 import jwt from 'jsonwebtoken';
 import { authenticateUser } from "../middlewares/authMiddleware";
+import stytch  from "stytch";
 
 export const userRouter = express.Router();
 dotenv.config();
 const userRepository = AppDataSource.getRepository(User);
+
+const client = new stytch.Client({
+    project_id: process.env.STYTCH_PROJECT_ID,
+    secret: process.env.STYTCH_SECRET,
+    // env: stytch.envs.test,
+  });
 
 let challenges = {}; // Store challenge messages temporarily
 
@@ -36,11 +43,13 @@ userRouter.post("/", [
     body('data.email').trim().custom(validateEmail),
     body('data.address').trim().escape(),
     body('data.subscribe').trim().escape(),
-    body('data.signature').trim().escape()
+    body('data.signature').trim().escape(),
+    body('data.stytch_token').trim().escape()
 
 ], async (req: Request, res: Response) => {
     try {
         let dbUser;
+        let token;
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
             Logger.error(`Fatal error due to inproper request parameters to route POST /: ${JSON.stringify(errors)}`);
@@ -53,6 +62,13 @@ userRouter.post("/", [
         if (!!user.data.email) {
             Logger.info(`User register via email: ${user.data.email}`);
             // Check if the user with the given email already exists
+            const stytchSession = await client.sessions.authenticateJwt({
+                session_jwt: user?.data?.stytch_token,
+              })
+            if (!stytchSession?.session?.user_id) {
+                Logger.error(`Invalid stytch token`);
+                return res.status(401).json({ errors: "Invalid stytch token" });
+            }
             const existingUser = await userRepository.findOne({
                 where: {
                     email: user.data.email,
@@ -78,6 +94,7 @@ userRouter.post("/", [
                 let addedUser = await userRepository.save(newUser);
                 dbUser = JSON.parse(JSON.stringify({ id: addedUser.id, username: addedUser.username, profileImg: addedUser.profileImg  }));
             }
+             token = jwt.sign({ email:user.data.email }, process.env.JWT_SECRET, { expiresIn: "1d" });
         }
         // User registered via address and skipped email verification
         if (!user.data.email && !!user.data.address) {
@@ -119,9 +136,10 @@ userRouter.post("/", [
                 let addedUser = await userRepository.save(newUser);
                 dbUser = JSON.parse(JSON.stringify({ id: addedUser.id, username: addedUser.username, profileImg: addedUser.profileImg  }));
             }
+             token = jwt.sign({ address:user.data.address,id:dbUser?.id }, process.env.JWT_SECRET, { expiresIn: "1d" });
         }
+
         Logger.info(`All done! Returning...`);
-        const token = jwt.sign({ address:user.data.address,id:dbUser?.id }, process.env.JWT_SECRET, { expiresIn: "1d" });
         res.json({ success: true, user: dbUser, token:token });
     } catch (e) {
         Logger.error(`Fatal error due to unknown reason: ${JSON.stringify(e)}`);
