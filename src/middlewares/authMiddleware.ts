@@ -61,7 +61,7 @@ export function hasValidEventParam(req: Request, res: Response, next) {
   return next();
 }
   
-  export function initSSE(req: Request, res: Response) {
+export function initSSE(req: Request, res: Response) {
     res.writeHead(200, {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache',
@@ -88,15 +88,3 @@ export const authenticateUser = (req, res, next) => {
       next();
   });
 };
-
-
-// const authenticateStytchSession = (req, res, next) => {
-//   return client.sessions.authenticate({
-//     session_token: req.cookies['stytch_session'],
-//   })
-//     .then(session => {
-//       req.stytchSession = session;
-//       return next();
-//     })
-//     .catch(next)
-// };

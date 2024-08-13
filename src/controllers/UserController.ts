@@ -102,6 +102,7 @@ userRouter.post("/", [
 
             const challenge = challenges[user.data.address];
             if (!challenge) {
+                Logger.error(`Invalid challenge`);
                 return res.status(400).send('Invalid challenge');
             }
         
@@ -109,6 +110,7 @@ userRouter.post("/", [
             const signerAddress = ethers.utils.verifyMessage(challenge, user?.data?.signature);
         
             if (signerAddress.toLowerCase() !== user.data.address.toLowerCase()) {
+                Logger.error(`Invalid signature`);
                 return res.status(400).send('Invalid signature');
             }
                 // Signature is valid, issue JWT token
@@ -253,7 +255,7 @@ userRouter.put("/", authenticateUser, [
     }
 });
 
-
+//generate random string to take user signature
 userRouter.get('/challenge', (req, res) => {
     const walletAddress = req.query.address;
     const challenge = ethers.utils.hexlify(ethers.utils.randomBytes(32));
