@@ -60,18 +60,6 @@ export function hasValidEventParam(req: Request, res: Response, next) {
   req.sseID = sseID;
   return next();
 }
-  
-export function initSSE(req: Request, res: Response) {
-    res.writeHead(200, {
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
-      'Connection': 'keep-alive',
-    });
-    res.write(`data: {"message":"Connection established"}\n\n`);
-    memoryStore.set(req.sessionID, res);
-  }
-
-  
 // Middleware to authenticate JWT
 export const isAuthenticated = (req, res, next) => {
   const token = req.headers.authorization && req.headers.authorization.split(' ')[1];
