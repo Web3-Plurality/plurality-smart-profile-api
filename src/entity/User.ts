@@ -17,6 +17,9 @@ export class User {
   @Column({nullable: false, default: "https://res.cloudinary.com/dblrsf3fe/image/upload/v1721919290/wkaejhi7ocnwhfl42vb8.png"})
   profileImg: string;
 
-  @Column({nullable: false})
+  @Column({nullable: false, default: ""})
   username: string;
+
+  @Column({nullable: false, default: ""})
+  bio: string;
 }

@@ -71,9 +71,9 @@ export function initSSE(req: Request, res: Response) {
     memoryStore.set(req.sessionID, res);
   }
 
-
+  
 // Middleware to authenticate JWT
-export const authenticateUser = (req, res, next) => {
+export const isAuthenticated = (req, res, next) => {
   const token = req.headers.authorization && req.headers.authorization.split(' ')[1];
 
   if (!token) {

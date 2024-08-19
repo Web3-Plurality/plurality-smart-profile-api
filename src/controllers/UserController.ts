@@ -8,7 +8,7 @@ import { v2 as cloudinary } from 'cloudinary';
 import { faker } from '@faker-js/faker';
 import { ethers } from "ethers";
 import jwt from 'jsonwebtoken';
-import { authenticateUser } from "../middlewares/authMiddleware";
+import { isAuthenticated } from "../middlewares/authMiddleware";
 import stytch  from "stytch";
 
 export const userRouter = express.Router();
@@ -180,16 +180,17 @@ userRouter.get("/check-address", [
             return res.json({ exists: false });
         }
     } catch (e) {
-        // If an error occurs during the database query, return an error response  
+        // If an error occurs during the database query, return an error response
         Logger.error(`Fatal error due to unknown reason: ${JSON.stringify(e)}`);
         return res.status(500).json({ error: "An error occurred while processing your request" });
     }
 });
 // We authentication check here
 // GET endpoint to get user object
-userRouter.put("/", authenticateUser, [
+userRouter.put("/", isAuthenticated, [
     body('data.id').optional().trim().isUUID(4).withMessage('Invalid UUID format'),
     body('data.username').optional().trim().isLength({ min: 3 }).withMessage('Username must be at least 3 characters long'),
+    body("bio").optional().trim().isLength({ max: 300 }),
     body('data.profileImg').optional()
     .trim()
     .custom((value) => {
@@ -211,7 +212,7 @@ userRouter.put("/", authenticateUser, [
 
         const user = JSON.parse(JSON.stringify(req.body.data));
 
-        const { username, profileImg } = user;
+        const { username, profileImg, bio } = user;
         const id = req?.user?.id;
         // agr sirf id se user access kren ge to me apne ap ko authenticate kraa kr kisi or ki cheezen change kr skta hun
         const existingUser = await userRepository.findOne({
@@ -237,7 +238,8 @@ userRouter.put("/", authenticateUser, [
 
             const updatedUser = {
                 username: username ? username : existingUser?.username, 
-                profileImg: uploadResult?.secure_url ? uploadResult?.secure_url : existingUser?.profileImg
+                profileImg: uploadResult?.secure_url ? uploadResult?.secure_url : existingUser?.profileImg,
+                bio: bio ? bio : existingUser?.bio,
             }
 
             await userRepository.update({ id: id }, updatedUser);
