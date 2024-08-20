@@ -2,20 +2,30 @@ import { Request, Response } from "express";
 import { memoryStore } from "../utils/global";
 import Logger from "../lib/logger";
 import jwt from 'jsonwebtoken';
+import stytch from "stytch";
+import * as dotenv from 'dotenv';
+import { ethers } from "ethers";
+
+
+dotenv.config();
+
+const client = new stytch.Client({
+  project_id: process.env.STYTCH_PROJECT_ID,
+  secret: process.env.STYTCH_SECRET,
+  // env: stytch.envs.test,
+});
 
 
 export function hasValidAccessTokenHeader(req: Request, res: Response, next) {
   const accessTokenID = req.headers['x-token-id'];
-  if (accessTokenID)
-  {
+  if (accessTokenID) {
     const accessToken = memoryStore.get(accessTokenID);
     if (!accessToken) {
       Logger.error("Access token not found");
       return res.status(400).send("Access token not found");
     }
   }
-  else 
-  {
+  else {
     Logger.error("Invalid token id");
     return res.status(400).send("Invalid token id");
   }
@@ -25,16 +35,14 @@ export function hasValidAccessTokenHeader(req: Request, res: Response, next) {
 
 export function hasValidEventHeader(req: Request, res: Response, next) {
   const sseID = req.headers['x-sse-id'];
-  if (sseID)
-  {
+  if (sseID) {
     const ssEvent = memoryStore.get(sseID);
     if (!ssEvent) {
       Logger.error("SSE event not found");
       return res.status(400).send("SSE event not found");
     }
   }
-  else 
-  {
+  else {
     Logger.error("Invalid event id");
     return res.status(400).send("Invalid event id");
   }
@@ -44,16 +52,14 @@ export function hasValidEventHeader(req: Request, res: Response, next) {
 
 export function hasValidEventParam(req: Request, res: Response, next) {
   const sseID = req.query.sse_id;
-  if (sseID)
-  {
+  if (sseID) {
     const ssEvent = memoryStore.get(sseID);
     if (!ssEvent) {
       Logger.error("SSE event not found");
       return res.status(400).send("SSE event not found");
     }
   }
-  else 
-  {
+  else {
     Logger.error("Invalid event id");
     return res.status(400).send("Invalid event id");
   }
@@ -65,14 +71,54 @@ export const isAuthenticated = (req, res, next) => {
   const token = req.headers.authorization && req.headers.authorization.split(' ')[1];
 
   if (!token) {
-      return res.status(401).send('Token is missing');
+    return res.status(401).send('Token is missing');
   }
 
   jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
-      if (err) {
-          return res.status(403).send('Invalid token');
-      }
-      req.user = user;
-      next();
+    if (err) {
+      return res.status(403).send('Invalid token');
+    }
+    req.user = user;
+    next();
   });
+};
+
+export const isValid = async (req, res, next) => {
+
+
+  const stytchToken = req.headers['x-stytch-token'];
+  const signature = req.headers['x-signature'];
+  if (stytchToken && signature) {
+    Logger.error("get both address signature and email session token at the same time")
+    return res.status(401).json({ errors: "internal server error" });
+  }
+  
+  if (stytchToken) {
+    // email varification
+    const stytchSession = await client.sessions.authenticateJwt({
+      session_jwt: stytchToken,
+    })
+    // stytchSession?.authentication_factors?.
+    if (stytchSession?.session?.authentication_factors[0]?.email_factor?.email_address !== req?.body?.data?.email) {
+      Logger.error(`Invalid stytch token`);
+      return res.status(401).json({ errors: "Invalid stytch token" });
+    }
+    return next()
+  }
+
+  //address varification
+  const nonce = memoryStore[req?.body?.data?.address];
+  if (!nonce) {
+    Logger.error(`Invalid nonce`);
+    return res.status(400).send('Invalid nonce');
+  }
+  // Verify signature
+  const signerAddress = ethers.utils.verifyMessage(nonce, signature);
+  if (signerAddress?.toLowerCase() !== req?.body?.data?.address?.toLowerCase()) {
+    Logger.error(`Invalid signature`);
+    return res.status(400).send('Invalid signature');
+  }
+  // Signature is valid, issue JWT token
+  delete memoryStore[req?.body?.data?.address]; // Optionally delete the used challenge
+  next()
 };
