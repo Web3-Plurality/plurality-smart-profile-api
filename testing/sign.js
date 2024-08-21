@@ -7,7 +7,7 @@ const privateKey = process.env.PRIVATE_KEY;
 const wallet = new ethers.Wallet(privateKey);
 
 // The message you want to sign
-const message = "0xc346e0b938c7f9c2d8f74aa6f65976b93d4a0fc4431c5a9d1eb0c36494a109c0";
+const message = "0x250e662afb81d43f6389ab08fc2119aa155b261e12f504ea55bdfc83587d955a";
 
 // Sign the message
 async function signMessage() {

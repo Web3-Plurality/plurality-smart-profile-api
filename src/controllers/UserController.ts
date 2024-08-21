@@ -41,7 +41,7 @@ userRouter.post("/", [
         let token;
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
-            Logger.error(`Fatal error due to inproper request parameters to route POST /: ${JSON.stringify(errors)}`);
+            Logger.error(`Fatal error due to improper request parameters to route POST /: ${JSON.stringify(errors)}`);
             return res.status(400).json({ errors: errors.array() });
         }
         const user = JSON.parse(JSON.stringify(req.body));
@@ -59,7 +59,7 @@ userRouter.post("/", [
                 Logger.info(`This user already exists!`);
                 token = jwt.sign({ email: user.data.email, id: existingUser?.id }, process.env.JWT_SECRET, { expiresIn: "1d" });
                 Logger.info(`All done! Returning...`);
-                return res.json({ success: true, user: existingUser, token: token });
+                return res.status(200).json({ success: true, user: existingUser, token: token });
             } else {
                 // If the user doesn't exist, insert a new row
                 Logger.info(`This is a new user! Creating an entry with email: ${user.data.email}, address: ${user.data.address}, subscribe: ${user.data.subscribe} ...`);
@@ -73,7 +73,7 @@ userRouter.post("/", [
                 let addedUser = await userRepository.save(newUser);
                 token = jwt.sign({ email: user?.data?.email, id: addedUser?.id }, process.env.JWT_SECRET, { expiresIn: "1d" });
                 Logger.info(`All done! Returning...`);
-                return res.json({ success: true, user: addedUser, token: token });
+                return res.status(200).json({ success: true, user: addedUser, token: token });
             }
         }
         // User registered via address and skipped email verification
@@ -89,7 +89,7 @@ userRouter.post("/", [
                 Logger.info(`This user already exists!`);
                 token = jwt.sign({ address: user?.data?.address, id: existingUser?.id }, process.env.JWT_SECRET, { expiresIn: "1d" });
                 Logger.info(`All done! Returning...`);
-                return res.json({ success: true, user: existingUser, token: token });
+                return res.status(200).json({ success: true, user: existingUser, token: token });
             } else {
                 // If the user doesn't exist, insert a new row
                 Logger.info(`This is a new user! Creating an entry with email: ${user.data.email}, address: ${user.data.address}, subscribe: false ...`);
@@ -103,7 +103,7 @@ userRouter.post("/", [
                 let addedUser = await userRepository.save(newUser);
                 token = jwt.sign({ address: user.data.address, id: addedUser?.id }, process.env.JWT_SECRET, { expiresIn: "1d" });
                 Logger.info(`All done! Returning...`);
-                return res.json({ success: true, user: addedUser, token: token });
+                return res.status(200).json({ success: true, user: addedUser, token: token });
             }
         }
     } catch (e) {
@@ -122,7 +122,7 @@ userRouter.post("/", [
 //         // Check for validation errors
 //         const errors = validationResult(req);
 //         if (!errors.isEmpty()) {
-//             Logger.error(`Fatal error due to inproper request parameters to route GET /check-address: ${JSON.stringify(errors)}`);
+//             Logger.error(`Fatal error due to improper request parameters to route GET /check-address: ${JSON.stringify(errors)}`);
 //             return res.status(400).json({ errors: errors.array() });
 //         }
 //         const { address } = req.query;
@@ -157,13 +157,14 @@ userRouter.get("/", isAuthenticated, async (req: Request, res: Response)=>{
                 id: req?.user?.id,
             },
         });
-        if (existingUser) {
-            return res.status(200).json({ success: true, user: existingUser });
-        }
-        else{
+        if (!existingUser) {
             Logger.error(`user not exist on id ${req?.user?.id}`);
-            return res.status(404).json({ success: false, error: `user not exist on id ${req?.user?.id}`});
+            return res.status(404).json({ success: false, error: `user doest not exist`});
         }
+
+        Logger.info(`user exist on id ${req?.user?.id}`);
+        return res.status(200).json({ success: true, user: existingUser });
+        
 
     } catch (e) {
         Logger.error(`Fatal error due to unknown reason: ${JSON.stringify(e)}`);
@@ -190,7 +191,7 @@ userRouter.put("/", isAuthenticated, [
         const errors = validationResult(req);
 
         if (!errors.isEmpty()) {
-            Logger.error(`Fatal error due to inproper request parameters to route GET /: ${JSON.stringify(errors)}`);
+            Logger.error(`Fatal error due to improper request parameters to route GET /: ${JSON.stringify(errors)}`);
             return res.status(400).json({ errors: errors.array() });
         }
 
@@ -248,8 +249,6 @@ userRouter.get('/nonce', (req, res) => {
 
 });
 
-
-
 // // GET endpoint to check if a user exists by email
 // userRouter.get("/check-email", [
 //     check('email').trim().custom(validateEmail), // Validate the email
@@ -259,7 +258,7 @@ userRouter.get('/nonce', (req, res) => {
 //         // Check for validation errors
 //         const errors = validationResult(req);
 //         if (!errors.isEmpty()) {
-//             Logger.error(`Fatal error due to inproper request parameters to route GET /check-email: ${JSON.stringify(errors)}`);
+//             Logger.error(`Fatal error due to improper request parameters to route GET /check-email: ${JSON.stringify(errors)}`);
 //             return res.status(400).json({ errors: errors.array() });
 //         }
 
@@ -296,7 +295,7 @@ userRouter.get('/nonce', (req, res) => {
 //     try {
 //         const errors = validationResult(req);
 //         if (!errors.isEmpty()) {
-//             Logger.error(`Fatal error due to inproper request parameters to route GET /: ${JSON.stringify(errors)}`);
+//             Logger.error(`Fatal error due to improper request parameters to route GET /: ${JSON.stringify(errors)}`);
 //             return res.status(400).json({ errors: errors.array() });
 //         }
 

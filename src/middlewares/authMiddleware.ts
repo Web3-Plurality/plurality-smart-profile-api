@@ -90,9 +90,9 @@ export const isValid = async (req, res, next) => {
   const signature = req.headers['x-signature'];
   if (stytchToken && signature) {
     Logger.error("get both address signature and email session token at the same time")
-    return res.status(401).json({ errors: "internal server error" });
+    return res.status(500).json({ errors: "internal server error" });
   }
-  
+
   if (stytchToken) {
     // email varification
     const stytchSession = await client.sessions.authenticateJwt({
@@ -103,22 +103,37 @@ export const isValid = async (req, res, next) => {
       Logger.error(`Invalid stytch token`);
       return res.status(401).json({ errors: "Invalid stytch token" });
     }
-    return next()
+    if (jwt.decode(stytchToken)?.exp < Math.floor(Date.now() / 1000)) {
+      Logger.error(`stytch token expired`);
+      return res.status(401).json({ errors: "stytch token expired" });  
+    }
+    if (jwt.decode(stytchToken)?.aud[0] !== process.env.STYTCH_PROJECT_ID) {
+      Logger.error(`stytch token not belongs to this project`);
+      return res.status(401).json({ errors: "stytch token expired" });  
+    }
+    delete req?.body?.data["address"]; // if we are validating it with email then we have to create token with email
+    return next();
   }
 
-  //address varification
-  const nonce = memoryStore[req?.body?.data?.address];
-  if (!nonce) {
-    Logger.error(`Invalid nonce`);
-    return res.status(400).send('Invalid nonce');
+  if (signature) {
+    //address varification
+    const nonce = memoryStore[req?.body?.data?.address];
+    if (!nonce) {
+      Logger.error(`Invalid nonce`);
+      return res.status(400).send('Invalid nonce');
+    }
+    // Verify signature
+    const signerAddress = ethers.utils.verifyMessage(nonce, signature);
+    if (signerAddress?.toLowerCase() !== req?.body?.data?.address?.toLowerCase()) {
+      Logger.error(`Invalid signature`);
+      return res.status(400).send('Invalid signature');
+    }
+    // Signature is valid, issue JWT token
+    delete memoryStore[req?.body?.data?.address]; // Optionally delete the used challenge
+    delete req?.body?.data["email"]; // if we are validating it with email then we have to create token with email
+    return next()
   }
-  // Verify signature
-  const signerAddress = ethers.utils.verifyMessage(nonce, signature);
-  if (signerAddress?.toLowerCase() !== req?.body?.data?.address?.toLowerCase()) {
-    Logger.error(`Invalid signature`);
-    return res.status(400).send('Invalid signature');
-  }
-  // Signature is valid, issue JWT token
-  delete memoryStore[req?.body?.data?.address]; // Optionally delete the used challenge
-  next()
+  Logger.error(`neighter stytch token nor signature found`);
+  return res.status(400).send('Invalid request');
+
 };
