@@ -196,7 +196,6 @@ userRouter.put("/", isAuthenticated, [
         }
 
         const user = JSON.parse(JSON.stringify(req.body.data));
-
         const { username, profileImg, bio } = user;
         const id = req?.user?.id;
         const existingUser = await userRepository.findOne({
