@@ -11,6 +11,7 @@ import { analyze } from "../utils/groq";
 import { calculateReputation, scrapRoblox } from "../utils/roblox";
 import { ROBLOX_FETCH_INTEREST_PROMPT } from "../utils/aiPrompts";
 import { v4 as uuidv4 } from 'uuid';
+import { UserProfile } from "../entity/UserProfile";
 
 
 dotenv.config();
@@ -199,7 +200,7 @@ robloxRouter.get('/info', hasValidAccessTokenHeader, async (req, res) => {
         robloxProfile.friends = robloxInsights?.friends;
         robloxProfile.followers = robloxInsights?.followers;
         robloxProfile.following = robloxInsights?.following;
-        robloxProfile.avtar = robloxInsights?.avtar;
+        robloxProfile.avatar = robloxInsights?.avtar;
 
       } catch (error) {
         if (error.code === 'ECONNABORTED') {
@@ -211,6 +212,19 @@ robloxRouter.get('/info', hasValidAccessTokenHeader, async (req, res) => {
 
       robloxProfile.reputationScore += calculateReputation(robloxProfile);
 
+      // Create user profile object
+      const userProfile = new UserProfile();
+      userProfile.username = robloxProfile?.name;
+      userProfile.interests = robloxProfile?.interests;
+      userProfile.avatar = robloxProfile?.avatar;
+      userProfile.scores.push({score_type: "reputation score",score_value: robloxProfile?.reputationScore});
+      userProfile.reputation_tags = robloxProfile?.introTags;
+      userProfile.collections = robloxProfile?.assests;
+      userProfile.collections.push({field: "places visit", score_value: robloxProfile?.placesVisit});
+      userProfile.collections.push({field: "friends", score_value: robloxProfile?.friends});
+      userProfile.collections.push({field: "followers", score_value: robloxProfile?.followers});
+      userProfile.collections.push({field: "following", score_value: robloxProfile?.following});
+      
       memoryStore.delete(req?.accessTokenID);
       Logger.info(`${ROBLOX_APP}: User information has been delivered successfully`);
       return res.status(200).json({ app: ROBLOX_APP, message: "success", robloxProfile: robloxProfile })

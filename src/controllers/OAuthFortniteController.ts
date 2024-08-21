@@ -9,6 +9,7 @@ import OAuthFortniteStrategy from "../auth/OAuthFortniteStrategy"
 import jwt from 'jsonwebtoken'
 import { FortniteProfile } from "../entity/Fortnite";
 import { v4 as uuidv4 } from 'uuid';
+import { UserProfile } from "../entity/UserProfile";
 dotenv.config();
 
 export const fortniteRouter = express.Router();
@@ -120,6 +121,9 @@ fortniteRouter.get('/info', hasValidAccessTokenHeader, async (req, res) => {
 
       const fortniteProfile = new FortniteProfile(userFortnite?.data[0]);
 
+      // Create user profile object
+      const userProfile = new UserProfile();
+      userProfile.username = fortniteProfile?.displayName;
 
       memoryStore.delete(req?.accessTokenID);
       Logger.info(`${FORTNITE_APP}: User information has been delivered successfully`);

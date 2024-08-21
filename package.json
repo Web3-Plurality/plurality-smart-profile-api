@@ -56,6 +56,7 @@
     "@lit-protocol/contracts-sdk": "^6.4.5",
     "@lit-protocol/lit-auth-client": "^6.4.5",
     "@lit-protocol/lit-node-client": "^6.4.5",
+    "@ethereum-attestation-service/eas-sdk": "^2.5.0",
     "@superfaceai/passport-twitter-oauth2": "^1.2.3",
     "arweave": "^1.14.4",
     "axios": "^1.5.0",

@@ -10,6 +10,7 @@ import { InstaProfile } from "../entity/Instagram";
 import { analyze } from "../utils/groq";
 import { INSTA_FETCH_INTEREST_PROMPT } from "../utils/aiPrompts";
 import { v4 as uuidv4 } from 'uuid';
+import { UserProfile } from "../entity/UserProfile";
 dotenv.config();
 
 export const instagramRouter = express.Router();
@@ -61,10 +62,10 @@ instagramRouter.get('/callback', passport.authenticate('instagram', { session: f
         const url = `${process.env.WIDGET_UI_URL}?token_id=${accessTokenId}&app=${INSTAGRAM_APP}`;
         Logger.info(`${INSTAGRAM_APP}: Redirecting to ${url}`);
         res.redirect(url);
-      } catch (error: any) {
+    } catch (error: any) {
         Logger.error(`${INSTAGRAM_APP}: Error during callback: ${error.message}`);
         res.status(500).json({ app: INSTAGRAM_APP, message: 'Error during callback' });
-      }
+    }
 });
 
 // Send Event to Iframe
@@ -73,19 +74,19 @@ instagramRouter.post(
     hasValidEventHeader,
     hasValidAccessTokenHeader,
     async (req: Request, res: Response) => {
-      try {
-        Logger.info(`${INSTAGRAM_APP}: Request body tokenUUID ${req?.accessTokenID}`);
-        Logger.info(`${INSTAGRAM_APP}: Request body sseUUID ${req?.sseID}`);
-        const serverSentEventResponse = memoryStore.get(req?.sseID);
-        serverSentEventResponse.write(`data: {"message":"received", "app":"${INSTAGRAM_APP}", "auth":"${req?.accessTokenID}"}\n\n`)
-        Logger.info(`${INSTAGRAM_APP}: Server Side Event has been sent successfully`);
-        memoryStore.delete(req?.sseID);
-        return res.status(200).json({ app: INSTAGRAM_APP, message: "success" });  
-      } catch (error) {
-        Logger.info(`${INSTAGRAM_APP}:  Error in sending SSE ${error.message}`);
-        return res.status(500).json({ app: INSTAGRAM_APP, message: "Internal Server error" }); 
-      }
-      
+        try {
+            Logger.info(`${INSTAGRAM_APP}: Request body tokenUUID ${req?.accessTokenID}`);
+            Logger.info(`${INSTAGRAM_APP}: Request body sseUUID ${req?.sseID}`);
+            const serverSentEventResponse = memoryStore.get(req?.sseID);
+            serverSentEventResponse.write(`data: {"message":"received", "app":"${INSTAGRAM_APP}", "auth":"${req?.accessTokenID}"}\n\n`)
+            Logger.info(`${INSTAGRAM_APP}: Server Side Event has been sent successfully`);
+            memoryStore.delete(req?.sseID);
+            return res.status(200).json({ app: INSTAGRAM_APP, message: "success" });
+        } catch (error) {
+            Logger.info(`${INSTAGRAM_APP}:  Error in sending SSE ${error.message}`);
+            return res.status(500).json({ app: INSTAGRAM_APP, message: "Internal Server error" });
+        }
+
     });
 
 // Return User Object
@@ -138,12 +139,16 @@ instagramRouter.get('/info', hasValidAccessTokenHeader, async (req, res) => {
             const instaProfile = new InstaProfile(instaUser?.data);
             instaProfile.interests = interests?.Interests || [];
 
-            
+            // Create user profile object
+            const userProfile = new UserProfile();
+            userProfile.username = instaProfile?.username;
+            userProfile.interests = instaProfile?.interests;
+
             memoryStore.delete(req?.accessTokenID);
             Logger.info(`${INSTAGRAM_APP}: Session destroyed successfully`);
             Logger.info(`${INSTAGRAM_APP}: User information has been delivered successfully`);
             return res.status(200).json({ app: INSTAGRAM_APP, message: "success", instaProfile: instaProfile })
-        
+
         } else {
             Logger.error(`${INSTAGRAM_APP}: Token has been expired.`);
             return res.status(500).json({ app: INSTAGRAM_APP, message: INTERNAL_SERVER_ERROR });

@@ -8,6 +8,7 @@ import { INTERNAL_SERVER_ERROR, SNAPCHAT_APP, TIMEOUT_ERROR, memoryStore } from 
 import OAuthSnapChatStrategy from "../auth/OAuthSnapChatStrategy";
 import { SnapChatProfile } from "../entity/Snapchat";
 import { v4 as uuidv4 } from 'uuid';
+import { UserProfile } from "../entity/UserProfile";
 dotenv.config();
 
 export const snapchatRouter = express.Router();
@@ -115,7 +116,11 @@ snapchatRouter.get('/info', hasValidAccessTokenHeader, async (req, res) => {
         }
       }
       const snapChatProfile = new SnapChatProfile(snapUser?.data?.data);
-      
+      // Create user profile object
+      const userProfile = new UserProfile();
+      userProfile.username = snapChatProfile.displayName;
+      userProfile.avatar = snapChatProfile.bitmoji;
+
       memoryStore.delete(req?.accessTokenID);
       Logger.info(`${SNAPCHAT_APP}: User information has been delivered successfully`);
       return res.status(200).json({ app: SNAPCHAT_APP, message: "success", snapchatProfile: snapChatProfile })
