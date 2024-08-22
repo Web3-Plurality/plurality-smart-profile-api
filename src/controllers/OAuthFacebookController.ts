@@ -11,6 +11,7 @@ import { FacebookProfile } from "../entity/Facebook";
 import { calculateReputation, extractContent, getPagingData, sanitizeObject } from "../utils/facebook";
 import { FACEBOOK_FETCH_INTEREST_FROM_NAMES_PROMPT, FACEBOOK_FETCH_INTEREST_PROMPT } from "../utils/aiPrompts";
 import { v4 as uuidv4 } from 'uuid';
+import { UserProfile } from "../entity/UserProfile";
 dotenv.config();
 
 export const facebookRouter = express.Router();
@@ -61,10 +62,10 @@ facebookRouter.get('/callback', passport.authenticate('facebook', { session: fal
         const url = `${process.env.WIDGET_UI_URL}?token_id=${accessTokenId}&app=${FACEBOOK_APP}`;
         Logger.info(`${FACEBOOK_APP}: Redirecting to ${url}`);
         res.redirect(url);
-      } catch (error: any) {
+    } catch (error: any) {
         Logger.error(`${FACEBOOK_APP}: Error during callback: ${error.message}`);
         res.status(500).json({ app: FACEBOOK_APP, message: 'Error during callback' });
-      }
+    }
 });
 
 // Send Event to Iframe
@@ -151,6 +152,17 @@ facebookRouter.get('/info', hasValidAccessTokenHeader, async (req, res) => {
             facebookProfile.interests = (interests1?.Interests?.concat(interests2?.Interests));
             facebookProfile.reputationScore = calculateReputation(facebookProfile);
 
+            // Create User Profile Objects
+            const userProfile = new UserProfile();
+            userProfile.username = facebookProfile?.name
+            userProfile.interests = facebookProfile?.interests
+            userProfile.scores.push({ score_type: "reputation score", score_value: facebookProfile?.reputationScore });
+            userProfile.extra.push({ field: "friends count", value: facebookProfile?.friends_count });
+            userProfile.extra.push({ field: "likes count", value: facebookProfile?.likes_count });
+            userProfile.extra.push({ field: "music count", value: facebookProfile?.music_count });
+            userProfile.extra.push({ field: "athleast count", value: facebookProfile?.athletes_count });
+            userProfile.extra.push({ field: "favourite team count", value: facebookProfile?.favTeam_count });
+            
             memoryStore.delete(req?.accessTokenID);
             Logger.info(`${FACEBOOK_APP}: User information has been delivered successfully`);
             return res.status(200).json({ app: FACEBOOK_APP, message: "success", facebookProfile: facebookProfile })

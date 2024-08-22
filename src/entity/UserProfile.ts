@@ -3,6 +3,11 @@ interface Score {
     score_value: number;
 }
 
+interface Extra {
+    field: string;
+    value: number;
+}
+
 interface LinkedAddress {
     chain_name: string;
     chain_id: number;
@@ -17,7 +22,7 @@ export class UserProfile {
     reputation_tags: string[];
     badges: string[];
     collections: string[];
-    extra: string[];
+    extra: Extra[];
     linked_address: LinkedAddress[];
 
     constructor(
@@ -28,7 +33,7 @@ export class UserProfile {
         reputation_tags?: string[] = [],
         badges?: string[] = [],
         collections?: string[] = [],
-        extra?: string[] = [],
+        extra?: Extra[] = [],
         linked_address?: LinkedAddress[] = []
     ) {
         this.username = username || "";

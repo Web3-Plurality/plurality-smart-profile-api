@@ -9,6 +9,7 @@ import { hasValidAccessTokenHeader, hasValidEventHeader, hasValidEventParam } fr
 import Logger from "../lib/logger";
 import { INTERNAL_SERVER_ERROR, TIMEOUT_ERROR, TWITTER_APP, memoryStore } from "../utils/global";
 import { v4 as uuidv4 } from 'uuid';
+import { UserProfile } from "../entity/UserProfile";
 dotenv.config();
 
 export const twitterRouter = express.Router();
@@ -186,6 +187,19 @@ twitterRouter.get('/info', hasValidAccessTokenHeader, async (req, res) => {
       const reputationScore = calculateReputation(twitterProfile);
       twitterProfile.reputationScore = reputationScore;
      
+      // Create User Profile Objects
+      const userProfile = new UserProfile();
+      userProfile.username = twitterProfile?.username
+      userProfile.avatar = twitterProfile?.profileImageUrl
+      userProfile.interests = twitterProfile?.interests
+      userProfile.reputation_tags = twitterProfile?.introTags
+      userProfile.scores.push({score_type: "reputation score", score_value: twitterProfile?.reputationScore})
+      userProfile.extra.push({field:"tweet count", value: twitterProfile?.tweetCount})
+      userProfile.extra.push({field:"like count", value: twitterProfile?.likeCount})
+      userProfile.extra.push({field:"listed count", value: twitterProfile?.listedCount})
+      userProfile.extra.push({field:"followers count", value: twitterProfile?.followersCount})
+      userProfile.extra.push({field:"following count", value: twitterProfile?.followingCount})
+
       memoryStore.delete(req?.accessTokenID);
       Logger.info(`${TWITTER_APP}: Session destroyed successfully`);
       Logger.info(`${TWITTER_APP}: User information has been delivered successfully`);

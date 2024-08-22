@@ -11,6 +11,7 @@ import { calculateReputation } from "../utils/tiktok";
 import Logger from "../lib/logger";
 import { TIKTOK_FETCH_INTEREST_PROMPT } from "../utils/aiPrompts";
 import { v4 as uuidv4 } from 'uuid';
+import { UserProfile } from "../entity/UserProfile";
 dotenv.config();
 
 export const tiktokRouter = express.Router();
@@ -177,6 +178,18 @@ tiktokRouter.get('/info', hasValidAccessTokenHeader, async (req, res) => {
       tiktokProfile.introTags = semanticObj?.IntroTags || [];
 
       tiktokProfile.reputationScore = reputationScore;
+
+      // Create User Profile Objects
+      const userProfile = new UserProfile();
+      userProfile.username = tiktokProfile?.user.username
+      userProfile.avatar = tiktokProfile?.user.avatarUrl
+      userProfile.interests = tiktokProfile?.interests
+      userProfile.reputation_tags = tiktokProfile?.introTags
+      userProfile.scores.push({ score_type: "reputation score", score_value: tiktokProfile?.reputationScore })
+      userProfile.extra.push({ field: "follower count", value: tiktokProfile?.user.followerCount })
+      userProfile.extra.push({ field: "following count", value: tiktokProfile?.user.followingCount })
+      userProfile.extra.push({ field: "video count", value: tiktokProfile?.user.videoCount })
+      userProfile.extra.push({ field: "likes count", value: tiktokProfile?.user.likesCount })
 
       memoryStore.delete(req?.accessTokenID);
       Logger.info(`${TIKTOK_APP}: Session destroyed successfully`);

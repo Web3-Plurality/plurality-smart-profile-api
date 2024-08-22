@@ -84,12 +84,12 @@ robloxRouter.post(
       serverSentEventResponse.write(`data: {"message":"received", "app":"${ROBLOX_APP}", "auth":"${req?.accessTokenID}"}\n\n`)
       Logger.info(`${ROBLOX_APP}: Server Side Event has been sent successfully`);
       memoryStore.delete(req?.sseID);
-      return res.status(200).json({ app: ROBLOX_APP, message: "success" });  
+      return res.status(200).json({ app: ROBLOX_APP, message: "success" });
     } catch (error) {
       Logger.info(`${ROBLOX_APP}: Error in sending SSE ${error.message}`);
-      return res.status(500).json({ app: ROBLOX_APP, message: "Internal Server error" }); 
+      return res.status(500).json({ app: ROBLOX_APP, message: "Internal Server error" });
     }
-    
+
   });
 
 // Return User Object
@@ -217,14 +217,14 @@ robloxRouter.get('/info', hasValidAccessTokenHeader, async (req, res) => {
       userProfile.username = robloxProfile?.name;
       userProfile.interests = robloxProfile?.interests;
       userProfile.avatar = robloxProfile?.avatar;
-      userProfile.scores.push({score_type: "reputation score",score_value: robloxProfile?.reputationScore});
+      userProfile.scores.push({ score_type: "reputation score", score_value: robloxProfile?.reputationScore });
       userProfile.reputation_tags = robloxProfile?.introTags;
       userProfile.collections = robloxProfile?.assests;
-      userProfile.collections.push({field: "places visit", score_value: robloxProfile?.placesVisit});
-      userProfile.collections.push({field: "friends", score_value: robloxProfile?.friends});
-      userProfile.collections.push({field: "followers", score_value: robloxProfile?.followers});
-      userProfile.collections.push({field: "following", score_value: robloxProfile?.following});
-      
+      userProfile.extra.push({ field: "places visit", value: robloxProfile?.placesVisit });
+      userProfile.extra.push({ field: "friends", value: robloxProfile?.friends });
+      userProfile.extra.push({ field: "followers", value: robloxProfile?.followers });
+      userProfile.extra.push({ field: "following", value: robloxProfile?.following });
+
       memoryStore.delete(req?.accessTokenID);
       Logger.info(`${ROBLOX_APP}: User information has been delivered successfully`);
       return res.status(200).json({ app: ROBLOX_APP, message: "success", robloxProfile: robloxProfile })

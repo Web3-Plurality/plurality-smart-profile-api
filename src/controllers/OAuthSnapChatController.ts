@@ -120,7 +120,8 @@ snapchatRouter.get('/info', hasValidAccessTokenHeader, async (req, res) => {
       const userProfile = new UserProfile();
       userProfile.username = snapChatProfile.displayName;
       userProfile.avatar = snapChatProfile.bitmoji;
-
+      console.log(userProfile)
+      
       memoryStore.delete(req?.accessTokenID);
       Logger.info(`${SNAPCHAT_APP}: User information has been delivered successfully`);
       return res.status(200).json({ app: SNAPCHAT_APP, message: "success", snapchatProfile: snapChatProfile })
