@@ -10,7 +10,7 @@ import { ethers } from "ethers";
 import jwt from 'jsonwebtoken';
 import { isAuthenticated, isValid } from "../middlewares/authMiddleware";
 import { memoryStore } from "../utils/global";
-
+import { generateNonce } from 'siwe';
 
 export const userRouter = express.Router();
 dotenv.config();
@@ -242,10 +242,9 @@ userRouter.put("/", isAuthenticated, [
 //generate random string to take user signature
 userRouter.get('/nonce', (req, res) => {
     const walletAddress = req.query.address;
-    const nonce = ethers.utils.hexlify(ethers.utils.randomBytes(32));
+    const nonce = generateNonce()
     memoryStore[walletAddress] = nonce;
     return res.status(200).json({ message: "success", nonce });
-
 });
 
 // // GET endpoint to check if a user exists by email

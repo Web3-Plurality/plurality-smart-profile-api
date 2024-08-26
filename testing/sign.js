@@ -1,5 +1,6 @@
 const { ethers } = require('ethers');
 const dotenv  = require('dotenv');
+const {SiweMessage} = require('siwe');
 dotenv.config();
 
 // Replace with your own private key (DO NOT SHARE THIS KEY PUBLICLY)
@@ -7,19 +8,33 @@ const privateKey = process.env.PRIVATE_KEY;
 const wallet = new ethers.Wallet(privateKey);
 
 // The message you want to sign
-const message = "0x250e662afb81d43f6389ab08fc2119aa155b261e12f504ea55bdfc83587d955a";
-
+const nonce = "iqUp30AfPAIJpyeYb";
+const address="0x843c97F8A229C7dF8667b6C0867f4c1732685707"
+const statement="I am the owner of this address"
+const domain = "localhost";
+const origin = "https://localhost/login";
 // Sign the message
 async function signMessage() {
     try {
         // Sign the message
-        const signature = await wallet.signMessage(message);
-        console.log('Message:', message);
+        const message = new SiweMessage({
+            domain,
+            address,
+            statement,
+            uri: origin,
+            version: '1',
+            chainId: '1',
+            nonce: nonce
+        });
+            const msg = message.prepareMessage();
+
+        const signature = await wallet.signMessage(msg);
+        console.log('Message:', JSON.stringify(msg));
         console.log('Signature:', signature);
 
-        // Verify the signature
-        const signerAddress = ethers.utils.verifyMessage(message, signature);
-        console.log('Signer Address:', signerAddress);
+        // // Verify the signature
+        // const signerAddress = ethers.utils.verifyMessage(message, signature);
+        // console.log('Signer Address:', signerAddress);
 
     } catch (error) {
         console.error('Error signing message:', error);
