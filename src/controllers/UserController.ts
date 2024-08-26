@@ -35,7 +35,9 @@ const validateEmail = (value: string) => {
 userRouter.post("/", [
     body('data.email').trim().custom(validateEmail),
     body('data.address').trim().escape(),
-    body('data.subscribe').trim().escape()
+    body('data.subscribe').trim().escape(),
+    body('data.pkp').trim().escape()
+
 ], isValid, async (req: Request, res: Response) => {
     try {
         let token;
@@ -69,6 +71,7 @@ userRouter.post("/", [
                     address: user.data.address === "" ? null : user.data.address,
                     subscribe: user.data.subscribe,
                     username: randomName,
+                    pkp: user.data.pkp,
                 });
                 let addedUser = await userRepository.save(newUser);
                 token = jwt.sign({ id: addedUser?.id }, process.env.JWT_SECRET, { expiresIn: "1d" });
@@ -151,7 +154,7 @@ userRouter.post("/", [
 //     }
 // });
 
-userRouter.get("/", isAuthenticated, async (req: Request, res: Response)=>{
+userRouter.get("/", isAuthenticated, async (req: Request, res: Response) => {
     try {
         const existingUser = await userRepository.findOne({
             where: {
@@ -160,12 +163,12 @@ userRouter.get("/", isAuthenticated, async (req: Request, res: Response)=>{
         });
         if (!existingUser) {
             Logger.error(`user not exist on id ${req?.user?.id}`);
-            return res.status(404).json({ success: false, error: `user doest not exist`});
+            return res.status(404).json({ success: false, error: `user doest not exist` });
         }
 
         Logger.info(`user exist on id ${req?.user?.id}`);
         return res.status(200).json({ success: true, user: existingUser });
-        
+
 
     } catch (e) {
         Logger.error(`Fatal error due to unknown reason: ${JSON.stringify(e)}`);
@@ -254,6 +257,32 @@ userRouter.get('/nonce/:wallet', (req, res) => {
             Logger.info(`Nonce generated for address ${walletAddress}: ${nonce}`);
             return res.status(200).json({ message: "success", nonce });
         }
+    } catch (error) {
+        Logger.error(`Fatal error due to unknown reason: ${JSON.stringify(error)}`);
+        return res.status(500).json({ error: "An error occurred while processing your request" });
+    }
+});
+
+
+userRouter.get('/capacity', isAuthenticated, async (req, res) => {
+    try {
+        const id = req?.user?.id;
+        const existingUser = await userRepository.findOne({
+            where: {
+                id: id,
+            },
+        });
+        // owner wallet which has the capacity NFT
+        const DAPP_OWNER_WALLET = new ethers.Wallet(process.env.VITE_APP_PUBLIC_DAPP_OWNER_WALLET_PRIVATE_KEY);
+        const { capacityDelegationAuthSig } =
+            await LitNodeClient.createCapacityDelegationAuthSig({
+                uses: '1000',
+                dAppOwnerWallet: DAPP_OWNER_WALLET,
+                capacityTokenId: process.env.VITE_APP_PUBLIC_CAPACITY_TOKEN_ID,
+                delegateeAddresses: [existingUser?.pkp],
+            });
+        return res.status(200).json({ success: true, capacityDelegationAuthSig });
+
     } catch (error) {
         Logger.error(`Fatal error due to unknown reason: ${JSON.stringify(error)}`);
         return res.status(500).json({ error: "An error occurred while processing your request" });

@@ -22,4 +22,7 @@ export class User {
 
   @Column({nullable: false, default: ""})
   bio: string;
+
+  @Column({nullable: false, default: ""})
+  pkp: string;
 }

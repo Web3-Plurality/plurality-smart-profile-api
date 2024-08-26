@@ -22,6 +22,8 @@ import { snapchatRouter } from './controllers/OAuthSnapChatController';
 import { instagramRouter } from './controllers/OAuthInstagramController';
 import { facebookRouter } from './controllers/OAuthFacebookController';
 import { fortniteRouter } from './controllers/OAuthFortniteController';
+import * as LitJsSdk from "@lit-protocol/lit-node-client";
+import { LitNetwork } from "@lit-protocol/constants";
 
 dotenv.config();
 
@@ -65,7 +67,15 @@ app.get('/register-event', async (req: Request, res: Response) => {
   initSSE(req, res)
 });
 
+
 try {
+
+  app.locals.litNodeClient = new LitJsSdk.LitNodeClientNodeJs({
+    // alertWhenUnauthorized: false,
+    // checkNodeAttestation: true,
+    litNetwork: LitNetwork.Datil,
+  });
+
   // Only for development 
   if (process.env.NODE_ENV === 'development') {
     const options = {
@@ -73,6 +83,7 @@ try {
       cert: fs.readFileSync('./local-certificates/cert.pem')
     };
     AppDataSource.initialize().then(async () => {
+      await app.locals.litNodeClient.connect();
       https.createServer(options, app).listen(PORT, () => {
         console.log(`Server is running on https://app.plurality.local:${PORT}`);
       });
@@ -83,6 +94,7 @@ try {
     console.log(process.env.VERIFIER_UI_URL);
     app.set('trust proxy', 1);
     AppDataSource.initialize().then(async () => {
+      await app.locals.litNodeClient.connect();
       app.listen(PORT, (): void => {
         console.log(`Connected successfully on http port ${PORT}`);
       });
