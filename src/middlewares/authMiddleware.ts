@@ -84,21 +84,21 @@ export const isAuthenticated = (req, res, next) => {
 };
 
 export const isValid = async (req, res, next) => {
-
-
   const stytchToken = req.headers['x-stytch-token'];
-  const signature = req.headers['x-signature'];
+  const signature = req.headers['x-siwe'];
+  const message = req.headers['x-message'];
+  console.log(message);
   if (stytchToken && signature) {
     Logger.error("get both address signature and email session token at the same time")
     return res.status(500).json({ errors: "internal server error" });
   }
-
-  if (stytchToken) {
-    // email varification
+  // email varification
+  if (stytchToken && req?.body?.data["email"] && req?.body?.data["address"]) {
+    try {
+    // what is the return of authenticateJwt
     const stytchSession = await client.sessions.authenticateJwt({
       session_jwt: stytchToken,
     })
-    // stytchSession?.authentication_factors?.
     if (stytchSession?.session?.authentication_factors[0]?.email_factor?.email_address !== req?.body?.data?.email) {
       Logger.error(`Invalid stytch token`);
       return res.status(401).json({ errors: "Invalid stytch token" });
@@ -110,12 +110,14 @@ export const isValid = async (req, res, next) => {
     if (jwt.decode(stytchToken)?.aud[0] !== process.env.STYTCH_PROJECT_ID) {
       Logger.error(`stytch token not belongs to this project`);
       return res.status(401).json({ errors: "stytch token expired" });
+    }      
+    } catch (error) {
+      Logger.error(`Invalid stytch token: ${error}`);
+      return res.status(400).send('Invalid stytch token');
     }
-    delete req?.body?.data["address"]; // if we are validating it with email then we have to create token with email
     return next();
   }
-
-  if (signature) {
+  else if (signature && req?.body?.data["address"] && !req?.body?.data["email"]) {
     try {
       //address varification
       const nonce = memoryStore[req?.body?.data?.address];
@@ -124,19 +126,20 @@ export const isValid = async (req, res, next) => {
         return res.status(400).send('Invalid nonce');
       }
 
+      delete memoryStore[req?.body?.data?.address];
       // new implementation
-      const { message } = req?.body?.data;
       const siweMessage = new SiweMessage(message);
-      await siweMessage.verify({ signature })
+      console.log("aaaaaaaaa")
+      // what is the return of this object -> suucess, err, message but if it thorugh error of signature not valid  
+      const SiweResponse = await siweMessage.verify({ signature })
+      if (!SiweResponse.success) {
+        Logger.error(`Invalid signature`);
+        return res.status(400).send('Invalid signature');
+      }
       if (siweMessage?.address?.toLowerCase() !== req?.body?.data?.address?.toLowerCase()) {
         Logger.error(`Invalid signature`);
         return res.status(400).send('Invalid signature');
       }
-
-      if (req?.body?.data["email"]) {
-        delete req?.body?.data["email"];
-      }
-      delete memoryStore[req?.body?.data?.address]; // Optionally delete the used challenge
       return next()
     }
     catch (e) {

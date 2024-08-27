@@ -57,7 +57,7 @@ userRouter.post("/", [
             });
             if (existingUser) {
                 Logger.info(`This user already exists!`);
-                token = jwt.sign({ email: user.data.email, id: existingUser?.id }, process.env.JWT_SECRET, { expiresIn: "1d" });
+                token = jwt.sign({ id: existingUser?.id }, process.env.JWT_SECRET, { expiresIn: "1d" });
                 Logger.info(`All done! Returning...`);
                 return res.status(200).json({ success: true, user: existingUser, token: token });
             } else {
@@ -71,13 +71,13 @@ userRouter.post("/", [
                     username: randomName,
                 });
                 let addedUser = await userRepository.save(newUser);
-                token = jwt.sign({ email: user?.data?.email, id: addedUser?.id }, process.env.JWT_SECRET, { expiresIn: "1d" });
+                token = jwt.sign({ id: addedUser?.id }, process.env.JWT_SECRET, { expiresIn: "1d" });
                 Logger.info(`All done! Returning...`);
                 return res.status(200).json({ success: true, user: addedUser, token: token });
             }
         }
         // User registered via address and skipped email verification
-        if (!user.data.email && !!user.data.address) {
+        else if (!user.data.email && !!user.data.address) {
             Logger.info(`User register via metamask address: ${user.data.address}`);
             // Check if the user with the given address already exists
             const existingUser = await userRepository.findOne({
@@ -101,6 +101,7 @@ userRouter.post("/", [
                     username: randomName,
                 });
                 let addedUser = await userRepository.save(newUser);
+                // remove address, only id is enough -> also at other places
                 token = jwt.sign({ address: user.data.address, id: addedUser?.id }, process.env.JWT_SECRET, { expiresIn: "1d" });
                 Logger.info(`All done! Returning...`);
                 return res.status(200).json({ success: true, user: addedUser, token: token });
