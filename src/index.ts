@@ -27,7 +27,7 @@ import { LitNetwork } from "@lit-protocol/constants";
 
 dotenv.config();
 
-const app: Application = express();
+export const app: Application = express();
 const PORT = process.env.PORT;
 
 app.use(bodyParser.json());

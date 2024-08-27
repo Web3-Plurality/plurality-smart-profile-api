@@ -11,6 +11,7 @@ import jwt from 'jsonwebtoken';
 import { isAuthenticated, isValid } from "../middlewares/authMiddleware";
 import { memoryStore } from "../utils/global";
 import { generateNonce } from 'siwe';
+import { app } from "..";
 
 export const userRouter = express.Router();
 dotenv.config();
@@ -275,7 +276,7 @@ userRouter.get('/capacity', isAuthenticated, async (req, res) => {
         // owner wallet which has the capacity NFT
         const DAPP_OWNER_WALLET = new ethers.Wallet(process.env.VITE_APP_PUBLIC_DAPP_OWNER_WALLET_PRIVATE_KEY);
         const { capacityDelegationAuthSig } =
-            await LitNodeClient.createCapacityDelegationAuthSig({
+            await app.locals.litNodeClient.createCapacityDelegationAuthSig({
                 uses: '1000',
                 dAppOwnerWallet: DAPP_OWNER_WALLET,
                 capacityTokenId: process.env.VITE_APP_PUBLIC_CAPACITY_TOKEN_ID,
