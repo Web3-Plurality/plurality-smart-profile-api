@@ -86,8 +86,6 @@ export const isAuthenticated = (req, res, next) => {
 export const isValid = async (req, res, next) => {
   const stytchToken = req.headers['x-stytch-token'];
   const signature = req.headers['x-siwe'];
-  const message = req.headers['x-message'];
-  console.log(message);
   if (stytchToken && signature) {
     Logger.error("get both address signature and email session token at the same time")
     return res.status(500).json({ errors: "internal server error" });
@@ -120,17 +118,14 @@ export const isValid = async (req, res, next) => {
   else if (signature && req?.body?.data["address"] && !req?.body?.data["email"]) {
     try {
       //address varification
+      const message = decodeURIComponent(req.headers['x-message']);
       const nonce = memoryStore[req?.body?.data?.address];
       if (!nonce) {
         Logger.error(`Invalid nonce`);
         return res.status(400).send('Invalid nonce');
       }
-
       delete memoryStore[req?.body?.data?.address];
-      // new implementation
-      const siweMessage = new SiweMessage(message);
-      console.log("aaaaaaaaa")
-      // what is the return of this object -> suucess, err, message but if it thorugh error of signature not valid  
+      const siweMessage = new SiweMessage(message); 
       const SiweResponse = await siweMessage.verify({ signature })
       if (!SiweResponse.success) {
         Logger.error(`Invalid signature`);
