@@ -84,8 +84,11 @@ export const isAuthenticated = (req, res, next) => {
 };
 
 export const isValid = async (req, res, next) => {
+  try {
   const stytchToken = req.headers['x-stytch-token'];
-  const siweToken = req.headers['x-siwe'];
+  const siweObj = JSON.parse(req.headers['x-siwe']);
+  const siweToken = siweObj?.siwe;
+  
   if (stytchToken && siweToken) {
     Logger.error("get both siwe token and email session token at the same time")
     return res.status(500).json({ errors: "internal server error" });
@@ -118,7 +121,7 @@ export const isValid = async (req, res, next) => {
   else if (siweToken && req?.body?.data["address"] && !req?.body?.data["email"]) {
     try {
       //address varification
-      const message = decodeURIComponent(req.headers['x-message']);
+      const message = decodeURIComponent(siweObj?.message);
       const nonce = memoryStore[req?.body?.data?.address];
       if (!nonce) {
         Logger.error(`Invalid nonce`);
@@ -142,6 +145,12 @@ export const isValid = async (req, res, next) => {
       return res.status(400).send('Invalid siwe token');
     }
   }
-  Logger.error(`neither stytch token nor siwe token found`);
+  else{
+    Logger.error(`neither stytch token nor siwe token found`);
+    return res.status(400).send('Invalid request');
+  }
+} catch (error) {
+  Logger.error(`error: ${error}`);
   return res.status(400).send('Invalid request');
+}
 };

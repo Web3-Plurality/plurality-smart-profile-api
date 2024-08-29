@@ -241,11 +241,23 @@ userRouter.put("/", isAuthenticated, [
 });
 
 //generate random string to take user signature
-userRouter.get('/nonce/:address', (req, res) => {
-    const walletAddress = req.params.address;
-    const nonce = generateNonce()
-    memoryStore[walletAddress] = nonce;
-    return res.status(200).json({ message: "success", nonce });
+userRouter.get('/nonce/:wallet', (req, res) => {
+    try { 
+        const walletAddress = req?.params?.wallet;
+        if (!ethers.utils.isAddress(walletAddress)) {
+            Logger.error(`Fatal error due to invalid wallet address: ${walletAddress}`);
+            return res.status(400).json({ error: "Invalid wallet address" });
+        }
+        else{
+            const nonce = generateNonce()
+            memoryStore[walletAddress] = nonce;
+            Logger.info(`Nonce generated for address ${walletAddress}: ${nonce}`);
+            return res.status(200).json({ message: "success", nonce });
+        }
+    } catch (error) {
+        Logger.error(`Fatal error due to unknown reason: ${JSON.stringify(error)}`);
+        return res.status(500).json({ error: "An error occurred while processing your request" });
+    }
 });
 
 // // GET endpoint to check if a user exists by email
