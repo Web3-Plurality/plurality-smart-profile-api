@@ -241,8 +241,8 @@ userRouter.put("/", isAuthenticated, [
 });
 
 //generate random string to take user signature
-userRouter.get('/nonce', (req, res) => {
-    const walletAddress = req.query.address;
+userRouter.get('/nonce/:address', (req, res) => {
+    const walletAddress = req.params.address;
     const nonce = generateNonce()
     memoryStore[walletAddress] = nonce;
     return res.status(200).json({ message: "success", nonce });

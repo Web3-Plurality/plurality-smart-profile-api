@@ -85,9 +85,9 @@ export const isAuthenticated = (req, res, next) => {
 
 export const isValid = async (req, res, next) => {
   const stytchToken = req.headers['x-stytch-token'];
-  const signature = req.headers['x-siwe'];
-  if (stytchToken && signature) {
-    Logger.error("get both address signature and email session token at the same time")
+  const siweToken = req.headers['x-siwe'];
+  if (stytchToken && siweToken) {
+    Logger.error("get both siwe token and email session token at the same time")
     return res.status(500).json({ errors: "internal server error" });
   }
   // email varification
@@ -115,7 +115,7 @@ export const isValid = async (req, res, next) => {
     }
     return next();
   }
-  else if (signature && req?.body?.data["address"] && !req?.body?.data["email"]) {
+  else if (siweToken && req?.body?.data["address"] && !req?.body?.data["email"]) {
     try {
       //address varification
       const message = decodeURIComponent(req.headers['x-message']);
@@ -126,22 +126,22 @@ export const isValid = async (req, res, next) => {
       }
       delete memoryStore[req?.body?.data?.address];
       const siweMessage = new SiweMessage(message); 
-      const SiweResponse = await siweMessage.verify({ signature })
+      const SiweResponse = await siweMessage.verify({ siweToken })
       if (!SiweResponse.success) {
-        Logger.error(`Invalid signature`);
-        return res.status(400).send('Invalid signature');
+        Logger.error(`Invalid siwe token`);
+        return res.status(400).send('Invalid siwe token');
       }
       if (siweMessage?.address?.toLowerCase() !== req?.body?.data?.address?.toLowerCase()) {
-        Logger.error(`Invalid signature`);
-        return res.status(400).send('Invalid signature');
+        Logger.error(`Invalid siwe token`);
+        return res.status(400).send('Invalid siwe token');
       }
       return next()
     }
     catch (e) {
-      Logger.error(`Invalid signature: ${e}`);
-      return res.status(400).send('Invalid signature');
+      Logger.error(`Invalid siwe token: ${e}`);
+      return res.status(400).send('Invalid siwe token');
     }
   }
-  Logger.error(`neighter stytch token nor signature found`);
+  Logger.error(`neither stytch token nor siwe token found`);
   return res.status(400).send('Invalid request');
 };
