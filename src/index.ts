@@ -14,7 +14,7 @@ import { permawebRouter } from './controllers/PermawebUploadController';
 import { tiktokRouter } from './controllers/OAuthTikTokController';
 import { subgraphRouter } from './controllers/SubgraphController';
 import https from "https"
-import { stytchRouter } from './controllers/StytchController';
+import { userRouter } from './controllers/UserController';
 import { AppDataSource } from './data-source';
 import fs from "fs";
 import { initSSE } from './utils/global';
@@ -22,10 +22,12 @@ import { snapchatRouter } from './controllers/OAuthSnapChatController';
 import { instagramRouter } from './controllers/OAuthInstagramController';
 import { facebookRouter } from './controllers/OAuthFacebookController';
 import { fortniteRouter } from './controllers/OAuthFortniteController';
+import * as LitJsSdk from "@lit-protocol/lit-node-client";
+import { LitNetwork } from "@lit-protocol/constants";
 
 dotenv.config();
 
-const app: Application = express();
+export const app: Application = express();
 const PORT = process.env.PORT;
 
 app.use(bodyParser.json());
@@ -44,7 +46,7 @@ app.use("/oauth-fortnite", fortniteRouter);
 app.use("/permaweb", permawebRouter);
 app.use("/oauth-tiktok", tiktokRouter);
 app.use("/subgraph", subgraphRouter);
-app.use("/stytch", stytchRouter);
+app.use("/user", userRouter);
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 app.get('/', async (req: Request, res: Response): Promise<Response> => {
@@ -65,7 +67,15 @@ app.get('/register-event', async (req: Request, res: Response) => {
   initSSE(req, res)
 });
 
+
 try {
+
+  app.locals.litNodeClient = new LitJsSdk.LitNodeClientNodeJs({
+    // alertWhenUnauthorized: false,
+    // checkNodeAttestation: true,
+    litNetwork: LitNetwork.Datil,
+  });
+
   // Only for development 
   if (process.env.NODE_ENV === 'development') {
     const options = {
@@ -73,6 +83,7 @@ try {
       cert: fs.readFileSync('./local-certificates/cert.pem')
     };
     AppDataSource.initialize().then(async () => {
+      await app.locals.litNodeClient.connect();
       https.createServer(options, app).listen(PORT, () => {
         console.log(`Server is running on https://app.plurality.local:${PORT}`);
       });
@@ -83,6 +94,7 @@ try {
     console.log(process.env.VERIFIER_UI_URL);
     app.set('trust proxy', 1);
     AppDataSource.initialize().then(async () => {
+      await app.locals.litNodeClient.connect();
       app.listen(PORT, (): void => {
         console.log(`Connected successfully on http port ${PORT}`);
       });
