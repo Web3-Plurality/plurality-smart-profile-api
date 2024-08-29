@@ -91,7 +91,7 @@ userRouter.post("/", [
             });
             if (existingUser) {
                 Logger.info(`This user already exists!`);
-                token = jwt.sign({ address: user?.data?.address, id: existingUser?.id }, process.env.JWT_SECRET, { expiresIn: "1d" });
+                token = jwt.sign({ id: existingUser?.id }, process.env.JWT_SECRET, { expiresIn: "1d" });
                 Logger.info(`All done! Returning...`);
                 return res.status(200).json({ success: true, user: existingUser, token: token });
             } else {
@@ -106,7 +106,7 @@ userRouter.post("/", [
                 });
                 let addedUser = await userRepository.save(newUser);
                 // remove address, only id is enough -> also at other places
-                token = jwt.sign({ address: user.data.address, id: addedUser?.id }, process.env.JWT_SECRET, { expiresIn: "1d" });
+                token = jwt.sign({ id: addedUser?.id }, process.env.JWT_SECRET, { expiresIn: "1d" });
                 Logger.info(`All done! Returning...`);
                 return res.status(200).json({ success: true, user: addedUser, token: token });
             }
