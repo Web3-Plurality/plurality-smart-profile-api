@@ -36,9 +36,7 @@ const validateEmail = (value: string) => {
 userRouter.post("/", [
     body('data.email').trim().custom(validateEmail),
     body('data.address').trim().escape(),
-    body('data.subscribe').trim().escape(),
-    body('data.pkp').trim().escape()
-
+    body('data.subscribe').toBoolean()
 ], isValid, async (req: Request, res: Response) => {
     try {
         let token;
@@ -71,8 +69,7 @@ userRouter.post("/", [
                     email: user.data.email === "" ? null : user.data.email,
                     address: user.data.address === "" ? null : user.data.address,
                     subscribe: user.data.subscribe,
-                    username: randomName,
-                    pkp: user.data.pkp,
+                    username: randomName
                 });
                 let addedUser = await userRepository.save(newUser);
                 token = jwt.sign({ id: addedUser?.id }, process.env.JWT_SECRET, { expiresIn: "1d" });
@@ -274,13 +271,13 @@ userRouter.get('/capacity', isAuthenticated, async (req, res) => {
             },
         });
         // owner wallet which has the capacity NFT
-        const DAPP_OWNER_WALLET = new ethers.Wallet(process.env.VITE_APP_PUBLIC_DAPP_OWNER_WALLET_PRIVATE_KEY);
+        const DAPP_OWNER_WALLET = new ethers.Wallet(process.env.PUBLIC_DAPP_OWNER_WALLET_PRIVATE_KEY);
         const { capacityDelegationAuthSig } =
             await app.locals.litNodeClient.createCapacityDelegationAuthSig({
-                uses: '1000',
+                uses: '100',
                 dAppOwnerWallet: DAPP_OWNER_WALLET,
-                capacityTokenId: process.env.VITE_APP_PUBLIC_CAPACITY_TOKEN_ID,
-                delegateeAddresses: [existingUser?.pkp],
+                capacityTokenId: process.env.PUBLIC_CAPACITY_TOKEN_ID,
+                delegateeAddresses: [existingUser?.address],
             });
         return res.status(200).json({ success: true, capacityDelegationAuthSig });
 
