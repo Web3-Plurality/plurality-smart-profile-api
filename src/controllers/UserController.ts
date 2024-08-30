@@ -179,14 +179,18 @@ userRouter.put("/", isAuthenticated, [
     body('data.username').optional().trim().isLength({ max: 50 }),
     body("bio").optional().trim().isLength({ max: 300 }),
     body('data.profileImg').optional()
-        .trim()
-        .custom((value) => {
-            const base64Pattern = /^data:image\/(jpeg|png|gif|bmp|tiff|webp);base64,/;
-            if (!base64Pattern.test(value)) {
-                throw new Error('Profile image must be a base64 encoded image');
-            }
+    .trim()
+    .custom((value) => {
+        // If the value is empty or undefined, allow it to pass
+        if (!value) {
             return true;
-        })
+        }
+        const base64Pattern = /^data:image\/(jpeg|png|gif|bmp|tiff|webp);base64,/;
+        if (!base64Pattern.test(value)) {
+            throw new Error('Profile image must be a base64 encoded image');
+        }
+        return true;
+    })
 
 ], async (req: Request, res: Response) => {
     try {
