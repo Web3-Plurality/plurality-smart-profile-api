@@ -2,9 +2,9 @@ import express, { Request, Response } from "express";
 import passport from "passport";
 import * as dotenv from 'dotenv';
 import axios from "axios";
-import { hasValidAccessTokenHeader, hasValidEventHeader, hasValidEventParam } from "../middlewares/authMiddleware";
+import { hasValidAccessTokenHeader, hasValidEventHeader, hasValidEventParam, isAuthenticated } from "../middlewares/authMiddleware";
 import Logger from "../lib/logger";
-import { INTERNAL_SERVER_ERROR, SNAPCHAT_APP, TIMEOUT_ERROR, memoryStore } from "../utils/global";
+import { INTERNAL_SERVER_ERROR, SNAPCHAT_APP, TIMEOUT_ERROR, memoryStoreProfile, memoryStoreSSE, memoryStoreToken } from "../utils/global";
 import OAuthSnapChatStrategy from "../auth/OAuthSnapChatStrategy";
 import { SnapChatProfile } from "../entity/Snapchat";
 import { v4 as uuidv4 } from 'uuid';
@@ -55,7 +55,7 @@ snapchatRouter.get(
 snapchatRouter.get('/callback', passport.authenticate('snapchat', { session: false }), async (req, res) => {
   try {
     const accessTokenId = uuidv4();
-    memoryStore.set(accessTokenId, req.user.accessToken);
+    memoryStoreToken.set(accessTokenId, req.user.accessToken);
     const url = `${process.env.WIDGET_UI_URL}?token_id=${accessTokenId}&app=${SNAPCHAT_APP}`;
     Logger.info(`${SNAPCHAT_APP}: Redirecting to ${url}`);
     res.redirect(url);
@@ -74,10 +74,10 @@ snapchatRouter.post(
     try {
       Logger.info(`${SNAPCHAT_APP}: Request body tokenUUID ${req?.accessTokenID}`);
       Logger.info(`${SNAPCHAT_APP}: Request body sseUUID ${req?.sseID}`);
-      const serverSentEventResponse = memoryStore.get(req?.sseID);
+      const serverSentEventResponse = memoryStoreSSE.get(req?.sseID);
       serverSentEventResponse.write(`data: {"message":"received", "app":"${SNAPCHAT_APP}", "auth":"${req?.accessTokenID}"}\n\n`)
       Logger.info(`${SNAPCHAT_APP}: Server Side Event has been sent successfully`);
-      memoryStore.delete(req?.sseID);
+      memoryStoreSSE.delete(req?.sseID);
       return res.status(200).json({ app: SNAPCHAT_APP, message: "success" });
     } catch (error) {
       Logger.info(`${SNAPCHAT_APP}: Error in sending event ${error.message}`);
@@ -87,10 +87,10 @@ snapchatRouter.post(
   });
 
 // Return User Object
-snapchatRouter.get('/info', hasValidAccessTokenHeader, async (req, res) => {
+snapchatRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, async (req, res) => {
   try {
     Logger.info(`${SNAPCHAT_APP}: Request for information has been received successfully with id ${req.accessTokenID}`);
-    const accessToken = memoryStore.get(req.accessTokenID)
+    const accessToken = memoryStoreToken.get(req.accessTokenID)
     let snapUser = { data: { data: {} } }
 
     if (accessToken) {
@@ -121,10 +121,14 @@ snapchatRouter.get('/info', hasValidAccessTokenHeader, async (req, res) => {
       userProfile.username = snapChatProfile.displayName;
       userProfile.avatar = snapChatProfile.bitmoji;
       console.log(userProfile)
-      
-      memoryStore.delete(req?.accessTokenID);
+      if (memoryStoreProfile.get(req?.user?.id)) {
+        memoryStoreProfile.get(req?.user?.id).aggregateProfile(userProfile);
+      } else {
+        memoryStoreProfile.set(req?.user?.id, userProfile)
+      }
+      memoryStoreToken.delete(req?.accessTokenID);
       Logger.info(`${SNAPCHAT_APP}: User information has been delivered successfully`);
-      return res.status(200).json({ app: SNAPCHAT_APP, message: "success", snapchatProfile: snapChatProfile })
+      return res.status(200).json({ app: SNAPCHAT_APP, message: "success", snapchatProfile: userProfile })
 
     } else {
       Logger.error(`${SNAPCHAT_APP}: Token has been expired.`);

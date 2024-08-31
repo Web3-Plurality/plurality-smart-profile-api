@@ -9,7 +9,7 @@ import { faker } from '@faker-js/faker';
 import { ethers } from "ethers";
 import jwt from 'jsonwebtoken';
 import { isAuthenticated, isValid } from "../middlewares/authMiddleware";
-import { memoryStore } from "../utils/global";
+import { memoryStoreNonce, memoryStoreProfile, memoryStoreToken } from "../utils/global";
 import { generateNonce } from 'siwe';
 import { app } from "..";
 
@@ -254,7 +254,7 @@ userRouter.get('/nonce/:wallet', (req, res) => {
         }
         else{
             const nonce = generateNonce()
-            memoryStore[walletAddress] = nonce;
+            memoryStoreNonce.set(walletAddress, nonce);
             Logger.info(`Nonce generated for address ${walletAddress}: ${nonce}`);
             return res.status(200).json({ message: "success", nonce });
         }
@@ -289,6 +289,25 @@ userRouter.get('/capacity', isAuthenticated, async (req, res) => {
         return res.status(500).json({ error: "An error occurred while processing your request" });
     }
 });
+
+userRouter.get('/smart-profile', isAuthenticated, async (req, res) => {
+    try {
+        const id = req?.user?.id;
+        const smartProfile = memoryStoreProfile.get(id);
+        if (smartProfile) {
+            memoryStoreProfile.delete(id);
+            Logger.info(`Smart profile found for user id: ${id}`);
+            return res.status(200).json({ success: true, smartProfile });
+        }else{
+            Logger.error(`Fatal error due to invalid user id: ${id}`);
+            return res.status(400).json({ error: "Invalid user id" });
+        }
+    } catch (error) {
+        Logger.error(`Fatal error due to unknown reason: ${JSON.stringify(error)}`);
+        return res.status(500).json({ error: "An error occurred while processing your request" });
+    }
+});
+
 
 // // GET endpoint to check if a user exists by email
 // userRouter.get("/check-email", [

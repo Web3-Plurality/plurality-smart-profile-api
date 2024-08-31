@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { memoryStore } from "../utils/global";
+import { memoryStoreNonce, memoryStoreToken, memoryStoreSSE } from "../utils/global";
 import Logger from "../lib/logger";
 import jwt from 'jsonwebtoken';
 import stytch from "stytch";
@@ -19,7 +19,7 @@ const client = new stytch.Client({
 export function hasValidAccessTokenHeader(req: Request, res: Response, next) {
   const accessTokenID = req.headers['x-token-id'];
   if (accessTokenID) {
-    const accessToken = memoryStore.get(accessTokenID);
+    const accessToken = memoryStoreToken.get(accessTokenID);
     if (!accessToken) {
       Logger.error("Access token not found");
       return res.status(400).send("Access token not found");
@@ -36,7 +36,7 @@ export function hasValidAccessTokenHeader(req: Request, res: Response, next) {
 export function hasValidEventHeader(req: Request, res: Response, next) {
   const sseID = req.headers['x-sse-id'];
   if (sseID) {
-    const ssEvent = memoryStore.get(sseID);
+    const ssEvent = memoryStoreSSE.get(sseID);
     if (!ssEvent) {
       Logger.error("SSE event not found");
       return res.status(400).send("SSE event not found");
@@ -53,7 +53,7 @@ export function hasValidEventHeader(req: Request, res: Response, next) {
 export function hasValidEventParam(req: Request, res: Response, next) {
   const sseID = req.query.sse_id;
   if (sseID) {
-    const ssEvent = memoryStore.get(sseID);
+    const ssEvent = memoryStoreSSE.get(sseID);
     if (!ssEvent) {
       Logger.error("SSE event not found");
       return res.status(400).send("SSE event not found");
@@ -121,12 +121,12 @@ export const isValid = async (req, res, next) => {
     try {
       //address varification
       const message = decodeURIComponent(siweObj?.message);
-      const nonce = memoryStore[req?.body?.data?.address];
+      const nonce = memoryStoreNonce.get(req?.body?.data?.address);
       if (!nonce) {
         Logger.error(`Invalid nonce`);
         return res.status(400).send('Invalid nonce');
       }
-      delete memoryStore[req?.body?.data?.address];
+      delete memoryStoreNonce[req?.body?.data?.address];
       const siweMessage = new SiweMessage(message); 
       const signature=siweToken;
       const siweResponse = await siweMessage.verify({ signature })

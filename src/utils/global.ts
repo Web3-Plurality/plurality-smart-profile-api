@@ -1,6 +1,9 @@
 import { v4 as uuidv4 } from 'uuid';
 
-export const memoryStore = new Map();
+export const memoryStoreNonce = new Map();
+export const memoryStoreToken = new Map();
+export const memoryStoreProfile = new Map();
+export const memoryStoreSSE = new Map();
 export const TIKTOK_APP = "tiktok";
 export const TWITTER_APP = "twitter";
 export const SNAPCHAT_APP = "snapchat";
@@ -20,9 +23,9 @@ export function initSSE(req: Request, res: Response) {
     'Cache-Control': 'no-cache',
     'Connection': 'keep-alive',
   });
-  const id = uuidv4();
-  memoryStore.set(id, res);
-  res.write(`data: {"message":"Connection established", "id":"${id}"}\n\n`);
+  const sseID = uuidv4();
+  memoryStoreSSE.set(sseID, res);
+  res.write(`data: {"message":"Connection established", "id":"${sseID}"}\n\n`);
 }
 
 export function parseQueryString(query: string) {

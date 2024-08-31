@@ -2,9 +2,9 @@ import express, { Request, Response } from "express";
 import passport from "passport";
 import * as dotenv from 'dotenv';
 import axios from "axios";
-import { hasValidAccessTokenHeader, hasValidEventHeader, hasValidEventParam } from "../middlewares/authMiddleware";
+import { hasValidAccessTokenHeader, hasValidEventHeader, hasValidEventParam, isAuthenticated } from "../middlewares/authMiddleware";
 import Logger from "../lib/logger";
-import { FACEBOOK_APP, INTERNAL_SERVER_ERROR, TIMEOUT_ERROR, memoryStore, createPrompt } from "../utils/global";
+import { FACEBOOK_APP, INTERNAL_SERVER_ERROR, TIMEOUT_ERROR, createPrompt, memoryStoreToken, memoryStoreSSE, memoryStoreProfile } from "../utils/global";
 import OAuthFacebookStrategy from "../auth/OAuthFacebookStrategy";
 import { analyze } from "../utils/groq";
 import { FacebookProfile } from "../entity/Facebook";
@@ -58,7 +58,7 @@ facebookRouter.get(
 facebookRouter.get('/callback', passport.authenticate('facebook', { session: false }), async (req, res) => {
     try {
         const accessTokenId = uuidv4();
-        memoryStore.set(accessTokenId, req.user.accessToken);
+        memoryStoreToken.set(accessTokenId, req.user.accessToken);
         const url = `${process.env.WIDGET_UI_URL}?token_id=${accessTokenId}&app=${FACEBOOK_APP}`;
         Logger.info(`${FACEBOOK_APP}: Redirecting to ${url}`);
         res.redirect(url);
@@ -77,10 +77,10 @@ facebookRouter.post(
         try {
             Logger.info(`${FACEBOOK_APP}: Request body tokenUUID ${req?.accessTokenID}`);
             Logger.info(`${FACEBOOK_APP}: Request body sseUUID ${req?.sseID}`);
-            const serverSentEventResponse = memoryStore.get(req?.sseID);
+            const serverSentEventResponse = memoryStoreSSE.get(req?.sseID);
             serverSentEventResponse.write(`data: {"message":"received", "app":"${FACEBOOK_APP}", "auth":"${req?.accessTokenID}"}\n\n`)
             Logger.info(`${FACEBOOK_APP}: Server Side Event has been sent successfully`);
-            memoryStore.delete(req?.sseID);
+            memoryStoreSSE.delete(req?.sseID);
             return res.status(200).json({ app: FACEBOOK_APP, message: "success" });
         } catch (error) {
             Logger.info(`${FACEBOOK_APP}: Error in sending SSE ${error.message}`);
@@ -91,10 +91,10 @@ facebookRouter.post(
 
 
 // Return User Object
-facebookRouter.get('/info', hasValidAccessTokenHeader, async (req, res) => {
+facebookRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, async (req, res) => {
     try {
         Logger.info(`${FACEBOOK_APP}: Request for information has been received successfully with id ${req.accessTokenID}`);
-        const accessToken = memoryStore.get(req.accessTokenID)
+        const accessToken = memoryStoreToken.get(req.accessTokenID)
         let fbUser = { data: { data: {} } }
         if (accessToken) {
 
@@ -162,10 +162,16 @@ facebookRouter.get('/info', hasValidAccessTokenHeader, async (req, res) => {
             userProfile.extra.push({ field: "music count", value: facebookProfile?.music_count });
             userProfile.extra.push({ field: "athleast count", value: facebookProfile?.athletes_count });
             userProfile.extra.push({ field: "favourite team count", value: facebookProfile?.favTeam_count });
+
+            if (memoryStoreProfile.get(req?.user?.id)) {
+                memoryStoreProfile.get(req?.user?.id).aggregateProfile(userProfile);
+            } else {
+                memoryStoreProfile.set(req?.user?.id, userProfile)
+            }
             
-            memoryStore.delete(req?.accessTokenID);
+            memoryStoreToken.delete(req?.accessTokenID);
             Logger.info(`${FACEBOOK_APP}: User information has been delivered successfully`);
-            return res.status(200).json({ app: FACEBOOK_APP, message: "success", facebookProfile: facebookProfile })
+            return res.status(200).json({ app: FACEBOOK_APP, message: "success", facebookProfile: userProfile })
         }
         else {
             Logger.error(`${FACEBOOK_APP}: Token has been expired.`);

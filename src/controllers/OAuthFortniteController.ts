@@ -2,9 +2,9 @@ import express, { Request, Response } from "express";
 import passport from "passport";
 import * as dotenv from 'dotenv';
 import axios from "axios";
-import { hasValidAccessTokenHeader, hasValidEventHeader, hasValidEventParam } from "../middlewares/authMiddleware";
+import { hasValidAccessTokenHeader, hasValidEventHeader, hasValidEventParam, isAuthenticated } from "../middlewares/authMiddleware";
 import Logger from "../lib/logger";
-import { memoryStore, FORTNITE_APP, INTERNAL_SERVER_ERROR, TIMEOUT_ERROR } from "../utils/global";
+import { FORTNITE_APP, INTERNAL_SERVER_ERROR, TIMEOUT_ERROR, memoryStoreToken, memoryStoreSSE, memoryStoreProfile } from "../utils/global";
 import OAuthFortniteStrategy from "../auth/OAuthFortniteStrategy"
 import jwt from 'jsonwebtoken'
 import { FortniteProfile } from "../entity/Fortnite";
@@ -57,7 +57,7 @@ fortniteRouter.get(
 fortniteRouter.get('/callback', passport.authenticate('fortnite', { session: false }), async (req, res) => {
   try {
     const accessTokenId = uuidv4();
-    memoryStore.set(accessTokenId, {
+    memoryStoreToken.set(accessTokenId, {
       accessToken: req.user.accessToken,
       account_id: req.user.account_id
     });
@@ -79,10 +79,10 @@ fortniteRouter.post(
     try {
       Logger.info(`${FORTNITE_APP}: Request body tokenUUID ${req?.accessTokenID}`);
       Logger.info(`${FORTNITE_APP}: Request body sseUUID ${req?.sseID}`);
-      const serverSentEventResponse = memoryStore.get(req?.sseID);
+      const serverSentEventResponse = memoryStoreSSE.get(req?.sseID);
       serverSentEventResponse.write(`data: {"message":"received", "app":"${FORTNITE_APP}", "auth":"${req?.accessTokenID}"}\n\n`)
       Logger.info(`${FORTNITE_APP}: Server Side Event has been sent successfully`);
-      memoryStore.delete(req?.sseID);
+      memoryStoreSSE.delete(req?.sseID);
       return res.status(200).json({ app: FORTNITE_APP, message: "success" });
     } catch (error) {
       Logger.info(`${FORTNITE_APP}: Error in sending SSE ${error.message}`);
@@ -92,10 +92,10 @@ fortniteRouter.post(
   });
 
 // Return User Object
-fortniteRouter.get('/info', hasValidAccessTokenHeader, async (req, res) => {
+fortniteRouter.get('/info', hasValidAccessTokenHeader,isAuthenticated, async (req, res) => {
   try {
     Logger.info(`${FORTNITE_APP}: Request for information has been received successfully with id ${req.accessTokenID}`);
-    const { accessToken, account_id }: any = memoryStore.get(req.accessTokenID);
+    const { accessToken, account_id }: any = memoryStoreToken.get(req.accessTokenID);
     let userFortnite = { data: {} }
 
     if (accessToken) {
@@ -124,23 +124,27 @@ fortniteRouter.get('/info', hasValidAccessTokenHeader, async (req, res) => {
       // Create user profile object
       const userProfile = new UserProfile();
       userProfile.username = fortniteProfile?.displayName;
-
-      memoryStore.delete(req?.accessTokenID);
+      if (memoryStoreProfile.get(req?.user?.id)) {
+        memoryStoreProfile.get(req?.user?.id).aggregateProfile(userProfile);
+      } else {
+        memoryStoreProfile.set(req?.user?.id, userProfile)
+      }
+      memoryStoreToken.delete(req?.accessTokenID);
       Logger.info(`${FORTNITE_APP}: User information has been delivered successfully`);
-      return res.status(200).json({ app: FORTNITE_APP, message: "success", fortniteProfile: fortniteProfile })
+      return res.status(200).json({ app: FORTNITE_APP, message: "success", fortniteProfile: userProfile })
 
     } else {
-  Logger.error(`${FORTNITE_APP}: Token has been expired.`);
-  return res.status(500).json({ app: FORTNITE_APP, error: 'Unauthorized', message: INTERNAL_SERVER_ERROR });
-}
+      Logger.error(`${FORTNITE_APP}: Token has been expired.`);
+      return res.status(500).json({ app: FORTNITE_APP, error: 'Unauthorized', message: INTERNAL_SERVER_ERROR });
+    }
   } catch (error: any) {
-  if (error.code === 'ECONNABORTED') {
-    Logger.error(`${FORTNITE_APP}: Request timeout error in fetching userinfo: ${error.message}`);
-    return res.status(408).json({ app: FORTNITE_APP, message: TIMEOUT_ERROR });
+    if (error.code === 'ECONNABORTED') {
+      Logger.error(`${FORTNITE_APP}: Request timeout error in fetching userinfo: ${error.message}`);
+      return res.status(408).json({ app: FORTNITE_APP, message: TIMEOUT_ERROR });
+    }
+    else {
+      Logger.error(`${FORTNITE_APP}: Error occurred in fetching user informantion: ${error.message}`);
+      return res.status(500).json({ app: FORTNITE_APP, error: 'Unauthorized', message: INTERNAL_SERVER_ERROR });
+    }
   }
-  else {
-    Logger.error(`${FORTNITE_APP}: Error occurred in fetching user informantion: ${error.message}`);
-    return res.status(500).json({ app: FORTNITE_APP, error: 'Unauthorized', message: INTERNAL_SERVER_ERROR });
-  }
-}
 });
