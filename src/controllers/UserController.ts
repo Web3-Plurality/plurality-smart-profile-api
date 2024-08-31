@@ -176,7 +176,7 @@ userRouter.get("/", isAuthenticated, async (req: Request, res: Response) => {
 
 userRouter.put("/", isAuthenticated, [
     body('data.username').optional().trim().isLength({ max: 50 }),
-    body("bio").optional().trim().isLength({ max: 300 }),
+    body("data.bio").optional().trim().isLength({ max: 300 }),
     body('data.profileImg').optional()
     .trim()
     .custom((value) => {
