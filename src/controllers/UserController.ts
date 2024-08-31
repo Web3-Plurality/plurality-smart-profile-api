@@ -9,9 +9,10 @@ import { faker } from '@faker-js/faker';
 import { ethers } from "ethers";
 import jwt from 'jsonwebtoken';
 import { isAuthenticated, isValid } from "../middlewares/authMiddleware";
-import { memoryStoreNonce, memoryStoreProfile, memoryStoreToken } from "../utils/global";
+import { memoryStoreNonce, memoryStoreProfile } from "../utils/global";
 import { generateNonce } from 'siwe';
 import { app } from "..";
+import { UserProfile } from "../entity/UserProfile";
 
 export const userRouter = express.Router();
 dotenv.config();
@@ -178,18 +179,18 @@ userRouter.put("/", isAuthenticated, [
     body('data.username').optional().trim().isLength({ max: 50 }),
     body("data.bio").optional().trim().isLength({ max: 300 }),
     body('data.profileImg').optional()
-    .trim()
-    .custom((value) => {
-        // If the value is empty or undefined, allow it to pass
-        if (!value) {
+        .trim()
+        .custom((value) => {
+            // If the value is empty or undefined, allow it to pass
+            if (!value) {
+                return true;
+            }
+            const base64Pattern = /^data:image\/(jpeg|png|gif|bmp|tiff|webp);base64,/;
+            if (!base64Pattern.test(value)) {
+                throw new Error('Profile image must be a base64 encoded image');
+            }
             return true;
-        }
-        const base64Pattern = /^data:image\/(jpeg|png|gif|bmp|tiff|webp);base64,/;
-        if (!base64Pattern.test(value)) {
-            throw new Error('Profile image must be a base64 encoded image');
-        }
-        return true;
-    })
+        })
 
 ], async (req: Request, res: Response) => {
     try {
@@ -246,13 +247,13 @@ userRouter.put("/", isAuthenticated, [
 
 //generate random string to take user signature
 userRouter.get('/nonce/:wallet', (req, res) => {
-    try { 
+    try {
         const walletAddress = req?.params?.wallet;
         if (!ethers.utils.isAddress(walletAddress)) {
             Logger.error(`Fatal error due to invalid wallet address: ${walletAddress}`);
             return res.status(400).json({ error: "Invalid wallet address" });
         }
-        else{
+        else {
             const nonce = generateNonce()
             memoryStoreNonce.set(walletAddress, nonce);
             Logger.info(`Nonce generated for address ${walletAddress}: ${nonce}`);
@@ -290,17 +291,53 @@ userRouter.get('/capacity', isAuthenticated, async (req, res) => {
     }
 });
 
-userRouter.get('/smart-profile', isAuthenticated, async (req, res) => {
+userRouter.post('/smart-profile', isAuthenticated, async (req, res) => {
     try {
         const id = req?.user?.id;
+
         const smartProfile = memoryStoreProfile.get(id);
-        if (smartProfile) {
+        if (smartProfile && req?.body?.userProfile) {
+            const { username,
+                avatar,
+                interests,
+                scores,
+                reputation_tags,
+                badges,
+                collections,
+                extra,
+                linked_address } = req?.body?.userProfile;
+            const userProfile = new UserProfile();
+            userProfile.username = username;
+            userProfile.avatar = avatar;
+            userProfile.interests = interests;
+            userProfile.scores = scores;
+            userProfile.reputation_tags = reputation_tags;
+            userProfile.badges = badges;
+            userProfile.collections = collections;
+            userProfile.extra = extra;
+            userProfile.linked_address = linked_address;
+
+            userProfile.aggregateProfile(smartProfile);
             memoryStoreProfile.delete(id);
             Logger.info(`Smart profile found for user id: ${id}`);
-            return res.status(200).json({ success: true, smartProfile });
-        }else{
-            Logger.error(`Fatal error due to invalid user id: ${id}`);
-            return res.status(400).json({ error: "Invalid user id" });
+            return res.status(200).json({ success: true, userProfile: userProfile });
+        }else if(smartProfile){
+
+            const existingUser = await userRepository.findOne({
+                where: {
+                    id: id,
+                },
+            });
+            smartProfile.username = existingUser?.username;
+            smartProfile.avatar = existingUser?.profileImg;
+            smartProfile.bio = existingUser?.bio;
+            memoryStoreProfile.delete(id);
+            Logger.info(`Smart profile found for user id: ${id}`);
+            return res.status(200).json({ success: true, userProfile: smartProfile });
+        }
+         else {
+            Logger.error(`no profile connected on id: ${id}`);
+            return res.status(400).json({ error: "no profile connected" });
         }
     } catch (error) {
         Logger.error(`Fatal error due to unknown reason: ${JSON.stringify(error)}`);

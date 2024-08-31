@@ -1,3 +1,5 @@
+import { th } from "@faker-js/faker";
+
 interface Score {
     score_type: string;
     score_value: number;
@@ -17,6 +19,7 @@ interface LinkedAddress {
 export class UserProfile {
     username: string;
     avatar: string;
+    bio: string;
     interests: string[];
     scores: Score[];
     reputation_tags: string[];
@@ -28,16 +31,18 @@ export class UserProfile {
     constructor(
         username?: string,
         avatar?: string,
-        interests?: string[] = [],
-        scores?: Score[] = [],
-        reputation_tags?: string[] = [],
-        badges?: string[] = [],
-        collections?: string[] = [],
-        extra?: Extra[] = [],
-        linked_address?: LinkedAddress[] = []
+        bio?: string,
+        interests: string[] = [],
+        scores: Score[] = [],
+        reputation_tags: string[] = [],
+        badges: string[] = [],
+        collections: string[] = [],
+        extra: Extra[] = [],
+        linked_address: LinkedAddress[] = []
     ) {
         this.username = username || "";
         this.avatar = avatar || "";
+        this.bio = bio || "";
         this.interests = interests || [];
         this.scores = scores;
         this.reputation_tags = reputation_tags;
@@ -49,8 +54,6 @@ export class UserProfile {
 
     // You can add methods to manipulate or retrieve the data here
     aggregateProfile(user: UserProfile){
-        this.username = this.username ?? user?.username; 
-        this.avatar = this.avatar ?? user?.avatar; 
         this.collections = this.collections.concat(user.collections);
         this.interests = this.interests.concat(user.interests);
         this.reputation_tags = this.reputation_tags.concat(user.reputation_tags);
