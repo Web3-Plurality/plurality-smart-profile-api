@@ -13,6 +13,7 @@ import { memoryStoreNonce, memoryStoreProfile } from "../utils/global";
 import { generateNonce } from 'siwe';
 import { app } from "..";
 import { UserProfile } from "../entity/UserProfile";
+import { plainToClass, plainToInstance  } from "class-transformer";
 
 export const userRouter = express.Router();
 dotenv.config();
@@ -65,12 +66,12 @@ userRouter.post("/", [
             } else {
                 // If the user doesn't exist, insert a new row
                 Logger.info(`This is a new user! Creating an entry with email: ${user.data.email}, address: ${user.data.address}, subscribe: ${user.data.subscribe} ...`);
-                const randomName = faker.person.lastName().toLocaleLowerCase();
+                // const randomName = faker.person.lastName().toLocaleLowerCase();
                 let newUser = await userRepository.create({
                     email: user.data.email === "" ? null : user.data.email,
                     address: user.data.address === "" ? null : user.data.address,
                     subscribe: user.data.subscribe,
-                    username: randomName
+                    // username: randomName
                 });
                 let addedUser = await userRepository.save(newUser);
                 token = jwt.sign({ id: addedUser?.id }, process.env.JWT_SECRET, { expiresIn: "1d" });
@@ -95,12 +96,12 @@ userRouter.post("/", [
             } else {
                 // If the user doesn't exist, insert a new row
                 Logger.info(`This is a new user! Creating an entry with email: ${user.data.email}, address: ${user.data.address}, subscribe: false ...`);
-                const randomName = faker.person.lastName().toLocaleLowerCase();
+                // const randomName = faker.person.lastName().toLocaleLowerCase();
                 const newUser = await userRepository.create({
                     email: user.data.email === "" ? null : user.data.email,
                     address: user.data.address === "" ? null : user.data.address,
                     subscribe: "false",
-                    username: randomName,
+                    // username: randomName,
                 });
                 let addedUser = await userRepository.save(newUser);
                 // remove address, only id is enough -> also at other places
@@ -202,7 +203,7 @@ userRouter.put("/", isAuthenticated, [
         }
 
         const user = JSON.parse(JSON.stringify(req.body.data));
-        const { username, profileImg, bio } = user;
+        const { username, profileImg, bio, userProfile } = user;
         const id = req?.user?.id;
         const existingUser = await userRepository.findOne({
             where: {
@@ -224,14 +225,24 @@ userRouter.put("/", isAuthenticated, [
                     });
             }
 
-            const updatedUser = {
-                username: username ? username : existingUser?.username,
-                profileImg: uploadResult?.secure_url ? uploadResult?.secure_url : existingUser?.profileImg,
-                bio: bio ? bio : existingUser?.bio,
-            }
+            // const updatedUser = {
+            //     username: username ? username : existingUser?.username,
+            //     profileImg: uploadResult?.secure_url ? uploadResult?.secure_url : existingUser?.profileImg,
+            //     bio: bio ? bio : existingUser?.bio,
+            // }
 
-            await userRepository.update({ id: id }, updatedUser);
-            return res.status(200).json({ success: true, user: { email: user?.data?.email, ...updatedUser } });
+            // await userRepository.update({ id: id }, updatedUser);
+            if (userProfile) {
+                const newUser = plainToInstance(UserProfile,userProfile)
+                newUser.username = username ?? newUser?.username;
+                newUser.avatar = uploadResult?.secure_url ?? newUser?.avatar;
+                newUser.bio = bio ?? newUser?.bio;
+                Logger.info(`User profile updated for user id: ${id}`);
+                return res.status(200).json({ success: true, userProfile: newUser });
+            }
+            Logger.error(`user profile not found on body`);
+            return res.status(400).json({ success: false, error: "user profile not found in the body" });
+    
         } else {
             // User does not exist
             Logger.info(`This user does not exist!`);
@@ -297,48 +308,23 @@ userRouter.post('/smart-profile', isAuthenticated, async (req, res) => {
 
         const smartProfile = memoryStoreProfile.get(id);
         if (smartProfile && req?.body?.userProfile) {
-            const { username,
-                avatar,
-                interests,
-                scores,
-                reputation_tags,
-                badges,
-                collections,
-                extra,
-                linked_address } = req?.body?.userProfile;
-            const userProfile = new UserProfile();
-            userProfile.username = username;
-            userProfile.avatar = avatar;
-            userProfile.interests = interests;
-            userProfile.scores = scores;
-            userProfile.reputation_tags = reputation_tags;
-            userProfile.badges = badges;
-            userProfile.collections = collections;
-            userProfile.extra = extra;
-            userProfile.linked_address = linked_address;
-
+            const userProfile = plainToInstance(UserProfile,req?.body?.userProfile);
             userProfile.aggregateProfile(smartProfile);
             memoryStoreProfile.delete(id);
             Logger.info(`Smart profile found for user id: ${id}`);
             return res.status(200).json({ success: true, userProfile: userProfile });
-        }else if(smartProfile){
-
-            const existingUser = await userRepository.findOne({
-                where: {
-                    id: id,
-                },
-            });
-            smartProfile.username = existingUser?.username;
-            smartProfile.avatar = existingUser?.profileImg;
-            smartProfile.bio = existingUser?.bio;
-            memoryStoreProfile.delete(id);
-            Logger.info(`Smart profile found for user id: ${id}`);
-            return res.status(200).json({ success: true, userProfile: smartProfile });
-        }
-         else {
+        } else if(!smartProfile && !req?.body?.userProfile) {
             Logger.error(`no profile connected on id: ${id}`);
-            return res.status(400).json({ error: "no profile connected" });
+            const newProfile = new UserProfile();
+            newProfile.username = faker.person.lastName().toLocaleLowerCase();
+            newProfile.avatar = "https://res.cloudinary.com/dblrsf3fe/image/upload/v1721919290/wkaejhi7ocnwhfl42vb8.png";
+            return res.status(200).json({ success: true, userProfile: newProfile });
         }
+        else {
+            Logger.error(`user profile not found on id: ${id}`);
+            return res.status(500).json({ error: "user profile not found in the body" });
+        }
+        
     } catch (error) {
         Logger.error(`Fatal error due to unknown reason: ${JSON.stringify(error)}`);
         return res.status(500).json({ error: "An error occurred while processing your request" });
