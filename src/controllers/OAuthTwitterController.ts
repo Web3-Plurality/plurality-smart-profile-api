@@ -47,6 +47,7 @@ passport.use(
 twitterRouter.get(
   '/',
   hasValidEventParam,
+  isAuthenticated,
   async (req: Request, res: Response, next) => {
     Logger.info(`${TWITTER_APP}: Request for Twitter Oauth has been received successfully on sse Id ${req.sseID}`)
     passport.authenticate('twitter')(req, res, next);
@@ -71,6 +72,7 @@ twitterRouter.post(
   '/event',
   hasValidEventHeader,
   hasValidAccessTokenHeader,
+  isAuthenticated,
   async (req: Request, res: Response) => {
     try {
       Logger.info(`${TWITTER_APP}: Request body tokenUUID ${req?.accessTokenID}`);
@@ -88,7 +90,7 @@ twitterRouter.post(
   });
 
 // Return User Object
-twitterRouter.get('/info', hasValidAccessTokenHeader,isAuthenticated, async (req, res) => {
+twitterRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, async (req, res) => {
   try {
     Logger.info(`${TWITTER_APP}: Request for information has been received successfully with id ${req.accessTokenID}`);
     const accessToken = memoryStoreToken.get(req.accessTokenID)
@@ -199,11 +201,13 @@ twitterRouter.get('/info', hasValidAccessTokenHeader,isAuthenticated, async (req
       userProfile.extra.push({ field: "listed count", value: twitterProfile?.listedCount })
       userProfile.extra.push({ field: "followers count", value: twitterProfile?.followersCount })
       userProfile.extra.push({ field: "following count", value: twitterProfile?.followingCount })
-      if (memoryStoreProfile.get(req?.user?.id)) {
-        memoryStoreProfile.get(req?.user?.id).aggregateProfile(userProfile);
+
+      if (memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
+        memoryStoreProfile.get(req?.user?.uniqueSessionId).aggregateProfile(userProfile);
       } else {
-        memoryStoreProfile.set(req?.user?.id, userProfile)
+        memoryStoreProfile.set(req?.user?.uniqueSessionId, userProfile)
       }
+
       memoryStoreToken.delete(req?.accessTokenID);
       Logger.info(`${TWITTER_APP}: Session destroyed successfully`);
       Logger.info(`${TWITTER_APP}: User information has been delivered successfully`);

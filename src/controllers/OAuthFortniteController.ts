@@ -47,6 +47,7 @@ passport.use(
 fortniteRouter.get(
   '/',
   hasValidEventParam,
+  isAuthenticated,
   async (req: Request, res: Response, next) => {
     Logger.info(`${FORTNITE_APP}: Request for Oauth has been received successfully on sse Id ${req.sseID}`)
     passport.authenticate('fortnite')(req, res, next);
@@ -75,6 +76,7 @@ fortniteRouter.post(
   '/event',
   hasValidEventHeader,
   hasValidAccessTokenHeader,
+  isAuthenticated,
   async (req: Request, res: Response) => {
     try {
       Logger.info(`${FORTNITE_APP}: Request body tokenUUID ${req?.accessTokenID}`);
@@ -92,7 +94,7 @@ fortniteRouter.post(
   });
 
 // Return User Object
-fortniteRouter.get('/info', hasValidAccessTokenHeader,isAuthenticated, async (req, res) => {
+fortniteRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, async (req, res) => {
   try {
     Logger.info(`${FORTNITE_APP}: Request for information has been received successfully with id ${req.accessTokenID}`);
     const { accessToken, account_id }: any = memoryStoreToken.get(req.accessTokenID);
@@ -124,11 +126,13 @@ fortniteRouter.get('/info', hasValidAccessTokenHeader,isAuthenticated, async (re
       // Create user profile object
       const userProfile = new UserProfile();
       userProfile.username = fortniteProfile?.displayName;
-      if (memoryStoreProfile.get(req?.user?.id)) {
-        memoryStoreProfile.get(req?.user?.id).aggregateProfile(userProfile);
+
+      if (memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
+        memoryStoreProfile.get(req?.user?.uniqueSessionId).aggregateProfile(userProfile);
       } else {
-        memoryStoreProfile.set(req?.user?.id, userProfile)
+        memoryStoreProfile.set(req?.user?.uniqueSessionId, userProfile)
       }
+
       memoryStoreToken.delete(req?.accessTokenID);
       Logger.info(`${FORTNITE_APP}: User information has been delivered successfully`);
       return res.status(200).json({ app: FORTNITE_APP, message: "success", fortniteProfile: userProfile })

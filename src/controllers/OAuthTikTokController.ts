@@ -41,7 +41,7 @@ passport.use("tiktok", new TikTokOAuth2Strategy(
 ));
 
 // Start authentication flow
-tiktokRouter.get('/', hasValidEventParam, async (req: Request, res: Response, next) => {
+tiktokRouter.get('/', hasValidEventParam, isAuthenticated, async (req: Request, res: Response, next) => {
 
   Logger.info(`${TIKTOK_APP}: Request for Tiktok Oauth has been received successfully on sse Id ${req.sseID}`)
   const csrfState = Math.random().toString(36).substring(2);
@@ -67,6 +67,7 @@ tiktokRouter.post(
   '/event',
   hasValidEventHeader,
   hasValidAccessTokenHeader,
+  isAuthenticated,
   async (req: Request, res: Response) => {
     try {
       Logger.info(`${TIKTOK_APP}: Request body tokenUUID ${req?.accessTokenID}`);
@@ -84,7 +85,7 @@ tiktokRouter.post(
   });
 
 // Return User Object
-tiktokRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated,async (req, res) => {
+tiktokRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, async (req, res) => {
   try {
 
     Logger.info(`${TIKTOK_APP}: Request for information has been received successfully with id ${req.accessTokenID}`);
@@ -191,11 +192,11 @@ tiktokRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated,async (req,
       userProfile.extra.push({ field: "video count", value: tiktokProfile?.user.videoCount })
       userProfile.extra.push({ field: "likes count", value: tiktokProfile?.user.likesCount })
 
-      if (memoryStoreProfile.get(req?.user?.id)) {
-        memoryStoreProfile.get(req?.user?.id).aggregateProfile(userProfile);
-    } else {
-        memoryStoreProfile.set(req?.user?.id, userProfile)
-    }
+      if (memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
+        memoryStoreProfile.get(req?.user?.uniqueSessionId).aggregateProfile(userProfile);
+      } else {
+        memoryStoreProfile.set(req?.user?.uniqueSessionId, userProfile)
+      }
       memoryStoreToken.delete(req?.accessTokenID);
       Logger.info(`${TIKTOK_APP}: Session destroyed successfully`);
       Logger.info(`${TIKTOK_APP}: User information has been delivered successfully`);

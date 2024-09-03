@@ -46,6 +46,7 @@ passport.use(
 snapchatRouter.get(
   '/',
   hasValidEventParam,
+  isAuthenticated,
   async (req: Request, res: Response, next) => {
     Logger.info(`${SNAPCHAT_APP}: Request for Oauth has been received successfully on sse Id ${req.sseID}`)
     passport.authenticate('snapchat')(req, res, next);
@@ -70,6 +71,7 @@ snapchatRouter.post(
   '/event',
   hasValidEventHeader,
   hasValidAccessTokenHeader,
+  isAuthenticated,
   async (req: Request, res: Response) => {
     try {
       Logger.info(`${SNAPCHAT_APP}: Request body tokenUUID ${req?.accessTokenID}`);
@@ -120,12 +122,13 @@ snapchatRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, async (r
       const userProfile = new UserProfile();
       userProfile.username = snapChatProfile.displayName;
       userProfile.avatar = snapChatProfile.bitmoji;
-      console.log(userProfile)
-      if (memoryStoreProfile.get(req?.user?.id)) {
-        memoryStoreProfile.get(req?.user?.id).aggregateProfile(userProfile);
+  
+      if (memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
+        memoryStoreProfile.get(req?.user?.uniqueSessionId).aggregateProfile(userProfile);
       } else {
-        memoryStoreProfile.set(req?.user?.id, userProfile)
+        memoryStoreProfile.set(req?.user?.uniqueSessionId, userProfile)
       }
+
       memoryStoreToken.delete(req?.accessTokenID);
       Logger.info(`${SNAPCHAT_APP}: User information has been delivered successfully`);
       return res.status(200).json({ app: SNAPCHAT_APP, message: "success", snapchatProfile: userProfile })

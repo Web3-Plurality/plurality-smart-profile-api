@@ -13,7 +13,8 @@ import { memoryStoreNonce, memoryStoreProfile } from "../utils/global";
 import { generateNonce } from 'siwe';
 import { app } from "..";
 import { UserProfile } from "../entity/UserProfile";
-import { plainToClass, plainToInstance  } from "class-transformer";
+import { plainToInstance  } from "class-transformer";
+import { v4 as uuidv4 } from 'uuid';
 
 export const userRouter = express.Router();
 dotenv.config();
@@ -42,6 +43,7 @@ userRouter.post("/", [
 ], isValid, async (req: Request, res: Response) => {
     try {
         let token;
+        const uniqueSessionId = uuidv4();
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
             Logger.error(`Fatal error due to improper request parameters to route POST /: ${JSON.stringify(errors)}`);
@@ -60,7 +62,7 @@ userRouter.post("/", [
             });
             if (existingUser) {
                 Logger.info(`This user already exists!`);
-                token = jwt.sign({ id: existingUser?.id }, process.env.JWT_SECRET, { expiresIn: "1d" });
+                token = jwt.sign({ id: existingUser?.id, uniqueSessionId }, process.env.JWT_SECRET, { expiresIn: "1d" });
                 Logger.info(`All done! Returning...`);
                 return res.status(200).json({ success: true, user: existingUser, token: token });
             } else {
@@ -74,7 +76,7 @@ userRouter.post("/", [
                     // username: randomName
                 });
                 let addedUser = await userRepository.save(newUser);
-                token = jwt.sign({ id: addedUser?.id }, process.env.JWT_SECRET, { expiresIn: "1d" });
+                token = jwt.sign({ id: addedUser?.id, uniqueSessionId }, process.env.JWT_SECRET, { expiresIn: "1d" });
                 Logger.info(`All done! Returning...`);
                 return res.status(200).json({ success: true, user: addedUser, token: token });
             }
@@ -90,7 +92,8 @@ userRouter.post("/", [
             });
             if (existingUser) {
                 Logger.info(`This user already exists!`);
-                token = jwt.sign({ id: existingUser?.id }, process.env.JWT_SECRET, { expiresIn: "1d" });
+                
+                token = jwt.sign({ id: existingUser?.id, uniqueSessionId  }, process.env.JWT_SECRET, { expiresIn: "1d" });
                 Logger.info(`All done! Returning...`);
                 return res.status(200).json({ success: true, user: existingUser, token: token });
             } else {
@@ -105,7 +108,7 @@ userRouter.post("/", [
                 });
                 let addedUser = await userRepository.save(newUser);
                 // remove address, only id is enough -> also at other places
-                token = jwt.sign({ id: addedUser?.id }, process.env.JWT_SECRET, { expiresIn: "1d" });
+                token = jwt.sign({ id: addedUser?.id, uniqueSessionId }, process.env.JWT_SECRET, { expiresIn: "1d" });
                 Logger.info(`All done! Returning...`);
                 return res.status(200).json({ success: true, user: addedUser, token: token });
             }
@@ -168,7 +171,6 @@ userRouter.get("/", isAuthenticated, async (req: Request, res: Response) => {
 
         Logger.info(`user exist on id ${req?.user?.id}`);
         return res.status(200).json({ success: true, user: existingUser });
-
 
     } catch (e) {
         Logger.error(`Fatal error due to unknown reason: ${JSON.stringify(e)}`);
@@ -304,7 +306,7 @@ userRouter.get('/capacity', isAuthenticated, async (req, res) => {
 
 userRouter.post('/smart-profile', isAuthenticated, async (req, res) => {
     try {
-        const id = req?.user?.id;
+        const id = req?.user?.uniqueSessionId;
 
         const smartProfile = memoryStoreProfile.get(id);
         if (smartProfile && req?.body?.userProfile) {

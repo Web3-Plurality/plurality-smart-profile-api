@@ -49,6 +49,7 @@ passport.use(
 facebookRouter.get(
     '/',
     hasValidEventParam,
+    isAuthenticated,
     async (req: Request, res: Response, next) => {
         Logger.info(`${FACEBOOK_APP}: Request for Oauth has been received successfully on sse Id ${req.sseID}`)
         passport.authenticate('facebook')(req, res, next);
@@ -73,6 +74,7 @@ facebookRouter.post(
     '/event',
     hasValidEventHeader,
     hasValidAccessTokenHeader,
+    isAuthenticated,
     async (req: Request, res: Response) => {
         try {
             Logger.info(`${FACEBOOK_APP}: Request body tokenUUID ${req?.accessTokenID}`);
@@ -163,10 +165,10 @@ facebookRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, async (r
             userProfile.extra.push({ field: "athleast count", value: facebookProfile?.athletes_count });
             userProfile.extra.push({ field: "favourite team count", value: facebookProfile?.favTeam_count });
 
-            if (memoryStoreProfile.get(req?.user?.id)) {
-                memoryStoreProfile.get(req?.user?.id).aggregateProfile(userProfile);
+            if (memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
+                memoryStoreProfile.get(req?.user?.uniqueSessionId).aggregateProfile(userProfile);
             } else {
-                memoryStoreProfile.set(req?.user?.id, userProfile)
+                memoryStoreProfile.set(req?.user?.uniqueSessionId, userProfile)
             }
             
             memoryStoreToken.delete(req?.accessTokenID);

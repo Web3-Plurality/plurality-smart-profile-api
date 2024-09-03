@@ -48,6 +48,7 @@ passport.use(
 instagramRouter.get(
     '/',
     hasValidEventParam,
+    isAuthenticated,
     async (req: Request, res: Response, next) => {
         Logger.info(`${INSTAGRAM_APP}: Request for Oauth has been received successfully on sse Id ${req.sseID}`)
         passport.authenticate('instagram')(req, res, next);
@@ -73,6 +74,7 @@ instagramRouter.post(
     '/event',
     hasValidEventHeader,
     hasValidAccessTokenHeader,
+    isAuthenticated,
     async (req: Request, res: Response) => {
         try {
             Logger.info(`${INSTAGRAM_APP}: Request body tokenUUID ${req?.accessTokenID}`);
@@ -90,7 +92,7 @@ instagramRouter.post(
     });
 
 // Return User Object
-instagramRouter.get('/info', hasValidAccessTokenHeader,isAuthenticated, async (req, res) => {
+instagramRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, async (req, res) => {
     try {
         Logger.info(`${INSTAGRAM_APP}: Request for information has been received successfully with id ${req.accessTokenID}`);
         const accessToken = memoryStoreToken.get(req.accessTokenID)
@@ -143,11 +145,13 @@ instagramRouter.get('/info', hasValidAccessTokenHeader,isAuthenticated, async (r
             const userProfile = new UserProfile();
             userProfile.username = instaProfile?.username;
             userProfile.interests = instaProfile?.interests;
-            if (memoryStoreProfile.get(req?.user?.id)) {
-                memoryStoreProfile.get(req?.user?.id).aggregateProfile(userProfile);
+
+            if (memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
+                memoryStoreProfile.get(req?.user?.uniqueSessionId).aggregateProfile(userProfile);
             } else {
-                memoryStoreProfile.set(req?.user?.id, userProfile)
+                memoryStoreProfile.set(req?.user?.uniqueSessionId, userProfile)
             }
+
             memoryStoreToken.delete(req?.accessTokenID);
             Logger.info(`${INSTAGRAM_APP}: Session destroyed successfully`);
             Logger.info(`${INSTAGRAM_APP}: User information has been delivered successfully`);

@@ -24,6 +24,7 @@ import { facebookRouter } from './controllers/OAuthFacebookController';
 import { fortniteRouter } from './controllers/OAuthFortniteController';
 import * as LitJsSdk from "@lit-protocol/lit-node-client";
 import { LitNetwork } from "@lit-protocol/constants";
+import { isAuthenticated } from './middlewares/authMiddleware';
 
 dotenv.config();
 
@@ -63,7 +64,7 @@ app.post('/post', async (req: Request, res: Response): Promise<Response> => {
 });
 
 
-app.get('/register-event', async (req: Request, res: Response) => {
+app.get('/register-event', isAuthenticated, async (req: Request, res: Response) => {
   initSSE(req, res)
 });
 

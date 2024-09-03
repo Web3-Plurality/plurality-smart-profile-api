@@ -52,6 +52,7 @@ passport.use(
 robloxRouter.get(
   '/',
   hasValidEventParam,
+  isAuthenticated,
   async (req: Request, res: Response, next) => {
     Logger.info(`${ROBLOX_APP}: Request for Oauth has been received successfully on sse Id ${req.sseID}`)
     passport.authenticate('roblox')(req, res, next);
@@ -76,6 +77,7 @@ robloxRouter.post(
   '/event',
   hasValidEventHeader,
   hasValidAccessTokenHeader,
+  isAuthenticated,
   async (req: Request, res: Response) => {
     try {
       Logger.info(`${ROBLOX_APP}: Request body tokenUUID ${req?.accessTokenID}`);
@@ -224,11 +226,13 @@ robloxRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, async (req
       userProfile.extra.push({ field: "friends", value: robloxProfile?.friends });
       userProfile.extra.push({ field: "followers", value: robloxProfile?.followers });
       userProfile.extra.push({ field: "following", value: robloxProfile?.following });
-      if (memoryStoreProfile.get(req?.user?.id)) {
-        memoryStoreProfile.get(req?.user?.id).aggregateProfile(userProfile);
+
+      if (memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
+        memoryStoreProfile.get(req?.user?.uniqueSessionId).aggregateProfile(userProfile);
       } else {
-        memoryStoreProfile.set(req?.user?.id, userProfile)
+        memoryStoreProfile.set(req?.user?.uniqueSessionId, userProfile)
       }
+
       memoryStoreToken.delete(req?.accessTokenID);
       Logger.info(`${ROBLOX_APP}: User information has been delivered successfully`);
       return res.status(200).json({ app: ROBLOX_APP, message: "success", robloxProfile: userProfile })
