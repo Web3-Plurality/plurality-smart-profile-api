@@ -74,13 +74,4 @@ export class SmartProfile {
         // update the score
         this.scores = updatedScores
     }
-
-    updateSocialScore(score: number) {
-       for (let index = 0; index < this.scores.length; index++) {
-           if (this.scores[index].score_type === SOCIAL_SCORE) {
-                this.scores[index].score_value = score;
-                break;
-            }
-       }
-    }
 }

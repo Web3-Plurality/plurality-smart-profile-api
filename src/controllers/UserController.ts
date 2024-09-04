@@ -308,19 +308,26 @@ userRouter.get('/capacity', isAuthenticated, async (req, res) => {
 userRouter.post('/smart-profile', isAuthenticated, async (req, res) => {
     try {
         const id = req?.user?.uniqueSessionId;
+        const reqConnectedProfileCount = req?.body?.connectedProfilesCount;
 
-        const newSmartProfile = memoryStoreProfile.get(id);
-        if (newSmartProfile && req?.body?.smartProfile) {
-            const smartProfile = plainToInstance(SmartProfile,req?.body?.smartProfile);
-            smartProfile.aggregateProfile(newSmartProfile);
+        const memorySmartProfile = memoryStoreProfile.get(id);
+        if (memorySmartProfile && req?.body?.smartProfile) {
+            const socialScore = calculateSocialScore(memorySmartProfile?.connected_profiles, reqConnectedProfileCount);
+            memorySmartProfile.scores.push({score_type: SOCIAL_SCORE, score_value: socialScore})
+            const smartProfile = plainToInstance(SmartProfile, req?.body?.smartProfile);
+            smartProfile.aggregateProfile(memorySmartProfile);
             memoryStoreProfile.delete(id);
-            const socialScore = calculateSocialScore(smartProfile?.connected_profiles);
-            smartProfile.updateSocialScore(socialScore);
             Logger.info(`Smart profile found for user id: ${id}`);
             return res.status(200).json({ success: true, smartProfile: smartProfile });
-        } else if(!newSmartProfile && !req?.body?.smartProfile) {
-            Logger.error(`no profile connected on id: ${id}`);
-            const newProfile = new SmartProfile({username: faker.person.lastName().toLocaleLowerCase(), avatar:  "https://res.cloudinary.com/dblrsf3fe/image/upload/v1721919290/wkaejhi7ocnwhfl42vb8.png" });
+        } else if(!memorySmartProfile && !req?.body?.smartProfile) {
+            Logger.info(`no profile connected on id: ${id}`);
+            // if user already exist in db then we use there old name
+            const existingUser = await userRepository.findOne({
+                where: {
+                    id: req?.user?.id,
+                },
+            });
+            const newProfile = new SmartProfile({username: existingUser?.username ? existingUser?.username :  faker.person.lastName().toLocaleLowerCase(), avatar: existingUser?.profileImg ? existingUser?.profileImg :  "https://res.cloudinary.com/dblrsf3fe/image/upload/v1721919290/wkaejhi7ocnwhfl42vb8.png" });
             newProfile.scores.push({score_type: SOCIAL_SCORE, score_value: 0})
             return res.status(200).json({ success: true, smartProfile: newProfile });
         }
