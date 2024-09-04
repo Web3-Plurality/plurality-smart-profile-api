@@ -9,6 +9,7 @@ import OAuthSnapChatStrategy from "../auth/OAuthSnapChatStrategy";
 import { SnapChatProfile } from "../entity/Snapchat";
 import { v4 as uuidv4 } from 'uuid';
 import { UserProfile } from "../entity/UserProfile";
+import { SmartProfile } from "../entity/smartProfile";
 dotenv.config();
 
 export const snapchatRouter = express.Router();
@@ -46,7 +47,6 @@ passport.use(
 snapchatRouter.get(
   '/',
   hasValidEventParam,
-  isAuthenticated,
   async (req: Request, res: Response, next) => {
     Logger.info(`${SNAPCHAT_APP}: Request for Oauth has been received successfully on sse Id ${req.sseID}`)
     passport.authenticate('snapchat')(req, res, next);
@@ -71,7 +71,6 @@ snapchatRouter.post(
   '/event',
   hasValidEventHeader,
   hasValidAccessTokenHeader,
-  isAuthenticated,
   async (req: Request, res: Response) => {
     try {
       Logger.info(`${SNAPCHAT_APP}: Request body tokenUUID ${req?.accessTokenID}`);
@@ -125,13 +124,15 @@ snapchatRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, async (r
   
       if (memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
         memoryStoreProfile.get(req?.user?.uniqueSessionId).aggregateProfile(userProfile);
-      } else {
-        memoryStoreProfile.set(req?.user?.uniqueSessionId, userProfile)
-      }
+    } else {
+        const smartProfile = new SmartProfile(userProfile);
+        smartProfile.connected_profiles = 1;
+        memoryStoreProfile.set(req?.user?.uniqueSessionId, smartProfile)
+    }
 
       memoryStoreToken.delete(req?.accessTokenID);
       Logger.info(`${SNAPCHAT_APP}: User information has been delivered successfully`);
-      return res.status(200).json({ app: SNAPCHAT_APP, message: "success", snapchatProfile: userProfile })
+      return res.status(200).json({ app: SNAPCHAT_APP, message: "success", individualProfile: userProfile })
 
     } else {
       Logger.error(`${SNAPCHAT_APP}: Token has been expired.`);

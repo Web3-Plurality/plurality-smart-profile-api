@@ -9,12 +9,13 @@ import { faker } from '@faker-js/faker';
 import { ethers } from "ethers";
 import jwt from 'jsonwebtoken';
 import { isAuthenticated, isValid } from "../middlewares/authMiddleware";
-import { memoryStoreNonce, memoryStoreProfile } from "../utils/global";
+import { calculateSocialScore, memoryStoreNonce, memoryStoreProfile, SOCIAL_SCORE } from "../utils/global";
 import { generateNonce } from 'siwe';
 import { app } from "..";
 import { UserProfile } from "../entity/UserProfile";
 import { plainToInstance  } from "class-transformer";
 import { v4 as uuidv4 } from 'uuid';
+import { SmartProfile } from "../entity/smartProfile";
 
 export const userRouter = express.Router();
 dotenv.config();
@@ -308,19 +309,20 @@ userRouter.post('/smart-profile', isAuthenticated, async (req, res) => {
     try {
         const id = req?.user?.uniqueSessionId;
 
-        const smartProfile = memoryStoreProfile.get(id);
-        if (smartProfile && req?.body?.userProfile) {
-            const userProfile = plainToInstance(UserProfile,req?.body?.userProfile);
-            userProfile.aggregateProfile(smartProfile);
+        const newSmartProfile = memoryStoreProfile.get(id);
+        if (newSmartProfile && req?.body?.smartProfile) {
+            const smartProfile = plainToInstance(SmartProfile,req?.body?.smartProfile);
+            smartProfile.aggregateProfile(newSmartProfile);
             memoryStoreProfile.delete(id);
+            const socialScore = calculateSocialScore(smartProfile?.connected_profiles);
+            smartProfile.updateSocialScore(socialScore);
             Logger.info(`Smart profile found for user id: ${id}`);
-            return res.status(200).json({ success: true, userProfile: userProfile });
-        } else if(!smartProfile && !req?.body?.userProfile) {
+            return res.status(200).json({ success: true, smartProfile: smartProfile });
+        } else if(!newSmartProfile && !req?.body?.smartProfile) {
             Logger.error(`no profile connected on id: ${id}`);
-            const newProfile = new UserProfile();
-            newProfile.username = faker.person.lastName().toLocaleLowerCase();
-            newProfile.avatar = "https://res.cloudinary.com/dblrsf3fe/image/upload/v1721919290/wkaejhi7ocnwhfl42vb8.png";
-            return res.status(200).json({ success: true, userProfile: newProfile });
+            const newProfile = new SmartProfile({username: faker.person.lastName().toLocaleLowerCase(), avatar:  "https://res.cloudinary.com/dblrsf3fe/image/upload/v1721919290/wkaejhi7ocnwhfl42vb8.png" });
+            newProfile.scores.push({score_type: SOCIAL_SCORE, score_value: 0})
+            return res.status(200).json({ success: true, smartProfile: newProfile });
         }
         else {
             Logger.error(`user profile not found on id: ${id}`);

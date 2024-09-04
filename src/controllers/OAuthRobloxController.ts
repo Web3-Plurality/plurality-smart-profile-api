@@ -4,7 +4,7 @@ import * as dotenv from 'dotenv';
 import axios from "axios";
 import { hasValidAccessTokenHeader, hasValidEventHeader, hasValidEventParam, isAuthenticated } from "../middlewares/authMiddleware";
 import Logger from "../lib/logger";
-import { INTERNAL_SERVER_ERROR, ROBLOX_APP, TIMEOUT_ERROR, createPrompt, memoryStoreToken, memoryStoreSSE, memoryStoreProfile } from "../utils/global";
+import { INTERNAL_SERVER_ERROR, ROBLOX_APP, TIMEOUT_ERROR, createPrompt, memoryStoreToken, memoryStoreSSE, memoryStoreProfile, REPUTATION_SCORE } from "../utils/global";
 import OAuthRobloxStrategy from "../auth/OAuthRobloxStrategy";
 import { RobloxProfile } from "../entity/Roblox";
 import { analyze } from "../utils/groq";
@@ -12,6 +12,7 @@ import { calculateReputation, scrapRoblox } from "../utils/roblox";
 import { ROBLOX_FETCH_INTEREST_PROMPT } from "../utils/aiPrompts";
 import { v4 as uuidv4 } from 'uuid';
 import { UserProfile } from "../entity/UserProfile";
+import { SmartProfile } from "../entity/smartProfile";
 
 
 dotenv.config();
@@ -52,7 +53,6 @@ passport.use(
 robloxRouter.get(
   '/',
   hasValidEventParam,
-  isAuthenticated,
   async (req: Request, res: Response, next) => {
     Logger.info(`${ROBLOX_APP}: Request for Oauth has been received successfully on sse Id ${req.sseID}`)
     passport.authenticate('roblox')(req, res, next);
@@ -77,7 +77,6 @@ robloxRouter.post(
   '/event',
   hasValidEventHeader,
   hasValidAccessTokenHeader,
-  isAuthenticated,
   async (req: Request, res: Response) => {
     try {
       Logger.info(`${ROBLOX_APP}: Request body tokenUUID ${req?.accessTokenID}`);
@@ -219,7 +218,7 @@ robloxRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, async (req
       userProfile.username = robloxProfile?.name;
       userProfile.interests = robloxProfile?.interests;
       userProfile.avatar = robloxProfile?.avatar;
-      userProfile.scores.push({ score_type: "reputation score", score_value: robloxProfile?.reputationScore });
+      userProfile.scores.push({ score_type: REPUTATION_SCORE, score_value: robloxProfile?.reputationScore });
       userProfile.reputation_tags = robloxProfile?.introTags;
       userProfile.collections = robloxProfile?.assests;
       userProfile.extra.push({ field: "places visit", value: robloxProfile?.placesVisit });
@@ -229,13 +228,15 @@ robloxRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, async (req
 
       if (memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
         memoryStoreProfile.get(req?.user?.uniqueSessionId).aggregateProfile(userProfile);
-      } else {
-        memoryStoreProfile.set(req?.user?.uniqueSessionId, userProfile)
-      }
+    } else {
+        const smartProfile = new SmartProfile(userProfile);
+        smartProfile.connected_profiles = 1;
+        memoryStoreProfile.set(req?.user?.uniqueSessionId, smartProfile)
+    }
 
       memoryStoreToken.delete(req?.accessTokenID);
       Logger.info(`${ROBLOX_APP}: User information has been delivered successfully`);
-      return res.status(200).json({ app: ROBLOX_APP, message: "success", robloxProfile: userProfile })
+      return res.status(200).json({ app: ROBLOX_APP, message: "success", individualProfile: userProfile })
     } else {
       Logger.error(`${ROBLOX_APP}: Token has been expired.`);
       return res.status(500).json({ app: ROBLOX_APP, message: INTERNAL_SERVER_ERROR });

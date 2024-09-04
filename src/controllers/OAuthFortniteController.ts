@@ -10,6 +10,7 @@ import jwt from 'jsonwebtoken'
 import { FortniteProfile } from "../entity/Fortnite";
 import { v4 as uuidv4 } from 'uuid';
 import { UserProfile } from "../entity/UserProfile";
+import { SmartProfile } from "../entity/smartProfile";
 dotenv.config();
 
 export const fortniteRouter = express.Router();
@@ -47,7 +48,6 @@ passport.use(
 fortniteRouter.get(
   '/',
   hasValidEventParam,
-  isAuthenticated,
   async (req: Request, res: Response, next) => {
     Logger.info(`${FORTNITE_APP}: Request for Oauth has been received successfully on sse Id ${req.sseID}`)
     passport.authenticate('fortnite')(req, res, next);
@@ -76,7 +76,6 @@ fortniteRouter.post(
   '/event',
   hasValidEventHeader,
   hasValidAccessTokenHeader,
-  isAuthenticated,
   async (req: Request, res: Response) => {
     try {
       Logger.info(`${FORTNITE_APP}: Request body tokenUUID ${req?.accessTokenID}`);
@@ -129,13 +128,15 @@ fortniteRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, async (r
 
       if (memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
         memoryStoreProfile.get(req?.user?.uniqueSessionId).aggregateProfile(userProfile);
-      } else {
-        memoryStoreProfile.set(req?.user?.uniqueSessionId, userProfile)
-      }
+    } else {
+        const smartProfile = new SmartProfile(userProfile);
+        smartProfile.connected_profiles = 1;
+        memoryStoreProfile.set(req?.user?.uniqueSessionId, smartProfile)
+    }
 
       memoryStoreToken.delete(req?.accessTokenID);
       Logger.info(`${FORTNITE_APP}: User information has been delivered successfully`);
-      return res.status(200).json({ app: FORTNITE_APP, message: "success", fortniteProfile: userProfile })
+      return res.status(200).json({ app: FORTNITE_APP, message: "success", individualProfile: userProfile })
 
     } else {
       Logger.error(`${FORTNITE_APP}: Token has been expired.`);

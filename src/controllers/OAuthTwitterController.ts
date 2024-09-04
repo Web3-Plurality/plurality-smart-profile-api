@@ -7,9 +7,10 @@ import { scrape, calculateReputation } from "../utils/twitter";
 import { TwitterProfile } from "../entity/Twitter";
 import { hasValidAccessTokenHeader, hasValidEventHeader, hasValidEventParam, isAuthenticated } from "../middlewares/authMiddleware";
 import Logger from "../lib/logger";
-import { INTERNAL_SERVER_ERROR, TIMEOUT_ERROR, TWITTER_APP, memoryStoreProfile, memoryStoreSSE, memoryStoreToken } from "../utils/global";
+import { INTERNAL_SERVER_ERROR, REPUTATION_SCORE, TIMEOUT_ERROR, TWITTER_APP, memoryStoreProfile, memoryStoreSSE, memoryStoreToken } from "../utils/global";
 import { v4 as uuidv4 } from 'uuid';
 import { UserProfile } from "../entity/UserProfile";
+import { SmartProfile } from "../entity/smartProfile";
 dotenv.config();
 
 export const twitterRouter = express.Router();
@@ -47,7 +48,6 @@ passport.use(
 twitterRouter.get(
   '/',
   hasValidEventParam,
-  isAuthenticated,
   async (req: Request, res: Response, next) => {
     Logger.info(`${TWITTER_APP}: Request for Twitter Oauth has been received successfully on sse Id ${req.sseID}`)
     passport.authenticate('twitter')(req, res, next);
@@ -72,7 +72,6 @@ twitterRouter.post(
   '/event',
   hasValidEventHeader,
   hasValidAccessTokenHeader,
-  isAuthenticated,
   async (req: Request, res: Response) => {
     try {
       Logger.info(`${TWITTER_APP}: Request body tokenUUID ${req?.accessTokenID}`);
@@ -195,7 +194,7 @@ twitterRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, async (re
       userProfile.avatar = twitterProfile?.profileImageUrl
       userProfile.interests = twitterProfile?.interests
       userProfile.reputation_tags = twitterProfile?.introTags
-      userProfile.scores.push({ score_type: "reputation score", score_value: twitterProfile?.reputationScore })
+      userProfile.scores.push({ score_type: REPUTATION_SCORE, score_value: twitterProfile?.reputationScore })
       userProfile.extra.push({ field: "tweet count", value: twitterProfile?.tweetCount })
       userProfile.extra.push({ field: "like count", value: twitterProfile?.likeCount })
       userProfile.extra.push({ field: "listed count", value: twitterProfile?.listedCount })
@@ -204,14 +203,16 @@ twitterRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, async (re
 
       if (memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
         memoryStoreProfile.get(req?.user?.uniqueSessionId).aggregateProfile(userProfile);
-      } else {
-        memoryStoreProfile.set(req?.user?.uniqueSessionId, userProfile)
-      }
+    } else {
+        const smartProfile = new SmartProfile(userProfile);
+        smartProfile.connected_profiles = 1;
+        memoryStoreProfile.set(req?.user?.uniqueSessionId, smartProfile)
+    }
 
       memoryStoreToken.delete(req?.accessTokenID);
       Logger.info(`${TWITTER_APP}: Session destroyed successfully`);
       Logger.info(`${TWITTER_APP}: User information has been delivered successfully`);
-      return res.status(200).json({ app: TWITTER_APP, message: "success", twitterProfile: userProfile })
+      return res.status(200).json({ app: TWITTER_APP, message: "success", individualProfile: userProfile })
 
     } else {
       Logger.error(`${TWITTER_APP}: Token has been expired.`);

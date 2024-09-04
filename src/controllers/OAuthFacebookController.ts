@@ -4,7 +4,7 @@ import * as dotenv from 'dotenv';
 import axios from "axios";
 import { hasValidAccessTokenHeader, hasValidEventHeader, hasValidEventParam, isAuthenticated } from "../middlewares/authMiddleware";
 import Logger from "../lib/logger";
-import { FACEBOOK_APP, INTERNAL_SERVER_ERROR, TIMEOUT_ERROR, createPrompt, memoryStoreToken, memoryStoreSSE, memoryStoreProfile } from "../utils/global";
+import { FACEBOOK_APP, INTERNAL_SERVER_ERROR, TIMEOUT_ERROR, createPrompt, memoryStoreToken, memoryStoreSSE, memoryStoreProfile, REPUTATION_SCORE, SOCIAL_SCORE } from "../utils/global";
 import OAuthFacebookStrategy from "../auth/OAuthFacebookStrategy";
 import { analyze } from "../utils/groq";
 import { FacebookProfile } from "../entity/Facebook";
@@ -12,6 +12,7 @@ import { calculateReputation, extractContent, getPagingData, sanitizeObject } fr
 import { FACEBOOK_FETCH_INTEREST_FROM_NAMES_PROMPT, FACEBOOK_FETCH_INTEREST_PROMPT } from "../utils/aiPrompts";
 import { v4 as uuidv4 } from 'uuid';
 import { UserProfile } from "../entity/UserProfile";
+import { SmartProfile } from "../entity/smartProfile";
 dotenv.config();
 
 export const facebookRouter = express.Router();
@@ -49,7 +50,6 @@ passport.use(
 facebookRouter.get(
     '/',
     hasValidEventParam,
-    isAuthenticated,
     async (req: Request, res: Response, next) => {
         Logger.info(`${FACEBOOK_APP}: Request for Oauth has been received successfully on sse Id ${req.sseID}`)
         passport.authenticate('facebook')(req, res, next);
@@ -74,7 +74,6 @@ facebookRouter.post(
     '/event',
     hasValidEventHeader,
     hasValidAccessTokenHeader,
-    isAuthenticated,
     async (req: Request, res: Response) => {
         try {
             Logger.info(`${FACEBOOK_APP}: Request body tokenUUID ${req?.accessTokenID}`);
@@ -158,7 +157,7 @@ facebookRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, async (r
             const userProfile = new UserProfile();
             userProfile.username = facebookProfile?.name
             userProfile.interests = facebookProfile?.interests
-            userProfile.scores.push({ score_type: "reputation score", score_value: facebookProfile?.reputationScore });
+            userProfile.scores.push({ score_type: REPUTATION_SCORE, score_value: facebookProfile?.reputationScore });
             userProfile.extra.push({ field: "friends count", value: facebookProfile?.friends_count });
             userProfile.extra.push({ field: "likes count", value: facebookProfile?.likes_count });
             userProfile.extra.push({ field: "music count", value: facebookProfile?.music_count });
@@ -168,12 +167,14 @@ facebookRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, async (r
             if (memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
                 memoryStoreProfile.get(req?.user?.uniqueSessionId).aggregateProfile(userProfile);
             } else {
-                memoryStoreProfile.set(req?.user?.uniqueSessionId, userProfile)
+                const smartProfile = new SmartProfile(userProfile);
+                smartProfile.connected_profiles = 1;
+                memoryStoreProfile.set(req?.user?.uniqueSessionId, smartProfile)
             }
             
             memoryStoreToken.delete(req?.accessTokenID);
             Logger.info(`${FACEBOOK_APP}: User information has been delivered successfully`);
-            return res.status(200).json({ app: FACEBOOK_APP, message: "success", facebookProfile: userProfile })
+            return res.status(200).json({ app: FACEBOOK_APP, message: "success", individualProfile: userProfile })
         }
         else {
             Logger.error(`${FACEBOOK_APP}: Token has been expired.`);

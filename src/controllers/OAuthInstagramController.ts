@@ -11,6 +11,7 @@ import { analyze } from "../utils/groq";
 import { INSTA_FETCH_INTEREST_PROMPT } from "../utils/aiPrompts";
 import { v4 as uuidv4 } from 'uuid';
 import { UserProfile } from "../entity/UserProfile";
+import { SmartProfile } from "../entity/smartProfile";
 dotenv.config();
 
 export const instagramRouter = express.Router();
@@ -48,7 +49,6 @@ passport.use(
 instagramRouter.get(
     '/',
     hasValidEventParam,
-    isAuthenticated,
     async (req: Request, res: Response, next) => {
         Logger.info(`${INSTAGRAM_APP}: Request for Oauth has been received successfully on sse Id ${req.sseID}`)
         passport.authenticate('instagram')(req, res, next);
@@ -74,7 +74,6 @@ instagramRouter.post(
     '/event',
     hasValidEventHeader,
     hasValidAccessTokenHeader,
-    isAuthenticated,
     async (req: Request, res: Response) => {
         try {
             Logger.info(`${INSTAGRAM_APP}: Request body tokenUUID ${req?.accessTokenID}`);
@@ -149,13 +148,15 @@ instagramRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, async (
             if (memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
                 memoryStoreProfile.get(req?.user?.uniqueSessionId).aggregateProfile(userProfile);
             } else {
-                memoryStoreProfile.set(req?.user?.uniqueSessionId, userProfile)
+                const smartProfile = new SmartProfile(userProfile);
+                smartProfile.connected_profiles = 1;
+                memoryStoreProfile.set(req?.user?.uniqueSessionId, smartProfile)
             }
 
             memoryStoreToken.delete(req?.accessTokenID);
             Logger.info(`${INSTAGRAM_APP}: Session destroyed successfully`);
             Logger.info(`${INSTAGRAM_APP}: User information has been delivered successfully`);
-            return res.status(200).json({ app: INSTAGRAM_APP, message: "success", instaProfile: userProfile })
+            return res.status(200).json({ app: INSTAGRAM_APP, message: "success", individualProfile: userProfile })
 
         } else {
             Logger.error(`${INSTAGRAM_APP}: Token has been expired.`);

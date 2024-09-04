@@ -11,6 +11,10 @@ export const ROBLOX_APP = "roblox";
 export const INSTAGRAM_APP = "instagram";
 export const FACEBOOK_APP = "facebook";
 export const FORTNITE_APP = "fortnite";
+// scores Field
+export const SOCIAL_SCORE = "social score";
+export const REPUTATION_SCORE = "reputation score";
+
 
 
 export const INTERNAL_SERVER_ERROR = "Internal Server Error";
@@ -51,4 +55,14 @@ export function createPrompt(prompt: any, content: any) {
     prompt[1].content += '\n' + content;
     return prompt;
   }
+}
+
+
+export const  calculateSocialScore = (connectedProfiles: number): number  => {
+  const score = 10
+  let sumScore = 0
+  for (let i = 1; i <= connectedProfiles; i++) {
+    sumScore += (score * (i)) ** 2
+  }
+  return sumScore
 }

@@ -1,0 +1,86 @@
+import { SOCIAL_SCORE } from "../utils/global";
+import { UserProfile } from "./UserProfile";
+
+interface Score {
+    score_type: string;
+    score_value: number;
+}
+
+interface Extra {
+    field: string;
+    value: number;
+}
+
+interface LinkedAddress {
+    chain_name: string;
+    chain_id: number;
+    address: string;
+}
+
+export class SmartProfile {
+    username: string;
+    avatar: string;
+    bio: string;
+    interests: string[];
+    scores: Score[];
+    reputation_tags: string[];
+    badges: string[];
+    collections: string[];
+    extra: Extra[];
+    linked_address: LinkedAddress[];
+    connected_profiles: number;
+
+    constructor(
+        data: any,
+    ) {
+        this.username = data?.username || "";
+        this.avatar = data?.avatar || "";
+        this.bio = data?.bio || "";
+        this.interests = data?.interests || [];
+        this.scores = data?.scores || [];
+        this.reputation_tags = data?.reputation_tags || [];
+        this.badges = data?.badges || [];
+        this.collections = data?.collections || [];
+        this.extra = data?.extra || [];
+        this.linked_address = data?.linked_address || [];
+        this.connected_profiles = data?.connected_profiles || 0;
+    }
+
+    // You can add methods to manipulate or retrieve the data here
+    aggregateProfile(user: UserProfile | SmartProfile) {
+        this.collections = this.collections.concat(user.collections);
+        this.interests = this.interests.concat(user.interests);
+        this.reputation_tags = this.reputation_tags.concat(user.reputation_tags);
+        this.badges = this.badges.concat(user.badges);
+        this.extra = this.extra.concat(user.extra);
+        this.linked_address = this.linked_address.concat(user.linked_address);
+        if (user instanceof SmartProfile) {
+            this.connected_profiles = this.connected_profiles + user.connected_profiles;
+        } else {
+
+            this.connected_profiles =  this.connected_profiles + 1;
+        }
+        // if score value is match then add the value
+        const updatedScores = this.scores.map(score => {
+            const userScore = user.scores.find(us => us.score_type === score.score_type);
+            if (userScore) {
+                return {
+                    ...score,
+                    score_value: score.score_value + userScore.score_value
+                };
+            }
+            return score;
+        });
+        // update the score
+        this.scores = updatedScores
+    }
+
+    updateSocialScore(score: number) {
+       for (let index = 0; index < this.scores.length; index++) {
+           if (this.scores[index].score_type === SOCIAL_SCORE) {
+                this.scores[index].score_value = score;
+                break;
+            }
+       }
+    }
+}
