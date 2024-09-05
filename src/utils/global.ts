@@ -56,13 +56,12 @@ export function createPrompt(prompt: any, content: any) {
     return prompt;
   }
 }
-
-
-export const  calculateSocialScore = (profilesInMemoryCount: number, reqConnectedProfilesCount: number): number  => {
+export const  calculateSocialScore = (profilesInMemory: string[], reqConnectedProfiles: string[]): number  => {
   const score = 10
   let sumScore = 0
-  let count = reqConnectedProfilesCount;
-  for (let i = 0; i < profilesInMemoryCount; i++) {
+  const newProfiles = profilesInMemory.filter(profile => !reqConnectedProfiles.includes(profile))
+  let count = reqConnectedProfiles?.length;
+  for (let i = 0; i < newProfiles?.length; i++) {
     sumScore += (score * (count+1)) ** 2
     count+=1
   }

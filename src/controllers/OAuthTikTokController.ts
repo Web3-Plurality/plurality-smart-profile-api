@@ -194,11 +194,12 @@ tiktokRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, async (req
 
       if (memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
         memoryStoreProfile.get(req?.user?.uniqueSessionId).aggregateProfile(userProfile);
-    } else {
+        memoryStoreProfile.get(req?.user?.uniqueSessionId).connected_profiles.push(TIKTOK_APP);
+      } else {
         const smartProfile = new SmartProfile(userProfile);
-        smartProfile.connected_profiles = 1;
+        smartProfile.connected_profiles = [TIKTOK_APP];
         memoryStoreProfile.set(req?.user?.uniqueSessionId, smartProfile)
-    }
+      }
 
       memoryStoreToken.delete(req?.accessTokenID);
       Logger.info(`${TIKTOK_APP}: Session destroyed successfully`);

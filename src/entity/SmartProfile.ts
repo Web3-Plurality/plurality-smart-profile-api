@@ -1,4 +1,4 @@
-import { SOCIAL_SCORE } from "../utils/global";
+import { REPUTATION_SCORE, SOCIAL_SCORE } from "../utils/global";
 import { UserProfile } from "./UserProfile";
 
 interface Score {
@@ -28,7 +28,7 @@ export class SmartProfile {
     collections: string[];
     extra: Extra[];
     linked_address: LinkedAddress[];
-    connected_profiles: number;
+    connected_profiles: string[];
 
     constructor(
         data: any,
@@ -43,7 +43,7 @@ export class SmartProfile {
         this.collections = data?.collections || [];
         this.extra = data?.extra || [];
         this.linked_address = data?.linked_address || [];
-        this.connected_profiles = data?.connected_profiles || 0;
+        this.connected_profiles = data?.connected_profiles || [];
     }
 
     // You can add methods to manipulate or retrieve the data here
@@ -55,12 +55,9 @@ export class SmartProfile {
         this.extra = this.extra.concat(user.extra);
         this.linked_address = this.linked_address.concat(user.linked_address);
         if (user instanceof SmartProfile) {
-            this.connected_profiles = this.connected_profiles + user.connected_profiles;
-        } else {
-
-            this.connected_profiles =  this.connected_profiles + 1;
+            const newProfile = user.connected_profiles.filter(profile => !this.connected_profiles.includes(profile));
+            this.connected_profiles = this.connected_profiles.concat(newProfile);
         }
-        // if score value is match then add the value
         const updatedScores = this.scores.map(score => {
             const userScore = user.scores.find(us => us.score_type === score.score_type);
             if (userScore) {

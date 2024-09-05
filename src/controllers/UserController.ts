@@ -1,6 +1,6 @@
 import express, { Request, Response } from "express";
 import * as dotenv from 'dotenv';
-import { body, validationResult, check } from 'express-validator';
+import { body, validationResult } from 'express-validator';
 import { AppDataSource } from "../data-source";
 import { User } from "../entity/User";
 import Logger from "../lib/logger";
@@ -12,7 +12,6 @@ import { isAuthenticated, isValid } from "../middlewares/authMiddleware";
 import { calculateSocialScore, memoryStoreNonce, memoryStoreProfile, SOCIAL_SCORE } from "../utils/global";
 import { generateNonce } from 'siwe';
 import { app } from "..";
-import { UserProfile } from "../entity/UserProfile";
 import { plainToInstance  } from "class-transformer";
 import { v4 as uuidv4 } from 'uuid';
 import { SmartProfile } from "../entity/smartProfile";
@@ -206,7 +205,7 @@ userRouter.put("/", isAuthenticated, [
         }
 
         const user = JSON.parse(JSON.stringify(req.body.data));
-        const { username, profileImg, bio, userProfile } = user;
+        const { username, profileImg, bio, smartProfile } = user;
         const id = req?.user?.id;
         const existingUser = await userRepository.findOne({
             where: {
@@ -235,13 +234,13 @@ userRouter.put("/", isAuthenticated, [
             // }
 
             // await userRepository.update({ id: id }, updatedUser);
-            if (userProfile) {
-                const newUser = plainToInstance(UserProfile,userProfile)
-                newUser.username = username ?? newUser?.username;
-                newUser.avatar = uploadResult?.secure_url ?? newUser?.avatar;
+            if (smartProfile) {
+                const newUser = plainToInstance(SmartProfile,smartProfile)
+                newUser.username = username || newUser?.username;
+                newUser.avatar = uploadResult?.secure_url || newUser?.avatar;
                 newUser.bio = bio ?? newUser?.bio;
                 Logger.info(`User profile updated for user id: ${id}`);
-                return res.status(200).json({ success: true, userProfile: newUser });
+                return res.status(200).json({ success: true, smartProfile: newUser });
             }
             Logger.error(`user profile not found on body`);
             return res.status(400).json({ success: false, error: "user profile not found in the body" });
@@ -308,13 +307,11 @@ userRouter.get('/capacity', isAuthenticated, async (req, res) => {
 userRouter.post('/smart-profile', isAuthenticated, async (req, res) => {
     try {
         const id = req?.user?.uniqueSessionId;
-        const reqConnectedProfileCount = req?.body?.connectedProfilesCount;
-
         const memorySmartProfile = memoryStoreProfile.get(id);
         if (memorySmartProfile && req?.body?.smartProfile) {
-            const socialScore = calculateSocialScore(memorySmartProfile?.connected_profiles, reqConnectedProfileCount);
-            memorySmartProfile.scores.push({score_type: SOCIAL_SCORE, score_value: socialScore})
             const smartProfile = plainToInstance(SmartProfile, req?.body?.smartProfile);
+            const socialScore = calculateSocialScore(memorySmartProfile?.connected_profiles, smartProfile?.connected_profiles);
+            memorySmartProfile.scores.push({score_type: SOCIAL_SCORE, score_value: socialScore})
             smartProfile.aggregateProfile(memorySmartProfile);
             memoryStoreProfile.delete(id);
             Logger.info(`Smart profile found for user id: ${id}`);
@@ -331,9 +328,13 @@ userRouter.post('/smart-profile', isAuthenticated, async (req, res) => {
             newProfile.scores.push({score_type: SOCIAL_SCORE, score_value: 0})
             return res.status(200).json({ success: true, smartProfile: newProfile });
         }
-        else {
-            Logger.error(`user profile not found on id: ${id}`);
+        else if (memorySmartProfile) {
+            Logger.error(`user profile not found on body id: ${id}`);
             return res.status(500).json({ error: "user profile not found in the body" });
+            
+        }{
+            Logger.error(`user profile not found on memory id: ${id}`);
+            return res.status(500).json({ error: "you did not connect any new platform" });
         }
         
     } catch (error) {

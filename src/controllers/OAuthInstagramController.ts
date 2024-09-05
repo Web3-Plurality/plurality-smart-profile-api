@@ -147,9 +147,10 @@ instagramRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, async (
 
             if (memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
                 memoryStoreProfile.get(req?.user?.uniqueSessionId).aggregateProfile(userProfile);
+                memoryStoreProfile.get(req?.user?.uniqueSessionId).connected_profiles.push(INSTAGRAM_APP);
             } else {
                 const smartProfile = new SmartProfile(userProfile);
-                smartProfile.connected_profiles = 1;
+                smartProfile.connected_profiles = [INSTAGRAM_APP];
                 memoryStoreProfile.set(req?.user?.uniqueSessionId, smartProfile)
             }
 

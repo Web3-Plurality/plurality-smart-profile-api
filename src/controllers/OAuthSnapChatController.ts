@@ -121,14 +121,15 @@ snapchatRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, async (r
       const userProfile = new UserProfile();
       userProfile.username = snapChatProfile.displayName;
       userProfile.avatar = snapChatProfile.bitmoji;
-  
+
       if (memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
         memoryStoreProfile.get(req?.user?.uniqueSessionId).aggregateProfile(userProfile);
-    } else {
+        memoryStoreProfile.get(req?.user?.uniqueSessionId).connected_profiles.push(SNAPCHAT_APP);
+      } else {
         const smartProfile = new SmartProfile(userProfile);
-        smartProfile.connected_profiles = 1;
+        smartProfile.connected_profiles = [SNAPCHAT_APP];
         memoryStoreProfile.set(req?.user?.uniqueSessionId, smartProfile)
-    }
+      }
 
       memoryStoreToken.delete(req?.accessTokenID);
       Logger.info(`${SNAPCHAT_APP}: User information has been delivered successfully`);

@@ -166,12 +166,13 @@ facebookRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, async (r
 
             if (memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
                 memoryStoreProfile.get(req?.user?.uniqueSessionId).aggregateProfile(userProfile);
+                memoryStoreProfile.get(req?.user?.uniqueSessionId).connected_profiles.push(FACEBOOK_APP);
             } else {
                 const smartProfile = new SmartProfile(userProfile);
-                smartProfile.connected_profiles = 1;
+                smartProfile.connected_profiles = [FACEBOOK_APP];
                 memoryStoreProfile.set(req?.user?.uniqueSessionId, smartProfile)
             }
-            
+
             memoryStoreToken.delete(req?.accessTokenID);
             Logger.info(`${FACEBOOK_APP}: User information has been delivered successfully`);
             return res.status(200).json({ app: FACEBOOK_APP, message: "success", individualProfile: userProfile })

@@ -203,11 +203,12 @@ twitterRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, async (re
 
       if (memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
         memoryStoreProfile.get(req?.user?.uniqueSessionId).aggregateProfile(userProfile);
-    } else {
+        memoryStoreProfile.get(req?.user?.uniqueSessionId).connected_profiles.push(TWITTER_APP);
+      } else {
         const smartProfile = new SmartProfile(userProfile);
-        smartProfile.connected_profiles = 1;
+        smartProfile.connected_profiles = [TWITTER_APP];
         memoryStoreProfile.set(req?.user?.uniqueSessionId, smartProfile)
-    }
+      }
 
       memoryStoreToken.delete(req?.accessTokenID);
       Logger.info(`${TWITTER_APP}: Session destroyed successfully`);

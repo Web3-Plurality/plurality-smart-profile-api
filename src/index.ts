@@ -64,7 +64,7 @@ app.post('/post', async (req: Request, res: Response): Promise<Response> => {
 });
 
 
-app.get('/register-event', isAuthenticated, async (req: Request, res: Response) => {
+app.get('/register-event', async (req: Request, res: Response) => {
   initSSE(req, res)
 });
 
