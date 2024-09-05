@@ -6,15 +6,16 @@ import { User } from "../entity/User";
 import Logger from "../lib/logger";
 import { v2 as cloudinary } from 'cloudinary';
 import { faker } from '@faker-js/faker';
-import { ethers } from "ethers";
+import { ethers, logger } from "ethers";
 import jwt from 'jsonwebtoken';
 import { isAuthenticated, isValid } from "../middlewares/authMiddleware";
-import { calculateSocialScore, memoryStoreNonce, memoryStoreProfile, SOCIAL_SCORE } from "../utils/global";
+import { calculateSocialScore, LAST_NFT_EXPIRE_TIME, LAST_NFT_TOKEN_ID, memoryStoreNonce, memoryStoreProfile, SOCIAL_SCORE } from "../utils/global";
 import { generateNonce } from 'siwe';
 import { app } from "..";
 import { plainToInstance  } from "class-transformer";
 import { v4 as uuidv4 } from 'uuid';
 import { SmartProfile } from "../entity/smartProfile";
+import axios from "axios";
 
 export const userRouter = express.Router();
 dotenv.config();
@@ -306,13 +307,27 @@ userRouter.get('/capacity', isAuthenticated, async (req, res) => {
         });
         // owner wallet which has the capacity NFT
         const DAPP_OWNER_WALLET = new ethers.Wallet(process.env.PUBLIC_DAPP_OWNER_WALLET_PRIVATE_KEY);
+        const currentTimestamp = Math.floor(Date.now() / 1000);
+        if(LAST_NFT_EXPIRE_TIME < currentTimestamp) {
+            const litResponse = await axios.get(`https://yellowstone-explorer.litprotocol.com/api/v2/addresses/${DAPP_OWNER_WALLET.address}/nft?type=ERC-721%2CERC-404%2CERC-1155`)
+            let maxNft = {id: 0}
+            for (let index = 0; index < litResponse?.data?.items.length; index++) {
+                 if (Number(litResponse?.data?.items[index].id) > Number(maxNft?.id)){
+                    maxNft = litResponse?.data?.items[index];
+                 }
+            }
+            LAST_NFT_EXPIRE_TIME = Number(maxNft?.metadata?.attributes[0]?.value)
+            LAST_NFT_TOKEN_ID = Number(maxNft?.id)
+            Logger.info(`Last NFT expire time: ${LAST_NFT_EXPIRE_TIME}, Last NFT token id: ${LAST_NFT_TOKEN_ID} updated`)
+        }
         const { capacityDelegationAuthSig } =
             await app.locals.litNodeClient.createCapacityDelegationAuthSig({
                 uses: '100',
                 dAppOwnerWallet: DAPP_OWNER_WALLET,
-                capacityTokenId: process.env.PUBLIC_CAPACITY_TOKEN_ID,
+                capacityTokenId: LAST_NFT_TOKEN_ID,
                 delegateeAddresses: [existingUser?.address],
             });
+        Logger.info(`Capacity delegation auth sig generated for user id: ${id}`);
         return res.status(200).json({ success: true, capacityDelegationAuthSig });
 
     } catch (error) {

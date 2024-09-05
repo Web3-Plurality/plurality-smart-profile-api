@@ -23,6 +23,9 @@ export const REPUTATION_SCORE = "reputation score";
 export const INTERNAL_SERVER_ERROR = "Internal Server Error";
 export const TIMEOUT_ERROR = 'Request timeout error in fetching userinfo';
 
+export let LAST_NFT_EXPIRE_TIME = 0;
+export let LAST_NFT_TOKEN_ID = 0;
+
 
 export function initSSE(req: Request, res: Response) {
   res.writeHead(200, {
