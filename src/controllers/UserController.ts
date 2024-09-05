@@ -64,7 +64,8 @@ userRouter.post("/", [
                 Logger.info(`This user already exists!`);
                 token = jwt.sign({ id: existingUser?.id, uniqueSessionId }, process.env.JWT_SECRET, { expiresIn: "1d" });
                 Logger.info(`All done! Returning...`);
-                return res.status(200).json({ success: true, user: existingUser, token: token });
+                const { username,bio,profileImg, ...remainingProfile } =  existingUser;
+                return res.status(200).json({ success: true, user: remainingProfile, token: token });
             } else {
                 // If the user doesn't exist, insert a new row
                 Logger.info(`This is a new user! Creating an entry with email: ${user.data.email}, address: ${user.data.address}, subscribe: ${user.data.subscribe} ...`);
@@ -76,9 +77,10 @@ userRouter.post("/", [
                     // username: randomName
                 });
                 let addedUser = await userRepository.save(newUser);
+                const { username,bio,profileImg, ...remainingProfile } =  addedUser;
                 token = jwt.sign({ id: addedUser?.id, uniqueSessionId }, process.env.JWT_SECRET, { expiresIn: "1d" });
                 Logger.info(`All done! Returning...`);
-                return res.status(200).json({ success: true, user: addedUser, token: token });
+                return res.status(200).json({ success: true, user: remainingProfile, token: token });
             }
         }
         // User registered via address and skipped email verification
@@ -92,10 +94,10 @@ userRouter.post("/", [
             });
             if (existingUser) {
                 Logger.info(`This user already exists!`);
-                
+                const { username,bio,profileImg, ...remainingProfile } =  existingUser;
                 token = jwt.sign({ id: existingUser?.id, uniqueSessionId  }, process.env.JWT_SECRET, { expiresIn: "1d" });
                 Logger.info(`All done! Returning...`);
-                return res.status(200).json({ success: true, user: existingUser, token: token });
+                return res.status(200).json({ success: true, user: remainingProfile, token: token });
             } else {
                 // If the user doesn't exist, insert a new row
                 Logger.info(`This is a new user! Creating an entry with email: ${user.data.email}, address: ${user.data.address}, subscribe: false ...`);
@@ -109,8 +111,9 @@ userRouter.post("/", [
                 let addedUser = await userRepository.save(newUser);
                 // remove address, only id is enough -> also at other places
                 token = jwt.sign({ id: addedUser?.id, uniqueSessionId }, process.env.JWT_SECRET, { expiresIn: "1d" });
+                const { username,bio,profileImg, ...remainingProfile } =  addedUser;
                 Logger.info(`All done! Returning...`);
-                return res.status(200).json({ success: true, user: addedUser, token: token });
+                return res.status(200).json({ success: true, user: remainingProfile, token: token });
             }
         }
     } catch (e) {
@@ -168,9 +171,9 @@ userRouter.get("/", isAuthenticated, async (req: Request, res: Response) => {
             Logger.error(`user not exist on id ${req?.user?.id}`);
             return res.status(404).json({ success: false, error: `user doest not exist` });
         }
-
+        const { username,bio,profileImg, ...remainingProfile } =  existingUser;
         Logger.info(`user exist on id ${req?.user?.id}`);
-        return res.status(200).json({ success: true, user: existingUser });
+        return res.status(200).json({ success: true, user: remainingProfile });
 
     } catch (e) {
         Logger.error(`Fatal error due to unknown reason: ${JSON.stringify(e)}`);
