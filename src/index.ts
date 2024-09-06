@@ -24,7 +24,6 @@ import { facebookRouter } from './controllers/OAuthFacebookController';
 import { fortniteRouter } from './controllers/OAuthFortniteController';
 import * as LitJsSdk from "@lit-protocol/lit-node-client";
 import { LitNetwork } from "@lit-protocol/constants";
-import { isAuthenticated } from './middlewares/authMiddleware';
 
 dotenv.config();
 

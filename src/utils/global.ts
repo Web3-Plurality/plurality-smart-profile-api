@@ -1,9 +1,12 @@
 import { v4 as uuidv4 } from 'uuid';
 
-export const memoryStoreNonce = new Map();
-export const memoryStoreToken = new Map();
-export const memoryStoreProfile = new Map();
-export const memoryStoreSSE = new Map();
+// maps
+export const memoryStoreNonce = new Map(); // key: address, value: nonce
+export const memoryStoreToken = new Map(); // key: token uuid, value: access token
+export const memoryStoreProfile = new Map(); // key: unique session uuid , value: smart profile
+export const memoryStoreSSE = new Map(); // key: sse uuid , value: response
+
+//platforms
 export const TIKTOK_APP = "tiktok";
 export const TWITTER_APP = "twitter";
 export const SNAPCHAT_APP = "snapchat";

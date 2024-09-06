@@ -184,6 +184,19 @@ userRouter.get("/", isAuthenticated, async (req: Request, res: Response) => {
 userRouter.put("/", isAuthenticated, [
     body('data.username').optional().trim().isLength({ max: 50 }),
     body("data.bio").optional().trim().isLength({ max: 300 }),
+    body('smartProfile')
+    .optional() // Only validate if it exists
+    .custom((value) => {
+        // If the value is empty or undefined, allow it to pass
+        if (!value) {
+            return true;
+            }
+      // Ensure the object is an instance of SmartProfile
+      if (!(plainToInstance(SmartProfile,value) instanceof SmartProfile)) {
+        throw new Error('smartProfile must be an instance of SmartProfile');
+      }
+      return true;
+    }),
     body('data.profileImg').optional()
         .trim()
         .custom((value) => {
@@ -197,18 +210,20 @@ userRouter.put("/", isAuthenticated, [
             }
             return true;
         })
-
-], async (req: Request, res: Response) => {
+        
+    ], async (req: Request, res: Response) => {
     try {
         const errors = validationResult(req);
-
+        
         if (!errors.isEmpty()) {
             Logger.error(`Fatal error due to improper request parameters to route GET /: ${JSON.stringify(errors)}`);
             return res.status(400).json({ errors: errors.array() });
         }
-
+        
         const user = JSON.parse(JSON.stringify(req.body.data));
-        const { username, profileImg, bio, smartProfile } = user;
+        const smartProfile = req?.body?.smartProfile;
+        const { username, profileImg, bio} = user;
+        const newUser = plainToInstance(SmartProfile, smartProfile)
         const id = req?.user?.id;
         const existingUser = await userRepository.findOne({
             where: {
@@ -238,10 +253,9 @@ userRouter.put("/", isAuthenticated, [
 
             // await userRepository.update({ id: id }, updatedUser);
             if (smartProfile) {
-                const newUser = plainToInstance(SmartProfile,smartProfile)
                 newUser.username = username || newUser?.username;
                 newUser.avatar = uploadResult?.secure_url || newUser?.avatar;
-                newUser.bio = bio ?? newUser?.bio;
+                newUser.bio = bio || newUser?.bio;
                 Logger.info(`User profile updated for user id: ${id}`);
                 return res.status(200).json({ success: true, smartProfile: newUser });
             }
@@ -328,18 +342,13 @@ userRouter.post('/smart-profile', isAuthenticated, async (req, res) => {
                 },
             });
             const newProfile = new SmartProfile({username: existingUser?.username ? existingUser?.username :  faker.person.lastName().toLocaleLowerCase(), avatar: existingUser?.profileImg ? existingUser?.profileImg :  "https://res.cloudinary.com/dblrsf3fe/image/upload/v1721919290/wkaejhi7ocnwhfl42vb8.png" });
-            newProfile.scores.push({score_type: SOCIAL_SCORE, score_value: 0})
+            newProfile.scores.push({score_type: SOCIAL_SCORE, score_value: existingUser?.username ? 1000 : process.env.DEFAULT_SCORE});
             return res.status(200).json({ success: true, smartProfile: newProfile });
         }
-        else if (memorySmartProfile) {
-            Logger.error(`user profile not found on body id: ${id}`);
-            return res.status(500).json({ error: "user profile not found in the body" });
-            
-        }{
-            Logger.error(`user profile not found on memory id: ${id}`);
-            return res.status(500).json({ error: "you did not connect any new platform" });
+        else {
+            Logger.error(`either not provide smart profile in body or smart profile not exist in memory of user: ${id}`);
+            return res.status(400).json({ error: "Bad request" });
         }
-        
     } catch (error) {
         Logger.error(`Fatal error due to unknown reason: ${JSON.stringify(error)}`);
         return res.status(500).json({ error: "An error occurred while processing your request" });
