@@ -12,7 +12,7 @@ import { isAuthenticated, isValid } from "../middlewares/authMiddleware";
 import { calculateSocialScore, LAST_NFT_EXPIRE_TIME, LAST_NFT_TOKEN_ID, memoryStoreNonce, memoryStoreProfile, SOCIAL_SCORE } from "../utils/global";
 import { generateNonce } from 'siwe';
 import { app } from "..";
-import { plainToInstance  } from "class-transformer";
+import { plainToInstance } from "class-transformer";
 import { v4 as uuidv4 } from 'uuid';
 import { SmartProfile } from "../entity/smartProfile";
 import axios from "axios";
@@ -65,7 +65,7 @@ userRouter.post("/", [
                 Logger.info(`This user already exists!`);
                 token = jwt.sign({ id: existingUser?.id, uniqueSessionId }, process.env.JWT_SECRET, { expiresIn: "1d" });
                 Logger.info(`All done! Returning...`);
-                const { username,bio,profileImg, ...remainingProfile } =  existingUser;
+                const { username, bio, profileImg, ...remainingProfile } = existingUser;
                 return res.status(200).json({ success: true, user: remainingProfile, token: token });
             } else {
                 // If the user doesn't exist, insert a new row
@@ -78,7 +78,7 @@ userRouter.post("/", [
                     // username: randomName
                 });
                 let addedUser = await userRepository.save(newUser);
-                const { username,bio,profileImg, ...remainingProfile } =  addedUser;
+                const { username, bio, profileImg, ...remainingProfile } = addedUser;
                 token = jwt.sign({ id: addedUser?.id, uniqueSessionId }, process.env.JWT_SECRET, { expiresIn: "1d" });
                 Logger.info(`All done! Returning...`);
                 return res.status(200).json({ success: true, user: remainingProfile, token: token });
@@ -95,8 +95,8 @@ userRouter.post("/", [
             });
             if (existingUser) {
                 Logger.info(`This user already exists!`);
-                const { username,bio,profileImg, ...remainingProfile } =  existingUser;
-                token = jwt.sign({ id: existingUser?.id, uniqueSessionId  }, process.env.JWT_SECRET, { expiresIn: "1d" });
+                const { username, bio, profileImg, ...remainingProfile } = existingUser;
+                token = jwt.sign({ id: existingUser?.id, uniqueSessionId }, process.env.JWT_SECRET, { expiresIn: "1d" });
                 Logger.info(`All done! Returning...`);
                 return res.status(200).json({ success: true, user: remainingProfile, token: token });
             } else {
@@ -112,7 +112,7 @@ userRouter.post("/", [
                 let addedUser = await userRepository.save(newUser);
                 // remove address, only id is enough -> also at other places
                 token = jwt.sign({ id: addedUser?.id, uniqueSessionId }, process.env.JWT_SECRET, { expiresIn: "1d" });
-                const { username,bio,profileImg, ...remainingProfile } =  addedUser;
+                const { username, bio, profileImg, ...remainingProfile } = addedUser;
                 Logger.info(`All done! Returning...`);
                 return res.status(200).json({ success: true, user: remainingProfile, token: token });
             }
@@ -172,7 +172,7 @@ userRouter.get("/", isAuthenticated, async (req: Request, res: Response) => {
             Logger.error(`user not exist on id ${req?.user?.id}`);
             return res.status(404).json({ success: false, error: `user doest not exist` });
         }
-        const { username,bio,profileImg, ...remainingProfile } =  existingUser;
+        const { username, bio, profileImg, ...remainingProfile } = existingUser;
         Logger.info(`user exist on id ${req?.user?.id}`);
         return res.status(200).json({ success: true, user: remainingProfile });
 
@@ -262,7 +262,7 @@ userRouter.put("/", isAuthenticated, [
             }
             Logger.error(`user profile not found on body`);
             return res.status(400).json({ success: false, error: "user profile not found in the body" });
-    
+
         } else {
             // User does not exist
             Logger.info(`This user does not exist!`);
@@ -308,23 +308,28 @@ userRouter.get('/capacity', isAuthenticated, async (req, res) => {
         // owner wallet which has the capacity NFT
         const DAPP_OWNER_WALLET = new ethers.Wallet(process.env.PUBLIC_DAPP_OWNER_WALLET_PRIVATE_KEY);
         const currentTimestamp = Math.floor(Date.now() / 1000);
-        if(LAST_NFT_EXPIRE_TIME < currentTimestamp) {
-            const litResponse = await axios.get(`https://yellowstone-explorer.litprotocol.com/api/v2/addresses/${DAPP_OWNER_WALLET.address}/nft?type=ERC-721%2CERC-404%2CERC-1155`)
-            let maxNft = {id: 0}
-            for (let index = 0; index < litResponse?.data?.items.length; index++) {
-                 if (Number(litResponse?.data?.items[index].id) > Number(maxNft?.id)){
-                    maxNft = litResponse?.data?.items[index];
-                 }
+        const litResponse = await axios.get(`https://yellowstone-explorer.litprotocol.com/api/v2/addresses/${DAPP_OWNER_WALLET.address}/nft?type=ERC-721%2CERC-404%2CERC-1155`)
+        let maxNft = { id: 0 }
+        for (let index = 0; index < litResponse?.data?.items.length; index++) {
+            if (Number(litResponse?.data?.items[index].id) > Number(maxNft?.id)) {
+                maxNft = litResponse?.data?.items[index];
+                if (currentTimestamp < Number(maxNft?.metadata?.attributes[0]?.value)) {
+                    break;
+                }
             }
-            LAST_NFT_EXPIRE_TIME = Number(maxNft?.metadata?.attributes[0]?.value)
-            LAST_NFT_TOKEN_ID = Number(maxNft?.id)
-            Logger.info(`Last NFT expire time: ${LAST_NFT_EXPIRE_TIME}, Last NFT token id: ${LAST_NFT_TOKEN_ID} updated`)
         }
+        Logger.info(`Last NFT expire time: ${LAST_NFT_EXPIRE_TIME}, Last NFT token id: ${LAST_NFT_TOKEN_ID} updated`)
+
+        if (currentTimestamp > Number(maxNft?.metadata?.attributes[0]?.value)) {
+            Logger.error(`Last NFT expired at: ${maxNft?.metadata?.attributes[0]?.value}`);
+            return res.status(500).json({ error: "Capacity NFT expired" });
+        }
+
         const { capacityDelegationAuthSig } =
             await app.locals.litNodeClient.createCapacityDelegationAuthSig({
                 uses: '100',
                 dAppOwnerWallet: DAPP_OWNER_WALLET,
-                capacityTokenId: LAST_NFT_TOKEN_ID,
+                capacityTokenId: Number(maxNft?.id),
                 delegateeAddresses: [existingUser?.address],
             });
         Logger.info(`Capacity delegation auth sig generated for user id: ${id}`);
@@ -343,12 +348,12 @@ userRouter.post('/smart-profile', isAuthenticated, async (req, res) => {
         if (memorySmartProfile && req?.body?.smartProfile) {
             const smartProfile = plainToInstance(SmartProfile, req?.body?.smartProfile);
             const socialScore = calculateSocialScore(memorySmartProfile?.connected_profiles, smartProfile?.connected_profiles);
-            memorySmartProfile.scores.push({score_type: SOCIAL_SCORE, score_value: socialScore})
+            memorySmartProfile.scores.push({ score_type: SOCIAL_SCORE, score_value: socialScore })
             smartProfile.aggregateProfile(memorySmartProfile);
             memoryStoreProfile.delete(id);
             Logger.info(`Smart profile found for user id: ${id}`);
             return res.status(200).json({ success: true, smartProfile: smartProfile });
-        } else if(!memorySmartProfile && !req?.body?.smartProfile) {
+        } else if (!memorySmartProfile && !req?.body?.smartProfile) {
             Logger.info(`no profile connected on id: ${id}`);
             // if user already exist in db then we use there old name
             const existingUser = await userRepository.findOne({

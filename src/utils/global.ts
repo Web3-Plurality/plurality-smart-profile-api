@@ -17,16 +17,10 @@ export const FORTNITE_APP = "fortnite";
 // scores Field
 export const SOCIAL_SCORE = "social score";
 export const REPUTATION_SCORE = "reputation score";
-
-
-
+// erorrs
 export const INTERNAL_SERVER_ERROR = "Internal Server Error";
 export const TIMEOUT_ERROR = 'Request timeout error in fetching userinfo';
-
-export let LAST_NFT_EXPIRE_TIME = 0;
-export let LAST_NFT_TOKEN_ID = 0;
-
-
+// functions
 export function initSSE(req: Request, res: Response) {
   res.writeHead(200, {
     'Content-Type': 'text/event-stream',
