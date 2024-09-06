@@ -6,10 +6,10 @@ import { User } from "../entity/User";
 import Logger from "../lib/logger";
 import { v2 as cloudinary } from 'cloudinary';
 import { faker } from '@faker-js/faker';
-import { ethers, logger } from "ethers";
+import { ethers } from "ethers";
 import jwt from 'jsonwebtoken';
 import { isAuthenticated, isValid } from "../middlewares/authMiddleware";
-import { calculateSocialScore, LAST_NFT_EXPIRE_TIME, LAST_NFT_TOKEN_ID, memoryStoreNonce, memoryStoreProfile, SOCIAL_SCORE } from "../utils/global";
+import { calculateSocialScore, memoryStoreNonce, memoryStoreProfile, SOCIAL_SCORE } from "../utils/global";
 import { generateNonce } from 'siwe';
 import { app } from "..";
 import { plainToInstance } from "class-transformer";
@@ -318,7 +318,6 @@ userRouter.get('/capacity', isAuthenticated, async (req, res) => {
                 }
             }
         }
-        Logger.info(`Last NFT expire time: ${LAST_NFT_EXPIRE_TIME}, Last NFT token id: ${LAST_NFT_TOKEN_ID} updated`)
 
         if (currentTimestamp > Number(maxNft?.metadata?.attributes[0]?.value)) {
             Logger.error(`Last NFT expired at: ${maxNft?.metadata?.attributes[0]?.value}`);
