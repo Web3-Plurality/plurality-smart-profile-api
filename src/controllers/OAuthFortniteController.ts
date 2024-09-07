@@ -2,7 +2,7 @@ import express, { Request, Response } from "express";
 import passport from "passport";
 import * as dotenv from 'dotenv';
 import axios from "axios";
-import { hasValidAccessTokenHeader, hasValidEventHeader, hasValidEventParam, isAuthenticated } from "../middlewares/authMiddleware";
+import { alreadyConnected, hasValidAccessTokenHeader, hasValidEventHeader, hasValidEventParam, isAuthenticated } from "../middlewares/authMiddleware";
 import Logger from "../lib/logger";
 import { FORTNITE_APP, INTERNAL_SERVER_ERROR, TIMEOUT_ERROR, memoryStoreToken, memoryStoreSSE, memoryStoreProfile } from "../utils/global";
 import OAuthFortniteStrategy from "../auth/OAuthFortniteStrategy"
@@ -48,6 +48,7 @@ passport.use(
 fortniteRouter.get(
   '/',
   hasValidEventParam,
+  alreadyConnected(FORTNITE_APP),
   async (req: Request, res: Response, next) => {
     Logger.info(`${FORTNITE_APP}: Request for Oauth has been received successfully on sse Id ${req.sseID}`)
     passport.authenticate('fortnite')(req, res, next);
@@ -128,10 +129,10 @@ fortniteRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, async (r
 
       if (memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
         memoryStoreProfile.get(req?.user?.uniqueSessionId).aggregateProfile(userProfile);
-        memoryStoreProfile.get(req?.user?.uniqueSessionId).connected_profiles.push(FORTNITE_APP);
+        memoryStoreProfile.get(req?.user?.uniqueSessionId).connected_profiles.push({platform_name: FORTNITE_APP, user_platform_id: fortniteProfile?.accountId, username: fortniteProfile?.displayName});
       } else {
         const smartProfile = new SmartProfile(userProfile);
-        smartProfile.connected_profiles = [FORTNITE_APP];
+        smartProfile.connected_profiles = [{platform_name: FORTNITE_APP, user_platform_id: fortniteProfile?.accountId, username: fortniteProfile?.displayName}];
         memoryStoreProfile.set(req?.user?.uniqueSessionId, smartProfile)
       }
 

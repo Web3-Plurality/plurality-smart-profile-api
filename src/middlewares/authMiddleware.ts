@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { memoryStoreNonce, memoryStoreToken, memoryStoreSSE } from "../utils/global";
+import { memoryStoreNonce, memoryStoreToken, memoryStoreSSE, memoryStoreProfile } from "../utils/global";
 import Logger from "../lib/logger";
 import jwt from 'jsonwebtoken';
 import stytch from "stytch";
@@ -153,4 +153,17 @@ export const isValid = async (req, res, next) => {
   Logger.error(`error: ${error}`);
   return res.status(400).send('Invalid request');
 }
+};
+
+export const alreadyConnected = (profile: string) => {
+  const profiles = memoryStoreProfile.get(req?.user?.uniqueSessionId)?.connected_profiles;
+  return (req, res, next) => {
+    if (profiles.find(prof => prof.platform_name === profile)) {
+      Logger.error(`Profile already connected`);
+      return res.status(400).send('Profile already connected');
+    }else{
+      next();
+    }
+  };
+  
 };

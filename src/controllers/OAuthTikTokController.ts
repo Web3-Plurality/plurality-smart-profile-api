@@ -5,7 +5,7 @@ import passport from "passport";
 import axios from "axios";
 import { TikTokProfile } from "../entity/Tiktok";
 import { INTERNAL_SERVER_ERROR, TIKTOK_APP, createPrompt, memoryStoreToken, memoryStoreSSE, memoryStoreProfile, REPUTATION_SCORE } from "../utils/global";
-import { hasValidAccessTokenHeader, hasValidEventHeader, hasValidEventParam, isAuthenticated } from "../middlewares/authMiddleware";
+import { alreadyConnected, hasValidAccessTokenHeader, hasValidEventHeader, hasValidEventParam, isAuthenticated } from "../middlewares/authMiddleware";
 import { analyze } from "../utils/groq";
 import { calculateReputation } from "../utils/tiktok";
 import Logger from "../lib/logger";
@@ -42,7 +42,7 @@ passport.use("tiktok", new TikTokOAuth2Strategy(
 ));
 
 // Start authentication flow
-tiktokRouter.get('/', hasValidEventParam, async (req: Request, res: Response, next) => {
+tiktokRouter.get('/', hasValidEventParam, alreadyConnected(TIKTOK_APP), async (req: Request, res: Response, next) => {
 
   Logger.info(`${TIKTOK_APP}: Request for Tiktok Oauth has been received successfully on sse Id ${req.sseID}`)
   const csrfState = Math.random().toString(36).substring(2);
@@ -194,10 +194,10 @@ tiktokRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, async (req
 
       if (memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
         memoryStoreProfile.get(req?.user?.uniqueSessionId).aggregateProfile(userProfile);
-        memoryStoreProfile.get(req?.user?.uniqueSessionId).connected_profiles.push(TIKTOK_APP);
+        memoryStoreProfile.get(req?.user?.uniqueSessionId).connected_profiles.push({platform_name: TIKTOK_APP, user_platform_id: "", username: tiktokProfile?.user?.username});
       } else {
         const smartProfile = new SmartProfile(userProfile);
-        smartProfile.connected_profiles = [TIKTOK_APP];
+        smartProfile.connected_profiles = [{platform_name: TIKTOK_APP, user_platform_id: "", username: tiktokProfile?.user?.username}];
         memoryStoreProfile.set(req?.user?.uniqueSessionId, smartProfile)
       }
 

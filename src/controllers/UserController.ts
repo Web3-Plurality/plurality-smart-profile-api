@@ -15,11 +15,16 @@ import { app } from "..";
 import { plainToInstance } from "class-transformer";
 import { v4 as uuidv4 } from 'uuid';
 import { SmartProfile } from "../entity/smartProfile";
+import  {SmartProfileMAP}  from "../entity/SmartProfileMAP";
 import axios from "axios";
+
+
 
 export const userRouter = express.Router();
 dotenv.config();
 const userRepository = AppDataSource.getRepository(User);
+const smartProfileRepository = AppDataSource.getRepository(SmartProfileMAP);
+
 
 // Configuration
 cloudinary.config({
@@ -350,6 +355,16 @@ userRouter.post('/smart-profile', isAuthenticated, async (req, res) => {
             memorySmartProfile.scores.push({ score_type: SOCIAL_SCORE, score_value: socialScore })
             smartProfile.aggregateProfile(memorySmartProfile);
             memoryStoreProfile.delete(id);
+            const updatedSmartProfileMap = {
+                connectedPlatforms: smartProfile?.connected_profiles?.map((profile) => {
+                    return {
+                        platform_name: profile?.platform_name,
+                        user_platform_id: profile?.user_platform_id,
+                        username: profile?.username,
+                    }}),
+            }
+
+            await smartProfileRepository.update({ userId: req?.user?.id, profileTypeStreamId: req?.body?.profileTypeStreamId }, updatedSmartProfileMap);
             Logger.info(`Smart profile found for user id: ${id}`);
             return res.status(200).json({ success: true, smartProfile: smartProfile });
         } else if (!memorySmartProfile && !req?.body?.smartProfile) {
@@ -362,6 +377,8 @@ userRouter.post('/smart-profile', isAuthenticated, async (req, res) => {
             });
             const newProfile = new SmartProfile({username: existingUser?.username ? existingUser?.username :  faker.person.lastName().toLocaleLowerCase(), avatar: existingUser?.profileImg ? existingUser?.profileImg :  "https://res.cloudinary.com/dblrsf3fe/image/upload/v1721919290/wkaejhi7ocnwhfl42vb8.png" });
             newProfile.scores.push({score_type: SOCIAL_SCORE, score_value: existingUser?.username ? 1000 : process.env.DEFAULT_SCORE});
+            const newSmartProfileMap = await smartProfileRepository.create({username: newProfile?.username, avatar: newProfile?.avatar, bio: newProfile?.bio, connectedPlatforms: [], profileTypeStreamId: req.body.profileTypeStreamId, userId: req?.user?.id});
+            await userRepository.save(newSmartProfileMap);
             return res.status(200).json({ success: true, smartProfile: newProfile });
         }
         else {

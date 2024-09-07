@@ -6,6 +6,12 @@ interface Score {
     score_value: number;
 }
 
+interface ConnectedProfiles {
+    platform_name: string;
+    user_platform_id: string | null;
+    username?: string | null;
+  }
+
 interface Extra {
     field: string;
     value: number;
@@ -28,7 +34,7 @@ export class SmartProfile {
     collections: string[];
     extra: Extra[];
     linked_address: LinkedAddress[];
-    connected_profiles: string[];
+    connected_profiles: ConnectedProfiles[];
 
     constructor(
         data: any,

@@ -5,7 +5,7 @@ import * as dotenv from 'dotenv';
 import axios from "axios";
 import { scrape, calculateReputation } from "../utils/twitter";
 import { TwitterProfile } from "../entity/Twitter";
-import { hasValidAccessTokenHeader, hasValidEventHeader, hasValidEventParam, isAuthenticated } from "../middlewares/authMiddleware";
+import { alreadyConnected, hasValidAccessTokenHeader, hasValidEventHeader, hasValidEventParam, isAuthenticated } from "../middlewares/authMiddleware";
 import Logger from "../lib/logger";
 import { INTERNAL_SERVER_ERROR, REPUTATION_SCORE, TIMEOUT_ERROR, TWITTER_APP, memoryStoreProfile, memoryStoreSSE, memoryStoreToken } from "../utils/global";
 import { v4 as uuidv4 } from 'uuid';
@@ -48,6 +48,7 @@ passport.use(
 twitterRouter.get(
   '/',
   hasValidEventParam,
+  alreadyConnected(TWITTER_APP),
   async (req: Request, res: Response, next) => {
     Logger.info(`${TWITTER_APP}: Request for Twitter Oauth has been received successfully on sse Id ${req.sseID}`)
     passport.authenticate('twitter')(req, res, next);
@@ -203,10 +204,10 @@ twitterRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, async (re
 
       if (memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
         memoryStoreProfile.get(req?.user?.uniqueSessionId).aggregateProfile(userProfile);
-        memoryStoreProfile.get(req?.user?.uniqueSessionId).connected_profiles.push(TWITTER_APP);
+        memoryStoreProfile.get(req?.user?.uniqueSessionId).connected_profiles.push({platform_name: TWITTER_APP, user_platform_id: twitterProfile?.id, username: twitterProfile?.username});
       } else {
         const smartProfile = new SmartProfile(userProfile);
-        smartProfile.connected_profiles = [TWITTER_APP];
+        smartProfile.connected_profiles = [{platform_name: TWITTER_APP, user_platform_id: twitterProfile?.id, username: twitterProfile?.username}];
         memoryStoreProfile.set(req?.user?.uniqueSessionId, smartProfile)
       }
 

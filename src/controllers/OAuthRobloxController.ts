@@ -2,7 +2,7 @@ import express, { Request, Response } from "express";
 import passport from "passport";
 import * as dotenv from 'dotenv';
 import axios from "axios";
-import { hasValidAccessTokenHeader, hasValidEventHeader, hasValidEventParam, isAuthenticated } from "../middlewares/authMiddleware";
+import { alreadyConnected, hasValidAccessTokenHeader, hasValidEventHeader, hasValidEventParam, isAuthenticated } from "../middlewares/authMiddleware";
 import Logger from "../lib/logger";
 import { INTERNAL_SERVER_ERROR, ROBLOX_APP, TIMEOUT_ERROR, createPrompt, memoryStoreToken, memoryStoreSSE, memoryStoreProfile, REPUTATION_SCORE } from "../utils/global";
 import OAuthRobloxStrategy from "../auth/OAuthRobloxStrategy";
@@ -53,6 +53,7 @@ passport.use(
 robloxRouter.get(
   '/',
   hasValidEventParam,
+  alreadyConnected(ROBLOX_APP),
   async (req: Request, res: Response, next) => {
     Logger.info(`${ROBLOX_APP}: Request for Oauth has been received successfully on sse Id ${req.sseID}`)
     passport.authenticate('roblox')(req, res, next);
@@ -228,10 +229,10 @@ robloxRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, async (req
 
       if (memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
         memoryStoreProfile.get(req?.user?.uniqueSessionId).aggregateProfile(userProfile);
-        memoryStoreProfile.get(req?.user?.uniqueSessionId).connected_profiles.push(ROBLOX_APP);
+        memoryStoreProfile.get(req?.user?.uniqueSessionId).connected_profiles.push({platform_name: ROBLOX_APP, user_platform_id:"", username: robloxProfile?.name});
       } else {
         const smartProfile = new SmartProfile(userProfile);
-        smartProfile.connected_profiles = [ROBLOX_APP];
+        smartProfile.connected_profiles = [{platform_name: ROBLOX_APP, user_platform_id:"", username: robloxProfile?.name}];
         memoryStoreProfile.set(req?.user?.uniqueSessionId, smartProfile)
       }
 

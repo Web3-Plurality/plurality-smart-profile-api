@@ -2,7 +2,7 @@ import express, { Request, Response } from "express";
 import passport from "passport";
 import * as dotenv from 'dotenv';
 import axios from "axios";
-import { hasValidAccessTokenHeader, hasValidEventHeader, hasValidEventParam, isAuthenticated } from "../middlewares/authMiddleware";
+import { alreadyConnected, hasValidAccessTokenHeader, hasValidEventHeader, hasValidEventParam, isAuthenticated } from "../middlewares/authMiddleware";
 import Logger from "../lib/logger";
 import { INTERNAL_SERVER_ERROR, SNAPCHAT_APP, TIMEOUT_ERROR, memoryStoreProfile, memoryStoreSSE, memoryStoreToken } from "../utils/global";
 import OAuthSnapChatStrategy from "../auth/OAuthSnapChatStrategy";
@@ -47,6 +47,7 @@ passport.use(
 snapchatRouter.get(
   '/',
   hasValidEventParam,
+  alreadyConnected(SNAPCHAT_APP),
   async (req: Request, res: Response, next) => {
     Logger.info(`${SNAPCHAT_APP}: Request for Oauth has been received successfully on sse Id ${req.sseID}`)
     passport.authenticate('snapchat')(req, res, next);
@@ -124,10 +125,10 @@ snapchatRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, async (r
 
       if (memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
         memoryStoreProfile.get(req?.user?.uniqueSessionId).aggregateProfile(userProfile);
-        memoryStoreProfile.get(req?.user?.uniqueSessionId).connected_profiles.push(SNAPCHAT_APP);
+        memoryStoreProfile.get(req?.user?.uniqueSessionId).connected_profiles.push({platform_name: SNAPCHAT_APP, user_platform_id:snapChatProfile?.externalId, username: snapChatProfile?.displayName});
       } else {
         const smartProfile = new SmartProfile(userProfile);
-        smartProfile.connected_profiles = [SNAPCHAT_APP];
+        smartProfile.connected_profiles = [{platform_name: SNAPCHAT_APP, user_platform_id:snapChatProfile?.externalId, username: snapChatProfile?.displayName}];
         memoryStoreProfile.set(req?.user?.uniqueSessionId, smartProfile)
       }
 
