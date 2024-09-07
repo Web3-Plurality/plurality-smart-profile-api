@@ -15,7 +15,7 @@ import { app } from "..";
 import { plainToInstance } from "class-transformer";
 import { v4 as uuidv4 } from 'uuid';
 import { SmartProfile } from "../entity/smartProfile";
-import  {SmartProfileMAP}  from "../entity/SmartProfileMAP";
+import  {SmartProfileMap}  from "../entity/SmartProfileMap";
 import axios from "axios";
 
 
@@ -23,7 +23,7 @@ import axios from "axios";
 export const userRouter = express.Router();
 dotenv.config();
 const userRepository = AppDataSource.getRepository(User);
-const smartProfileRepository = AppDataSource.getRepository(SmartProfileMAP);
+const smartProfileRepository = AppDataSource.getRepository(SmartProfileMap);
 
 
 // Configuration
@@ -186,10 +186,11 @@ userRouter.get("/", isAuthenticated, async (req: Request, res: Response) => {
         return res.status(500).json({ error: "An error occurred while processing your request" });
     }
 })
-
+// body => { data: { username: string, bio: string, profileImg: string }, profileTypeStreamId: string, smartProfile: SmartProfile }
 userRouter.put("/", isAuthenticated, [
     body('data.username').optional().trim().isLength({ max: 50 }),
     body("data.bio").optional().trim().isLength({ max: 300 }),
+    body('profileTypeStreamId').trim(),
     body('smartProfile')
     .optional() // Only validate if it exists
     .custom((value) => {
@@ -227,7 +228,7 @@ userRouter.put("/", isAuthenticated, [
         }
         
         const user = JSON.parse(JSON.stringify(req.body.data));
-        const smartProfile = req?.body?.smartProfile;
+        const smartProfile = JSON.parse(JSON.stringify(req?.body?.smartProfile));
         const { username, profileImg, bio} = user;
         const newUser = plainToInstance(SmartProfile, smartProfile)
         const id = req?.user?.id;
@@ -251,13 +252,13 @@ userRouter.put("/", isAuthenticated, [
                     });
             }
 
-            // const updatedUser = {
-            //     username: username ? username : existingUser?.username,
-            //     profileImg: uploadResult?.secure_url ? uploadResult?.secure_url : existingUser?.profileImg,
-            //     bio: bio ? bio : existingUser?.bio,
-            // }
+            const updatedUser = {
+                username: username || newUser?.username,
+                avatar: uploadResult?.secure_url || newUser?.avatar,
+                bio: bio ||  newUser?.bio,
+            }
+            await smartProfileRepository.update({ userId: req?.user?.id, profileTypeStreamId: req?.body?.profileTypeStreamId }, updatedUser);
 
-            // await userRepository.update({ id: id }, updatedUser);
             if (smartProfile) {
                 newUser.username = username || newUser?.username;
                 newUser.avatar = uploadResult?.secure_url || newUser?.avatar;
@@ -344,12 +345,13 @@ userRouter.get('/capacity', isAuthenticated, async (req, res) => {
         return res.status(500).json({ error: "An error occurred while processing your request" });
     }
 });
-
+// body => { smartProfile: SmartProfile, profileTypeStreamId: string }
+// header => { Authorization: Bearer token }
 userRouter.post('/smart-profile', isAuthenticated, async (req, res) => {
     try {
         const id = req?.user?.uniqueSessionId;
         const memorySmartProfile = memoryStoreProfile.get(id);
-        if (memorySmartProfile && req?.body?.smartProfile) {
+        if (memorySmartProfile && req?.body?.smartProfile && req?.body?.profileTypeStreamId) {
             const smartProfile = plainToInstance(SmartProfile, req?.body?.smartProfile);
             const socialScore = calculateSocialScore(memorySmartProfile?.connected_profiles, smartProfile?.connected_profiles);
             memorySmartProfile.scores.push({ score_type: SOCIAL_SCORE, score_value: socialScore })
@@ -367,7 +369,7 @@ userRouter.post('/smart-profile', isAuthenticated, async (req, res) => {
             await smartProfileRepository.update({ userId: req?.user?.id, profileTypeStreamId: req?.body?.profileTypeStreamId }, updatedSmartProfileMap);
             Logger.info(`Smart profile found for user id: ${id}`);
             return res.status(200).json({ success: true, smartProfile: smartProfile });
-        } else if (!memorySmartProfile && !req?.body?.smartProfile) {
+        } else if (!memorySmartProfile && !req?.body?.smartProfile && req?.body?.profileTypeStreamId) {
             Logger.info(`no profile connected on id: ${id}`);
             // if user already exist in db then we use there old name
             const existingUser = await userRepository.findOne({
@@ -378,7 +380,9 @@ userRouter.post('/smart-profile', isAuthenticated, async (req, res) => {
             const newProfile = new SmartProfile({username: existingUser?.username ? existingUser?.username :  faker.person.lastName().toLocaleLowerCase(), avatar: existingUser?.profileImg ? existingUser?.profileImg :  "https://res.cloudinary.com/dblrsf3fe/image/upload/v1721919290/wkaejhi7ocnwhfl42vb8.png" });
             newProfile.scores.push({score_type: SOCIAL_SCORE, score_value: existingUser?.username ? 1000 : process.env.DEFAULT_SCORE});
             const newSmartProfileMap = await smartProfileRepository.create({username: newProfile?.username, avatar: newProfile?.avatar, bio: newProfile?.bio, connectedPlatforms: [], profileTypeStreamId: req.body.profileTypeStreamId, userId: req?.user?.id});
-            await userRepository.save(newSmartProfileMap);
+            console.log(newSmartProfileMap);
+            await smartProfileRepository.save(newSmartProfileMap);
+            Logger.info(`Smart profile created for user id: ${id}`);
             return res.status(200).json({ success: true, smartProfile: newProfile });
         }
         else {

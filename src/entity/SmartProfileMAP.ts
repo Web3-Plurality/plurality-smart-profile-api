@@ -9,7 +9,7 @@ interface ConnectedPlatform {
 
 
 @Entity()
-export class SmartProfileMAP {
+export class SmartProfileMap {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 

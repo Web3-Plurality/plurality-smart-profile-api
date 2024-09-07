@@ -4,7 +4,6 @@ import Logger from "../lib/logger";
 import jwt from 'jsonwebtoken';
 import stytch from "stytch";
 import * as dotenv from 'dotenv';
-import { ethers } from "ethers";
 import { SiweMessage } from 'siwe';
 
 dotenv.config();
@@ -156,9 +155,9 @@ export const isValid = async (req, res, next) => {
 };
 
 export const alreadyConnected = (profile: string) => {
-  const profiles = memoryStoreProfile.get(req?.user?.uniqueSessionId)?.connected_profiles;
   return (req, res, next) => {
-    if (profiles.find(prof => prof.platform_name === profile)) {
+    const profiles = memoryStoreProfile.get(req?.user?.uniqueSessionId)?.connected_profiles;
+    if (profiles?.find(prof => prof.platform_name === profile)) {
       Logger.error(`Profile already connected`);
       return res.status(400).send('Profile already connected');
     }else{
