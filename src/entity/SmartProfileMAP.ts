@@ -1,6 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
 
-interface ConnectedPlatform {
+interface ConnectedProfiles {
   platform_name: string;
   user_platform_id: string | null;
   username?: string | null;
@@ -20,7 +20,7 @@ export class SmartProfileMap {
   profileTypeStreamId: string;
 
   @Column({ type: 'json', nullable: true })
-  connectedPlatforms: ConnectedPlatform[];
+  connectedProfiles: ConnectedProfiles[];
 
   @Column({ type: 'varchar', length: 255, nullable: true })
   username: string;

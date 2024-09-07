@@ -35,6 +35,7 @@ export class SmartProfile {
     extra: Extra[];
     linked_address: LinkedAddress[];
     connected_profiles: ConnectedProfiles[];
+    connected_platforms: string[];
 
     constructor(
         data: any,
@@ -50,6 +51,7 @@ export class SmartProfile {
         this.extra = data?.extra || [];
         this.linked_address = data?.linked_address || [];
         this.connected_profiles = data?.connected_profiles || [];
+        this.connected_platforms = data?.connected_platforms || [];
     }
 
     // You can add methods to manipulate or retrieve the data here
