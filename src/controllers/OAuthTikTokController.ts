@@ -5,7 +5,7 @@ import passport from "passport";
 import axios from "axios";
 import { TikTokProfile } from "../entity/Tiktok";
 import { INTERNAL_SERVER_ERROR, TIKTOK_APP, createPrompt, memoryStoreToken, memoryStoreSSE, memoryStoreProfile, REPUTATION_SCORE } from "../utils/global";
-import { alreadyConnected, hasValidAccessTokenHeader, hasValidEventHeader, hasValidEventParam, isAuthenticated } from "../middlewares/authMiddleware";
+import { hasValidAccessTokenHeader, hasValidEventHeader, hasValidEventParam, isAuthenticated, isProfileMapEmpty} from "../middlewares/authMiddleware";
 import { analyze } from "../utils/groq";
 import { calculateReputation } from "../utils/tiktok";
 import Logger from "../lib/logger";
@@ -42,7 +42,10 @@ passport.use("tiktok", new TikTokOAuth2Strategy(
 ));
 
 // Start authentication flow
-tiktokRouter.get('/', hasValidEventParam, alreadyConnected(TIKTOK_APP), async (req: Request, res: Response, next) => {
+tiktokRouter.get('/', 
+  hasValidEventParam,
+  isProfileMapEmpty,
+  async (req: Request, res: Response, next) => {
 
   Logger.info(`${TIKTOK_APP}: Request for Tiktok Oauth has been received successfully on sse Id ${req.sseID}`)
   const csrfState = Math.random().toString(36).substring(2);
@@ -68,6 +71,7 @@ tiktokRouter.post(
   '/event',
   hasValidEventHeader,
   hasValidAccessTokenHeader,
+  isProfileMapEmpty,
   async (req: Request, res: Response) => {
     try {
       Logger.info(`${TIKTOK_APP}: Request body tokenUUID ${req?.accessTokenID}`);
@@ -85,7 +89,7 @@ tiktokRouter.post(
   });
 
 // Return User Object
-tiktokRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, async (req, res) => {
+tiktokRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfileMapEmpty, async (req, res) => {
   try {
 
     Logger.info(`${TIKTOK_APP}: Request for information has been received successfully with id ${req.accessTokenID}`);
@@ -192,20 +196,20 @@ tiktokRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, async (req
       userProfile.extra.push({ field: "video count", value: tiktokProfile?.user.videoCount })
       userProfile.extra.push({ field: "likes count", value: tiktokProfile?.user.likesCount })
 
-      if (memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
-        memoryStoreProfile.get(req?.user?.uniqueSessionId).aggregateProfile(userProfile);
-        memoryStoreProfile.get(req?.user?.uniqueSessionId).connected_profiles.push({platform_name: TIKTOK_APP, user_platform_id: "", username: tiktokProfile?.user?.username});
-      } else {
+      if (!memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
         const smartProfile = new SmartProfile(userProfile);
         smartProfile.connected_profiles = [{platform_name: TIKTOK_APP, user_platform_id: "", username: tiktokProfile?.user?.username}];
-        memoryStoreProfile.set(req?.user?.uniqueSessionId, smartProfile)
+        memoryStoreProfile.set(req?.user?.uniqueSessionId, smartProfile);
+        memoryStoreToken.delete(req?.accessTokenID);
+        Logger.info(`${TIKTOK_APP}: Session destroyed successfully`);
+        Logger.info(`${TIKTOK_APP}: User information has been delivered successfully`);
+        return res.status(200).json({ app: TIKTOK_APP, message: "success", individualProfile: userProfile });
       }
-
-      memoryStoreToken.delete(req?.accessTokenID);
-      Logger.info(`${TIKTOK_APP}: Session destroyed successfully`);
-      Logger.info(`${TIKTOK_APP}: User information has been delivered successfully`);
-      return res.status(200).json({ app: TIKTOK_APP, message: "success", individualProfile: userProfile })
-
+      else {
+        Logger.error(`${TIKTOK_APP}: A profile already exists`);
+        return res.status(500).json({ app: TIKTOK_APP, error: 'Unauthorized', message: INTERNAL_SERVER_ERROR });
+      }
+      
     } else {
       Logger.error(`${TIKTOK_APP}: Token has been expired.`);
       return res.status(500).json({ app: TIKTOK_APP, message: INTERNAL_SERVER_ERROR });

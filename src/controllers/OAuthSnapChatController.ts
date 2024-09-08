@@ -2,7 +2,7 @@ import express, { Request, Response } from "express";
 import passport from "passport";
 import * as dotenv from 'dotenv';
 import axios from "axios";
-import { alreadyConnected, hasValidAccessTokenHeader, hasValidEventHeader, hasValidEventParam, isAuthenticated } from "../middlewares/authMiddleware";
+import { hasValidAccessTokenHeader, hasValidEventHeader, hasValidEventParam, isAuthenticated, isProfileMapEmpty } from "../middlewares/authMiddleware";
 import Logger from "../lib/logger";
 import { INTERNAL_SERVER_ERROR, SNAPCHAT_APP, TIMEOUT_ERROR, memoryStoreProfile, memoryStoreSSE, memoryStoreToken } from "../utils/global";
 import OAuthSnapChatStrategy from "../auth/OAuthSnapChatStrategy";
@@ -47,7 +47,7 @@ passport.use(
 snapchatRouter.get(
   '/',
   hasValidEventParam,
-  alreadyConnected(SNAPCHAT_APP),
+  isProfileMapEmpty,
   async (req: Request, res: Response, next) => {
     Logger.info(`${SNAPCHAT_APP}: Request for Oauth has been received successfully on sse Id ${req.sseID}`)
     passport.authenticate('snapchat')(req, res, next);
@@ -72,6 +72,7 @@ snapchatRouter.post(
   '/event',
   hasValidEventHeader,
   hasValidAccessTokenHeader,
+  isProfileMapEmpty,
   async (req: Request, res: Response) => {
     try {
       Logger.info(`${SNAPCHAT_APP}: Request body tokenUUID ${req?.accessTokenID}`);
@@ -89,7 +90,7 @@ snapchatRouter.post(
   });
 
 // Return User Object
-snapchatRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, async (req, res) => {
+snapchatRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfileMapEmpty, async (req, res) => {
   try {
     Logger.info(`${SNAPCHAT_APP}: Request for information has been received successfully with id ${req.accessTokenID}`);
     const accessToken = memoryStoreToken.get(req.accessTokenID)
@@ -123,19 +124,19 @@ snapchatRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, async (r
       userProfile.username = snapChatProfile.displayName;
       userProfile.avatar = snapChatProfile.bitmoji;
 
-      if (memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
-        memoryStoreProfile.get(req?.user?.uniqueSessionId).aggregateProfile(userProfile);
-        memoryStoreProfile.get(req?.user?.uniqueSessionId).connected_profiles.push({platform_name: SNAPCHAT_APP, user_platform_id:snapChatProfile?.externalId, username: snapChatProfile?.displayName});
-      } else {
+      if (!memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
         const smartProfile = new SmartProfile(userProfile);
         smartProfile.connected_profiles = [{platform_name: SNAPCHAT_APP, user_platform_id:snapChatProfile?.externalId, username: snapChatProfile?.displayName}];
-        memoryStoreProfile.set(req?.user?.uniqueSessionId, smartProfile)
+        memoryStoreProfile.set(req?.user?.uniqueSessionId, smartProfile);
+        memoryStoreToken.delete(req?.accessTokenID);
+        Logger.info(`${SNAPCHAT_APP}: User information has been delivered successfully`);
+        return res.status(200).json({ app: SNAPCHAT_APP, message: "success", individualProfile: userProfile });
       }
-
-      memoryStoreToken.delete(req?.accessTokenID);
-      Logger.info(`${SNAPCHAT_APP}: User information has been delivered successfully`);
-      return res.status(200).json({ app: SNAPCHAT_APP, message: "success", individualProfile: userProfile })
-
+      else {
+        Logger.error(`${SNAPCHAT_APP}: A profile already exists`);
+        return res.status(500).json({ app: SNAPCHAT_APP, error: 'Unauthorized', message: INTERNAL_SERVER_ERROR });
+      }
+     
     } else {
       Logger.error(`${SNAPCHAT_APP}: Token has been expired.`);
       return res.status(500).json({ app: SNAPCHAT_APP, message: INTERNAL_SERVER_ERROR });

@@ -6,6 +6,11 @@ interface ConnectedProfiles {
   username?: string | null;
 }
 
+interface Score {
+  score_type: string;
+  score_value: number;
+}
+
 
 
 @Entity()
@@ -21,6 +26,9 @@ export class SmartProfileMap {
 
   @Column({ type: 'json', nullable: true })
   connectedProfiles: ConnectedProfiles[];
+
+  @Column({ type: 'json', nullable: true })
+  scores: Score[];
 
   @Column({ type: 'varchar', length: 255, nullable: true })
   username: string;

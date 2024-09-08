@@ -2,7 +2,7 @@ import express, { Request, Response } from "express";
 import passport from "passport";
 import * as dotenv from 'dotenv';
 import axios from "axios";
-import { alreadyConnected, hasValidAccessTokenHeader, hasValidEventHeader, hasValidEventParam, isAuthenticated } from "../middlewares/authMiddleware";
+import { hasValidAccessTokenHeader, hasValidEventHeader, hasValidEventParam, isAuthenticated, isProfileMapEmpty } from "../middlewares/authMiddleware";
 import Logger from "../lib/logger";
 import { FACEBOOK_APP, INTERNAL_SERVER_ERROR, TIMEOUT_ERROR, createPrompt, memoryStoreToken, memoryStoreSSE, memoryStoreProfile, REPUTATION_SCORE, SOCIAL_SCORE } from "../utils/global";
 import OAuthFacebookStrategy from "../auth/OAuthFacebookStrategy";
@@ -50,7 +50,7 @@ passport.use(
 facebookRouter.get(
     '/',
     hasValidEventParam,
-    alreadyConnected(FACEBOOK_APP),
+    isProfileMapEmpty,
     async (req: Request, res: Response, next) => {
         Logger.info(`${FACEBOOK_APP}: Request for Oauth has been received successfully on sse Id ${req.sseID}`)
         passport.authenticate('facebook')(req, res, next);
@@ -75,6 +75,7 @@ facebookRouter.post(
     '/event',
     hasValidEventHeader,
     hasValidAccessTokenHeader,
+    isProfileMapEmpty,
     async (req: Request, res: Response) => {
         try {
             Logger.info(`${FACEBOOK_APP}: Request body tokenUUID ${req?.accessTokenID}`);
@@ -93,7 +94,7 @@ facebookRouter.post(
 
 
 // Return User Object
-facebookRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, async (req, res) => {
+facebookRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfileMapEmpty, async (req, res) => {
     try {
         Logger.info(`${FACEBOOK_APP}: Request for information has been received successfully with id ${req.accessTokenID}`);
         const accessToken = memoryStoreToken.get(req.accessTokenID)
@@ -165,19 +166,20 @@ facebookRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, async (r
             userProfile.extra.push({ field: "athleast count", value: facebookProfile?.athletes_count });
             userProfile.extra.push({ field: "favourite team count", value: facebookProfile?.favTeam_count });
 
-            if (memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
-                memoryStoreProfile.get(req?.user?.uniqueSessionId).aggregateProfile(userProfile);
-                memoryStoreProfile.get(req?.user?.uniqueSessionId).connected_profiles.push({platform_name: FACEBOOK_APP, user_platform_id: "", username: facebookProfile?.name});
-            } else {
+            if (!memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
                 const smartProfile = new SmartProfile(userProfile);
                 smartProfile.connected_profiles = [{platform_name: FACEBOOK_APP, user_platform_id: "", username: facebookProfile?.name}];
-                memoryStoreProfile.set(req?.user?.uniqueSessionId, smartProfile)
+                memoryStoreProfile.set(req?.user?.uniqueSessionId, smartProfile);
+                memoryStoreToken.delete(req?.accessTokenID);
+                Logger.info(`${FACEBOOK_APP}: User information has been delivered successfully`);
+                return res.status(200).json({ app: FACEBOOK_APP, message: "success", individualProfile: userProfile });
             }
-
-            memoryStoreToken.delete(req?.accessTokenID);
-            Logger.info(`${FACEBOOK_APP}: User information has been delivered successfully`);
-            return res.status(200).json({ app: FACEBOOK_APP, message: "success", individualProfile: userProfile })
+            else{
+                Logger.error(`${FACEBOOK_APP}: A profile already exists`);
+                return res.status(500).json({ app: FACEBOOK_APP, error: 'Unauthorized', message: INTERNAL_SERVER_ERROR });
+            }
         }
+        
         else {
             Logger.error(`${FACEBOOK_APP}: Token has been expired.`);
             return res.status(500).json({ app: FACEBOOK_APP, error: 'Unauthorized', message: INTERNAL_SERVER_ERROR });

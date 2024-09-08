@@ -15,8 +15,11 @@ export const INSTAGRAM_APP = "instagram";
 export const FACEBOOK_APP = "facebook";
 export const FORTNITE_APP = "fortnite";
 // scores Field
-export const SOCIAL_SCORE = "social score";
-export const REPUTATION_SCORE = "reputation score";
+export enum SCORE_TYPES {
+  REPUTATION_SCORE = "reputation_score",
+  SOCIAL_SCORE = "social_score"
+}
+
 // erorrs
 export const INTERNAL_SERVER_ERROR = "Internal Server Error";
 export const TIMEOUT_ERROR = 'Request timeout error in fetching userinfo';

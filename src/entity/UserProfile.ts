@@ -51,26 +51,26 @@ export class UserProfile {
     }
 
     // // You can add methods to manipulate or retrieve the data here
-    aggregateProfile(user: UserProfile){
-        this.collections = this.collections.concat(user.collections);
-        this.interests = this.interests.concat(user.interests);
-        this.reputation_tags = this.reputation_tags.concat(user.reputation_tags);
-        this.badges = this.badges.concat(user.badges);
-        this.extra = this.extra.concat(user.extra);
-        this.linked_address = this.linked_address.concat(user.linked_address);
-        // if score value is match then add the value
-        const updatedScores = this.scores.map(score => {
-            const userScore = user.scores.find(us => us.score_type === score.score_type);
-            if (userScore) {
-                return {
-                    ...score,
-                    score_value: score.score_value + userScore.score_value
-                };
-            }
-            return score;
-        });
-        // update the score
-        this.scores = updatedScores
+    // aggregateProfile(user: UserProfile){
+    //     this.collections = this.collections.concat(user.collections);
+    //     this.interests = this.interests.concat(user.interests);
+    //     this.reputation_tags = this.reputation_tags.concat(user.reputation_tags);
+    //     this.badges = this.badges.concat(user.badges);
+    //     this.extra = this.extra.concat(user.extra);
+    //     this.linked_address = this.linked_address.concat(user.linked_address);
+    //     // if score value is match then add the value
+    //     const updatedScores = this.scores.map(score => {
+    //         const userScore = user.scores.find(us => us.score_type === score.score_type);
+    //         if (userScore) {
+    //             return {
+    //                 ...score,
+    //                 score_value: score.score_value + userScore.score_value
+    //             };
+    //         }
+    //         return score;
+    //     });
+    //     // update the score
+    //     this.scores = updatedScores
 
-    }
+    // }
 }

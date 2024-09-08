@@ -154,15 +154,18 @@ export const isValid = async (req, res, next) => {
 }
 };
 
-export const alreadyConnected = (profile: string) => {
-  return (req, res, next) => {
-    const profiles = memoryStoreProfile.get(req?.user?.uniqueSessionId)?.connected_profiles;
-    if (profiles?.find(prof => prof.platform_name === profile)) {
-      Logger.error(`Profile already connected`);
-      return res.status(400).send('Profile already connected');
+export const isProfileMapEmpty = async (req, res, next) => {
+  try{
+    const profile = memoryStoreProfile.get(req?.user?.uniqueSessionId);
+    if (profile) {
+      Logger.error(`A profile is already stored in memory can not proceed to connect more profiles`);
+      return res.status(400).send('A profile is already stored in memory');
     }else{
-      next();
+      return next();
     }
-  };
-  
+  } catch (error) {
+    Logger.error(`error: ${error}`);
+    return res.status(400).send('Invalid request');
+  }
 };
+  
