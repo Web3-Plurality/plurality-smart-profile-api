@@ -1,10 +1,16 @@
-import { REPUTATION_SCORE, SOCIAL_SCORE } from "../utils/global";
+import { SCORE_TYPES } from "../utils/global";
 import { UserProfile } from "./UserProfile";
 
 interface Score {
     score_type: string;
     score_value: number;
 }
+
+interface ConnectedProfiles {
+    platform_name: string;
+    user_platform_id: string | null;
+    username?: string | null;
+  }
 
 interface Extra {
     field: string;
@@ -28,7 +34,8 @@ export class SmartProfile {
     collections: string[];
     extra: Extra[];
     linked_address: LinkedAddress[];
-    connected_profiles: string[];
+    connected_profiles: ConnectedProfiles[];
+    connected_platforms: string[];
 
     constructor(
         data: any,
@@ -37,17 +44,21 @@ export class SmartProfile {
         this.avatar = data?.avatar || "";
         this.bio = data?.bio || "";
         this.interests = data?.interests || [];
-        this.scores = data?.scores || [];
         this.reputation_tags = data?.reputation_tags || [];
         this.badges = data?.badges || [];
         this.collections = data?.collections || [];
         this.extra = data?.extra || [];
         this.linked_address = data?.linked_address || [];
         this.connected_profiles = data?.connected_profiles || [];
+        this.connected_platforms = data?.connected_platforms || [];
+        this.scores = Object.values(SCORE_TYPES).map(scoreType => ({
+            score_type: scoreType,
+            score_value: 0
+        }));
     }
 
     // You can add methods to manipulate or retrieve the data here
-    aggregateProfile(user: UserProfile | SmartProfile) {
+    aggregateProfile(user: SmartProfile) {
         this.collections = this.collections.concat(user.collections);
         this.interests = this.interests.concat(user.interests);
         this.reputation_tags = this.reputation_tags.concat(user.reputation_tags);
@@ -70,5 +81,17 @@ export class SmartProfile {
         });
         // update the score
         this.scores = updatedScores
+    }
+
+    updateScoreValue(scoreType: string, newValue: number) {
+        this.scores = this.scores.map(score => {
+            if (score.score_type === scoreType) {
+                return {
+                    ...score,
+                    score_value: newValue
+                };
+            }
+            return score;
+        });
     }
 }

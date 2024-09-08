@@ -1,10 +1,9 @@
 import { Request, Response } from "express";
-import { memoryStoreNonce, memoryStoreToken, memoryStoreSSE } from "../utils/global";
+import { memoryStoreNonce, memoryStoreToken, memoryStoreSSE, memoryStoreProfile } from "../utils/global";
 import Logger from "../lib/logger";
 import jwt from 'jsonwebtoken';
 import stytch from "stytch";
 import * as dotenv from 'dotenv';
-import { ethers } from "ethers";
 import { SiweMessage } from 'siwe';
 
 dotenv.config();
@@ -154,3 +153,19 @@ export const isValid = async (req, res, next) => {
   return res.status(400).send('Invalid request');
 }
 };
+
+export const isProfileMapEmpty = async (req, res, next) => {
+  try{
+    const profile = memoryStoreProfile.get(req?.user?.uniqueSessionId);
+    if (profile) {
+      Logger.error(`A profile is already stored in memory can not proceed to connect more profiles`);
+      return res.status(400).send('A profile is already stored in memory');
+    }else{
+      return next();
+    }
+  } catch (error) {
+    Logger.error(`error: ${error}`);
+    return res.status(400).send('Invalid request');
+  }
+};
+  

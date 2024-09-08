@@ -15,8 +15,11 @@ export const INSTAGRAM_APP = "instagram";
 export const FACEBOOK_APP = "facebook";
 export const FORTNITE_APP = "fortnite";
 // scores Field
-export const SOCIAL_SCORE = "social score";
-export const REPUTATION_SCORE = "reputation score";
+export enum SCORE_TYPES {
+  REPUTATION_SCORE = "reputation_score",
+  SOCIAL_SCORE = "social_score"
+}
+
 // erorrs
 export const INTERNAL_SERVER_ERROR = "Internal Server Error";
 export const TIMEOUT_ERROR = 'Request timeout error in fetching userinfo';
@@ -56,11 +59,16 @@ export function createPrompt(prompt: any, content: any) {
     return prompt;
   }
 }
-export const  calculateSocialScore = (profilesInMemory: string[], reqConnectedProfiles: string[]): number  => {
+export const  calculateSocialScore = (profilesInMemory: any[], reqConnectedProfiles: any[]): number  => {
   const score = 10
   let sumScore = 0
-  const newProfiles = profilesInMemory.filter(profile => !reqConnectedProfiles.includes(profile))
-  let count = reqConnectedProfiles?.length;
+  
+  const reqConnectedPlatforms = reqConnectedProfiles?.map((profile) => {
+    return profile?.platform_name
+  })
+  const newProfiles = profilesInMemory.filter(profile => !reqConnectedPlatforms.includes(profile))
+
+  let count = reqConnectedPlatforms?.length;
   for (let i = 0; i < newProfiles?.length; i++) {
     sumScore += (score * (count+1)) ** 2
     count+=1

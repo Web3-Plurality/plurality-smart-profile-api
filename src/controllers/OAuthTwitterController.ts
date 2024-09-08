@@ -5,7 +5,7 @@ import * as dotenv from 'dotenv';
 import axios from "axios";
 import { scrape, calculateReputation } from "../utils/twitter";
 import { TwitterProfile } from "../entity/Twitter";
-import { hasValidAccessTokenHeader, hasValidEventHeader, hasValidEventParam, isAuthenticated } from "../middlewares/authMiddleware";
+import { hasValidAccessTokenHeader, hasValidEventHeader, hasValidEventParam, isAuthenticated, isProfileMapEmpty } from "../middlewares/authMiddleware";
 import Logger from "../lib/logger";
 import { INTERNAL_SERVER_ERROR, REPUTATION_SCORE, TIMEOUT_ERROR, TWITTER_APP, memoryStoreProfile, memoryStoreSSE, memoryStoreToken } from "../utils/global";
 import { v4 as uuidv4 } from 'uuid';
@@ -48,6 +48,7 @@ passport.use(
 twitterRouter.get(
   '/',
   hasValidEventParam,
+  isProfileMapEmpty,
   async (req: Request, res: Response, next) => {
     Logger.info(`${TWITTER_APP}: Request for Twitter Oauth has been received successfully on sse Id ${req.sseID}`)
     passport.authenticate('twitter')(req, res, next);
@@ -72,6 +73,7 @@ twitterRouter.post(
   '/event',
   hasValidEventHeader,
   hasValidAccessTokenHeader,
+  isProfileMapEmpty,
   async (req: Request, res: Response) => {
     try {
       Logger.info(`${TWITTER_APP}: Request body tokenUUID ${req?.accessTokenID}`);
@@ -89,7 +91,7 @@ twitterRouter.post(
   });
 
 // Return User Object
-twitterRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, async (req, res) => {
+twitterRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfileMapEmpty, async (req, res) => {
   try {
     Logger.info(`${TWITTER_APP}: Request for information has been received successfully with id ${req.accessTokenID}`);
     const accessToken = memoryStoreToken.get(req.accessTokenID)
@@ -201,20 +203,20 @@ twitterRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, async (re
       userProfile.extra.push({ field: "followers count", value: twitterProfile?.followersCount })
       userProfile.extra.push({ field: "following count", value: twitterProfile?.followingCount })
 
-      if (memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
-        memoryStoreProfile.get(req?.user?.uniqueSessionId).aggregateProfile(userProfile);
-        memoryStoreProfile.get(req?.user?.uniqueSessionId).connected_profiles.push(TWITTER_APP);
-      } else {
+      if (!memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
         const smartProfile = new SmartProfile(userProfile);
-        smartProfile.connected_profiles = [TWITTER_APP];
-        memoryStoreProfile.set(req?.user?.uniqueSessionId, smartProfile)
-      }
-
-      memoryStoreToken.delete(req?.accessTokenID);
+        smartProfile.connected_profiles = [{platform_name: TWITTER_APP, user_platform_id: twitterProfile?.id, username: twitterProfile?.username}];
+        memoryStoreProfile.set(req?.user?.uniqueSessionId, smartProfile);
+        memoryStoreToken.delete(req?.accessTokenID);
       Logger.info(`${TWITTER_APP}: Session destroyed successfully`);
       Logger.info(`${TWITTER_APP}: User information has been delivered successfully`);
-      return res.status(200).json({ app: TWITTER_APP, message: "success", individualProfile: userProfile })
-
+      return res.status(200).json({ app: TWITTER_APP, message: "success", individualProfile: userProfile });
+      }
+      else {
+        Logger.error(`${TWITTER_APP}: A profile already exists`);
+        return res.status(500).json({ app: TWITTER_APP, error: 'Unauthorized', message: INTERNAL_SERVER_ERROR });
+      }
+      
     } else {
       Logger.error(`${TWITTER_APP}: Token has been expired.`);
       return res.status(500).json({ app: TWITTER_APP, message: INTERNAL_SERVER_ERROR });

@@ -2,7 +2,7 @@ import express, { Request, Response } from "express";
 import passport from "passport";
 import * as dotenv from 'dotenv';
 import axios from "axios";
-import { hasValidAccessTokenHeader, hasValidEventHeader, hasValidEventParam, isAuthenticated } from "../middlewares/authMiddleware";
+import { hasValidAccessTokenHeader, hasValidEventHeader, hasValidEventParam, isAuthenticated, isProfileMapEmpty } from "../middlewares/authMiddleware";
 import Logger from "../lib/logger";
 import { FORTNITE_APP, INTERNAL_SERVER_ERROR, TIMEOUT_ERROR, memoryStoreToken, memoryStoreSSE, memoryStoreProfile } from "../utils/global";
 import OAuthFortniteStrategy from "../auth/OAuthFortniteStrategy"
@@ -48,6 +48,7 @@ passport.use(
 fortniteRouter.get(
   '/',
   hasValidEventParam,
+  isProfileMapEmpty,
   async (req: Request, res: Response, next) => {
     Logger.info(`${FORTNITE_APP}: Request for Oauth has been received successfully on sse Id ${req.sseID}`)
     passport.authenticate('fortnite')(req, res, next);
@@ -76,6 +77,7 @@ fortniteRouter.post(
   '/event',
   hasValidEventHeader,
   hasValidAccessTokenHeader,
+  isProfileMapEmpty,
   async (req: Request, res: Response) => {
     try {
       Logger.info(`${FORTNITE_APP}: Request body tokenUUID ${req?.accessTokenID}`);
@@ -93,7 +95,7 @@ fortniteRouter.post(
   });
 
 // Return User Object
-fortniteRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, async (req, res) => {
+fortniteRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfileMapEmpty, async (req, res) => {
   try {
     Logger.info(`${FORTNITE_APP}: Request for information has been received successfully with id ${req.accessTokenID}`);
     const { accessToken, account_id }: any = memoryStoreToken.get(req.accessTokenID);
@@ -126,18 +128,18 @@ fortniteRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, async (r
       const userProfile = new UserProfile();
       userProfile.username = fortniteProfile?.displayName;
 
-      if (memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
-        memoryStoreProfile.get(req?.user?.uniqueSessionId).aggregateProfile(userProfile);
-        memoryStoreProfile.get(req?.user?.uniqueSessionId).connected_profiles.push(FORTNITE_APP);
-      } else {
+      if (!memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
         const smartProfile = new SmartProfile(userProfile);
-        smartProfile.connected_profiles = [FORTNITE_APP];
-        memoryStoreProfile.set(req?.user?.uniqueSessionId, smartProfile)
+        smartProfile.connected_profiles = [{platform_name: FORTNITE_APP, user_platform_id: fortniteProfile?.accountId, username: fortniteProfile?.displayName}];
+        memoryStoreProfile.set(req?.user?.uniqueSessionId, smartProfile);
+        memoryStoreToken.delete(req?.accessTokenID);
+        Logger.info(`${FORTNITE_APP}: User information has been delivered successfully`);
+        return res.status(200).json({ app: FORTNITE_APP, message: "success", individualProfile: userProfile });
+      } 
+      else {
+        Logger.error(`${FORTNITE_APP}: A profile already exists`);
+        return res.status(500).json({ app: FORTNITE_APP, error: 'Unauthorized', message: INTERNAL_SERVER_ERROR });
       }
-
-      memoryStoreToken.delete(req?.accessTokenID);
-      Logger.info(`${FORTNITE_APP}: User information has been delivered successfully`);
-      return res.status(200).json({ app: FORTNITE_APP, message: "success", individualProfile: userProfile })
 
     } else {
       Logger.error(`${FORTNITE_APP}: Token has been expired.`);

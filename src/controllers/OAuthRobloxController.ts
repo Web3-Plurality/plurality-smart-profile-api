@@ -2,7 +2,7 @@ import express, { Request, Response } from "express";
 import passport from "passport";
 import * as dotenv from 'dotenv';
 import axios from "axios";
-import { hasValidAccessTokenHeader, hasValidEventHeader, hasValidEventParam, isAuthenticated } from "../middlewares/authMiddleware";
+import { hasValidAccessTokenHeader, hasValidEventHeader, hasValidEventParam, isAuthenticated, isProfileMapEmpty } from "../middlewares/authMiddleware";
 import Logger from "../lib/logger";
 import { INTERNAL_SERVER_ERROR, ROBLOX_APP, TIMEOUT_ERROR, createPrompt, memoryStoreToken, memoryStoreSSE, memoryStoreProfile, REPUTATION_SCORE } from "../utils/global";
 import OAuthRobloxStrategy from "../auth/OAuthRobloxStrategy";
@@ -53,6 +53,7 @@ passport.use(
 robloxRouter.get(
   '/',
   hasValidEventParam,
+  isProfileMapEmpty,
   async (req: Request, res: Response, next) => {
     Logger.info(`${ROBLOX_APP}: Request for Oauth has been received successfully on sse Id ${req.sseID}`)
     passport.authenticate('roblox')(req, res, next);
@@ -77,6 +78,7 @@ robloxRouter.post(
   '/event',
   hasValidEventHeader,
   hasValidAccessTokenHeader,
+  isProfileMapEmpty,
   async (req: Request, res: Response) => {
     try {
       Logger.info(`${ROBLOX_APP}: Request body tokenUUID ${req?.accessTokenID}`);
@@ -94,7 +96,7 @@ robloxRouter.post(
   });
 
 // Return User Object
-robloxRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, async (req, res) => {
+robloxRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfileMapEmpty, async (req, res) => {
   try {
     Logger.info(`${ROBLOX_APP}: Request for information has been received successfully with id ${req.accessTokenID}`);
     const accessToken = memoryStoreToken.get(req.accessTokenID)
@@ -226,18 +228,19 @@ robloxRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, async (req
       userProfile.extra.push({ field: "followers", value: robloxProfile?.followers });
       userProfile.extra.push({ field: "following", value: robloxProfile?.following });
 
-      if (memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
-        memoryStoreProfile.get(req?.user?.uniqueSessionId).aggregateProfile(userProfile);
-        memoryStoreProfile.get(req?.user?.uniqueSessionId).connected_profiles.push(ROBLOX_APP);
-      } else {
+      if (!memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
         const smartProfile = new SmartProfile(userProfile);
-        smartProfile.connected_profiles = [ROBLOX_APP];
-        memoryStoreProfile.set(req?.user?.uniqueSessionId, smartProfile)
+        smartProfile.connected_profiles = [{platform_name: ROBLOX_APP, user_platform_id:"", username: robloxProfile?.name}];
+        memoryStoreProfile.set(req?.user?.uniqueSessionId, smartProfile);
+        memoryStoreToken.delete(req?.accessTokenID);
+        Logger.info(`${ROBLOX_APP}: User information has been delivered successfully`);
+        return res.status(200).json({ app: ROBLOX_APP, message: "success", individualProfile: userProfile });
       }
-
-      memoryStoreToken.delete(req?.accessTokenID);
-      Logger.info(`${ROBLOX_APP}: User information has been delivered successfully`);
-      return res.status(200).json({ app: ROBLOX_APP, message: "success", individualProfile: userProfile })
+      else {
+        Logger.error(`${ROBLOX_APP}: A profile already exists`);
+        return res.status(500).json({ app: ROBLOX_APP, error: 'Unauthorized', message: INTERNAL_SERVER_ERROR });
+      }
+      
     } else {
       Logger.error(`${ROBLOX_APP}: Token has been expired.`);
       return res.status(500).json({ app: ROBLOX_APP, message: INTERNAL_SERVER_ERROR });
