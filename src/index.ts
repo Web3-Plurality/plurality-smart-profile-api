@@ -72,7 +72,7 @@ try {
 
   app.locals.litNodeClient = new LitJsSdk.LitNodeClientNodeJs({
     // alertWhenUnauthorized: false,
-    // checkNodeAttestation: true,
+    checkNodeAttestation: true,
     litNetwork: LitNetwork.Datil,
   });
 

@@ -332,7 +332,7 @@ userRouter.get('/capacity', isAuthenticated, async (req, res) => {
             await app.locals.litNodeClient.createCapacityDelegationAuthSig({
                 uses: '100',
                 dAppOwnerWallet: DAPP_OWNER_WALLET,
-                capacityTokenId: Number(maxNft?.id),
+                capacityTokenId: maxNft?.id.toString(),
                 delegateeAddresses: [existingUser?.address],
             });
         Logger.info(`Capacity delegation auth sig generated for user id: ${id}`);
