@@ -5,7 +5,7 @@ export class RobloxProfile {
     friends: number;
     followers: number;
     following: number;
-    avtar: string;
+    avatar: string;
     name: string;
     nickname: string;
     picture: string;
@@ -26,7 +26,7 @@ export class RobloxProfile {
         this.friends =   0;
         this.followers = 0;
         this.following = 0;
-        this.avtar = "";
+        this.avatar = "";
         this.name = data?.name || "";
         this.nickname = data?.nickname || "";
         this.picture = data?.picture || "";

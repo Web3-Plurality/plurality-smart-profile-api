@@ -89,16 +89,22 @@ const handleAPI = ()=>{
   };
 
 
-  const handleInfoRequest = () => {
-    
+  const handleEvent = () => {
+    axios.post(`${process.env.REACT_APP_OAuth_Endpoint}/event`,{
+      headers: {
+        'x-sse-id': sseID,
+        "x-token-id": tokenID
+      }
+    })
+  
   };
 
   return (
     <div className="App">
       <h1>SSE and OAuth Example</h1>
       <button onClick={handleOAuth}>Start OAuth</button>
-      {/* <button onClick={handleInfoRequest} disabled={!isInfoButtonEnabled}>Get Info</button>}
-      {/* <button onClick={handle} >register</button> */}
+      {/* <button onClick={handleInfoRequest} disabled={!isInfoButtonEnabled}>Get Info</button> */}
+      {/* <button onClick={handleEvent} >event</button> */}
       <button onClick={handleAPI} >register event</button>
       <div>
         <h2>SSE Message:</h2>
