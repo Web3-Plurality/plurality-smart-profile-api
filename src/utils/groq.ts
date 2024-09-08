@@ -23,7 +23,7 @@ export async function analyze(prompt: any) {
 async function getGroqChatCompletion(prompt: any) {
   return groq.chat.completions.create({
     messages: prompt,
-    model: "llama3-70b-8192",
+    model: "llama3-8b-8192",
     temperature: 0.5,
     stream: false,
     response_format: {
