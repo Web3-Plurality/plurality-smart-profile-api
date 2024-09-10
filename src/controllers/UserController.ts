@@ -17,6 +17,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { SmartProfile } from "../entity/smartProfile";
 import  {SmartProfileMap}  from "../entity/SmartProfileMap";
 import axios from "axios";
+import { EarlyUser } from "../entity/EarlyUser";
 
 
 
@@ -24,6 +25,8 @@ export const userRouter = express.Router();
 dotenv.config();
 const userRepository = AppDataSource.getRepository(User);
 const smartProfileMapRepository = AppDataSource.getRepository(SmartProfileMap);
+const earlyUserRepository = AppDataSource.getRepository(EarlyUser);
+
 
 
 // Configuration
@@ -67,11 +70,25 @@ userRouter.post("/", [
                 },
             });
             if (existingUser) {
-                Logger.info(`This user already exists!`);
-                token = jwt.sign({ id: existingUser?.id, uniqueSessionId }, process.env.JWT_SECRET, { expiresIn: "1d" });
-                Logger.info(`All done! Returning...`);
-                const { username, bio, profileImg, ...remainingProfile } = existingUser;
-                return res.status(200).json({ success: true, user: remainingProfile, token: token });
+                if (!existingUser?.address) {
+                    Logger.info(`The address against this email was not found`);
+                    const updatedUser = {
+                       address: user.data.address, // pkp address
+                       subscribe: user.data.subscribe,
+                    }
+                    await userRepository.update({ id: existingUser?.id }, updatedUser)
+                    Logger.info(`Putting Lit address on the current user id ${existingUser?.id}`);
+                    token = jwt.sign({ id: existingUser?.id, uniqueSessionId }, process.env.JWT_SECRET, { expiresIn: "1d" });
+                    Logger.info(`All done! Returning...`);
+                    return res.status(200).json({ success: true, token: token });
+                } 
+                else{
+                    Logger.info(`This user already exists!`);
+                    token = jwt.sign({ id: existingUser?.id, uniqueSessionId }, process.env.JWT_SECRET, { expiresIn: "1d" });
+                    Logger.info(`All done! Returning...`);
+                    return res.status(200).json({ success: true, token: token });
+                }
+                 
             } else {
                 // If the user doesn't exist, insert a new row
                 Logger.info(`This is a new user! Creating an entry with email: ${user.data.email}, address: ${user.data.address}, subscribe: ${user.data.subscribe} ...`);
@@ -83,10 +100,9 @@ userRouter.post("/", [
                     // username: randomName
                 });
                 let addedUser = await userRepository.save(newUser);
-                const { username, bio, profileImg, ...remainingProfile } = addedUser;
                 token = jwt.sign({ id: addedUser?.id, uniqueSessionId }, process.env.JWT_SECRET, { expiresIn: "1d" });
                 Logger.info(`All done! Returning...`);
-                return res.status(200).json({ success: true, user: remainingProfile, token: token });
+                return res.status(200).json({ success: true, token: token });
             }
         }
         // User registered via address and skipped email verification
@@ -100,10 +116,9 @@ userRouter.post("/", [
             });
             if (existingUser) {
                 Logger.info(`This user already exists!`);
-                const { username, bio, profileImg, ...remainingProfile } = existingUser;
                 token = jwt.sign({ id: existingUser?.id, uniqueSessionId }, process.env.JWT_SECRET, { expiresIn: "1d" });
                 Logger.info(`All done! Returning...`);
-                return res.status(200).json({ success: true, user: remainingProfile, token: token });
+                return res.status(200).json({ success: true, token: token });
             } else {
                 // If the user doesn't exist, insert a new row
                 Logger.info(`This is a new user! Creating an entry with email: ${user.data.email}, address: ${user.data.address}, subscribe: false ...`);
@@ -111,15 +126,14 @@ userRouter.post("/", [
                 const newUser = await userRepository.create({
                     email: user.data.email === "" ? null : user.data.email,
                     address: user.data.address === "" ? null : user.data.address,
-                    subscribe: "false",
+                    subscribe: false,
                     // username: randomName,
                 });
                 let addedUser = await userRepository.save(newUser);
                 // remove address, only id is enough -> also at other places
                 token = jwt.sign({ id: addedUser?.id, uniqueSessionId }, process.env.JWT_SECRET, { expiresIn: "1d" });
-                const { username, bio, profileImg, ...remainingProfile } = addedUser;
                 Logger.info(`All done! Returning...`);
-                return res.status(200).json({ success: true, user: remainingProfile, token: token });
+                return res.status(200).json({ success: true, token: token });
             }
         }
     } catch (e) {
@@ -166,26 +180,26 @@ userRouter.post("/", [
 //     }
 // });
 
-userRouter.get("/", isAuthenticated, async (req: Request, res: Response) => {
-    try {
-        const existingUser = await userRepository.findOne({
-            where: {
-                id: req?.user?.id,
-            },
-        });
-        if (!existingUser) {
-            Logger.error(`user not exist on id ${req?.user?.id}`);
-            return res.status(404).json({ success: false, error: `user doest not exist` });
-        }
-        const { username, bio, profileImg, ...remainingProfile } = existingUser;
-        Logger.info(`user exist on id ${req?.user?.id}`);
-        return res.status(200).json({ success: true, user: remainingProfile });
+// userRouter.get("/", isAuthenticated, async (req: Request, res: Response) => {
+//     try {
+//         const existingUser = await userRepository.findOne({
+//             where: {
+//                 id: req?.user?.id,
+//             },
+//         });
+//         if (!existingUser) {
+//             Logger.error(`user not exist on id ${req?.user?.id}`);
+//             return res.status(404).json({ success: false, error: `user doest not exist` });
+//         }
+//         const { username, bio, profileImg, ...remainingProfile } = existingUser;
+//         Logger.info(`user exist on id ${req?.user?.id}`);
+//         return res.status(200).json({ success: true, user: remainingProfile });
 
-    } catch (e) {
-        Logger.error(`Fatal error due to unknown reason: ${JSON.stringify(e)}`);
-        return res.status(500).json({ error: "An error occurred while processing your request" });
-    }
-})
+//     } catch (e) {
+//         Logger.error(`Fatal error due to unknown reason: ${JSON.stringify(e)}`);
+//         return res.status(500).json({ error: "An error occurred while processing your request" });
+//     }
+// })
 // body => { data: { username: string, bio: string, profileImg: string }, smartProfile: SmartProfile }
 userRouter.put("/", isAuthenticated, [
     body('data.username').optional().trim().isLength({ max: 50 }),
@@ -249,18 +263,29 @@ userRouter.put("/", isAuthenticated, [
                         console.log(error);
                     });
             }
-
-            const updatedUser = {
-                username: user_update_req_data.username || smartProfile?.username,
-                avatar: uploadResult?.secure_url || smartProfile?.avatar,
-                bio: user_update_req_data.bio ||  smartProfile?.bio,
-            }
-            await smartProfileMapRepository.update({ userId: req?.user?.id, profileTypeStreamId: profileTypeStreamId }, updatedUser);
-
+            // now update the original smart profile with the updated values and return   
             if (smartProfile) {
                 smartProfile.username = user_update_req_data.username || smartProfile?.username;
                 smartProfile.avatar = uploadResult?.secure_url || smartProfile?.avatar;
                 smartProfile.bio = user_update_req_data.bio || smartProfile?.bio;
+
+                const updatedUser = {
+                    username: user_update_req_data.username || smartProfile?.username,
+                    avatar: uploadResult?.secure_url || smartProfile?.avatar,
+                    bio: user_update_req_data.bio ||  smartProfile?.bio,
+                }
+    
+                const existingProfileMap = await smartProfileMapRepository.findOne({ where: { userId: id } });
+    
+                if (existingProfileMap) {
+                // Update the existing profile
+                await smartProfileMapRepository.update({ userId: req?.user?.id, profileTypeStreamId: profileTypeStreamId }, updatedUser);
+                } else {
+                // Insert a new profile
+                const newSmartProfileMap = await smartProfileMapRepository.create({username: smartProfile?.username, avatar: smartProfile?.avatar, bio: smartProfile?.bio, connectedProfiles: smartProfile?.connected_profiles, scores: smartProfile?.scores, profileTypeStreamId: profileTypeStreamId, userId: req?.user?.id});
+                await smartProfileMapRepository.save(newSmartProfileMap);
+                }
+
                 Logger.info(`Smart profile updated locally for user id: ${id}`);
                 return res.status(200).json({ success: true, smartProfile: smartProfile });
             }
@@ -350,39 +375,68 @@ userRouter.post('/smart-profile', isAuthenticated, async (req, res) => {
         const profileTypeStreamId=process.env.PROFILE_TYPE_STREAM_ID;
         const id = req?.user?.uniqueSessionId;
         let memorySmartProfile = memoryStoreProfile.get(id);
-        // profile exchange workflow
+        // profile exchange workflow - profiles are present in both request and memory
         if (memorySmartProfile && req?.body?.smartProfile && profileTypeStreamId) 
         {
+            Logger.info(`Profile exchange workflow`);
             const smartProfile = plainToInstance(SmartProfile, req?.body?.smartProfile);
+
+            // this is not the first time this profile is being created - make sure the profile mapping exists in our database
+            const profileMapping = await smartProfileMapRepository.findOne({
+                where: {
+                    userId: req?.user?.id,
+                    profileTypeStreamId: profileTypeStreamId
+                },
+            });
+            if(!profileMapping)
+            {
+                // there must be something wrong if this mapping does not exist, this is a corner case but we create the mapping
+                Logger.info(`The older version of this profile was not found in profile mapping table, This is not normal`);
+                const newSmartProfileMap = await smartProfileMapRepository.create({username: smartProfile?.username, avatar: smartProfile?.avatar, bio: smartProfile?.bio, connectedProfiles: smartProfile?.connected_profiles, scores: smartProfile?.scores, profileTypeStreamId: profileTypeStreamId, userId: req?.user?.id});
+                console.log(newSmartProfileMap);
+                await smartProfileMapRepository.save(newSmartProfileMap);
+                Logger.info(`Smart profile created for user id: ${req?.user?.id}`);
+            }
+            else
+            {
+                // profile mapping found, everything is okay
+                Logger.info(`Smart profile found for user id: ${req?.user?.id}`);
+            }
+
             // check if the current platform is already connected
             if(smartProfile.connected_platforms.includes(memorySmartProfile?.connected_profiles[0]?.platform_name))
             {
-                Logger.error(`The profile is already connected: ${memorySmartProfile.connected_profiles[0]?.platform_name}`);
+                // If this platform is already connected there is no need to add this one to profile
+                Logger.info(`The profile is already connected: ${memorySmartProfile.connected_profiles[0]?.platform_name}`);
                 memoryStoreProfile.delete(id);
                 return res.status(400).json({ error: "Bad request" });
             }
+            // Calculate the social score based on the input profiles data
             const socialScore = calculateSocialScore(memorySmartProfile?.connected_profiles, smartProfile?.connected_profiles);
             memorySmartProfile.updateScoreValue('social_score', socialScore);
+
+            // Now we aggregate profiles
             smartProfile.aggregateProfile(memorySmartProfile);
             smartProfile.connected_platforms=smartProfile.connected_profiles.map((profile)=>{return profile.platform_name});
             memoryStoreProfile.delete(id);
+
             const updatedSmartProfileMap = {
                 connectedProfiles: smartProfile?.connected_profiles,
                 scores: smartProfile?.scores
             }
 
+            // Update the profiles mapping table with updated profile
             await smartProfileMapRepository.update(
                 { userId: req?.user?.id, profileTypeStreamId: profileTypeStreamId },
                 updatedSmartProfileMap
             );
-            Logger.info(`Smart profile found for user id: ${id}`);
+            Logger.info(`Smart profile updated for user id: ${req?.user?.id}`);
             return res.status(200).json({ success: true, smartProfile: smartProfile });
         } 
         // new profile creation
         else if (!memorySmartProfile && !req?.body?.smartProfile && profileTypeStreamId) 
         {
-            Logger.info(`no profile connected on id: ${id}`);
-
+            Logger.info(`New profile creation workflow`);
              // check if the profile map between user id and profile type exists 
              const profileMapping = await smartProfileMapRepository.findOne({
                 where: {
@@ -393,37 +447,39 @@ userRouter.post('/smart-profile', isAuthenticated, async (req, res) => {
             if(!profileMapping)
             {
                  // this is the new user
-                const existingUser = await userRepository.findOne({
+                const earlyUser = await earlyUserRepository.findOne({
                     where: {
                         id: req?.user?.id,
                     },
                 });
                 const newProfile = new SmartProfile({
-                    username: existingUser?.username ? existingUser?.username :  faker.person.lastName().toLocaleLowerCase(), 
-                    avatar: existingUser?.profileImg ? existingUser?.profileImg :  "https://res.cloudinary.com/dblrsf3fe/image/upload/v1721919290/wkaejhi7ocnwhfl42vb8.png" ,
-                    bio: existingUser?.bio ? existingUser?.bio :  ''
+                    username: earlyUser?.username ? earlyUser?.username :  faker.person.lastName().toLocaleLowerCase(), 
+                    avatar: earlyUser?.profileImg ? earlyUser?.profileImg :  "https://res.cloudinary.com/dblrsf3fe/image/upload/v1721919290/wkaejhi7ocnwhfl42vb8.png" ,
+                    bio: ''
                 });
-                newProfile.updateScoreValue('social_score', existingUser?.username? 1000 : Number(process.env.DEFAULT_SOCIAL_SCORE))
+                newProfile.updateScoreValue('social_score', earlyUser?.username? 1000 : Number(process.env.DEFAULT_SOCIAL_SCORE))
 
                 const newSmartProfileMap = await smartProfileMapRepository.create({username: newProfile?.username, avatar: newProfile?.avatar, bio: newProfile?.bio, connectedProfiles: [], scores: newProfile?.scores, profileTypeStreamId: profileTypeStreamId, userId: req?.user?.id});
                 console.log(newSmartProfileMap);
                 await smartProfileMapRepository.save(newSmartProfileMap);
-                Logger.info(`Smart profile created for user id: ${id}`);
+                Logger.info(`New smart profile created for user id: ${id}`);
                 return res.status(200).json({ success: true, smartProfile: newProfile });
             }
             else
             {
                 // if profile map exists in database we return the smart profile based on the map
-                console.log('profile map found in database');
+                Logger.info(`Profile map already found in database`);
                 const oldProfile = new SmartProfile({
                     username: profileMapping?.username ? profileMapping?.username :  faker.person.lastName().toLocaleLowerCase(), 
                     avatar: profileMapping?.avatar ? profileMapping?.avatar :  "https://res.cloudinary.com/dblrsf3fe/image/upload/v1721919290/wkaejhi7ocnwhfl42vb8.png" ,
-                    scores: profileMapping?.scores,
+                    //scores: profileMapping?.scores,
                     connected_profiles: profileMapping?.connectedProfiles,
                     connected_platforms: profileMapping?.connectedProfiles?.map((profile)=>{return profile.platform_name})
                 });
+                // need to set this explicitly 
+                oldProfile.scores=profileMapping?.scores;
                 console.log(oldProfile);
-                Logger.info(`Smart profile returned from profile map table: ${id}, This is not normal workflow`);
+                Logger.info(`Old version of smart profile returned from profile map: ${id}, This is not normal workflow`);
                 return res.status(200).json({ success: true, smartProfile: oldProfile });
             }          
         }

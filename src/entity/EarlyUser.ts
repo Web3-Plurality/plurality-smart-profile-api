@@ -1,7 +1,7 @@
 import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
 
-@Entity({ name: "users" })
-export class User {
+@Entity({ name: "early_users" })
+export class EarlyUser {
   @PrimaryGeneratedColumn("uuid")
   id!: string;
 
@@ -14,4 +14,9 @@ export class User {
   @Column({nullable: false, default: false})
   subscribe: boolean;
 
+  @Column({nullable: false, default: ""})
+  profileImg: string;
+
+  @Column({nullable: false, default: ""})
+  username: string;
 }
