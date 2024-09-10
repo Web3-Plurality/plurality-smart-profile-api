@@ -60,8 +60,8 @@ userRouter.post("/", [
         }
         const user = JSON.parse(JSON.stringify(req.body));
         Logger.info(`Received registration for user: ${JSON.stringify(user.data)}`);
-        // User registered via email
-        if (!!user.data.email) {
+        // User registered via email 
+        if (!!user.data.email && !!user.data.address) {
             Logger.info(`User register via email: ${user.data.email}`);
             // Check if the user with the given email already exists
             const existingUser = await userRepository.findOne({
@@ -81,12 +81,16 @@ userRouter.post("/", [
                     token = jwt.sign({ id: existingUser?.id, uniqueSessionId }, process.env.JWT_SECRET, { expiresIn: "1d" });
                     Logger.info(`All done! Returning...`);
                     return res.status(200).json({ success: true, token: token });
-                } 
-                else{
+                }
+                else if (existingUser?.address===user.data.address) {
                     Logger.info(`This user already exists!`);
                     token = jwt.sign({ id: existingUser?.id, uniqueSessionId }, process.env.JWT_SECRET, { expiresIn: "1d" });
                     Logger.info(`All done! Returning...`);
                     return res.status(200).json({ success: true, token: token });
+                } 
+                else {
+                    Logger.error(`The address against this email is not correct`);
+                    return res.status(400).json({ error: "Bad request" });
                 }
                  
             } else {
@@ -105,7 +109,7 @@ userRouter.post("/", [
                 return res.status(200).json({ success: true, token: token });
             }
         }
-        // User registered via address and skipped email verification
+        // User registered via Metamask
         else if (!user.data.email && !!user.data.address) {
             Logger.info(`User register via metamask address: ${user.data.address}`);
             // Check if the user with the given address already exists
@@ -135,6 +139,10 @@ userRouter.post("/", [
                 Logger.info(`All done! Returning...`);
                 return res.status(200).json({ success: true, token: token });
             }
+        }
+        else{
+            Logger.error(`The request params (address or email) combination is not correct`);
+            return res.status(400).json({ error: "Bad request" });
         }
     } catch (e) {
         Logger.error(`Fatal error due to unknown reason: ${JSON.stringify(e)}`);
