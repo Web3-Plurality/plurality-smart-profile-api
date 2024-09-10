@@ -11,7 +11,7 @@ import { analyze } from "../utils/groq";
 import { INSTA_FETCH_INTEREST_PROMPT } from "../utils/aiPrompts";
 import { v4 as uuidv4 } from 'uuid';
 import { UserProfile } from "../entity/UserProfile";
-import { SmartProfile } from "../entity/smartProfile";
+import { SmartProfile } from "../entity/SmartProfile";
 dotenv.config();
 
 export const instagramRouter = express.Router();

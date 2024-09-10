@@ -12,7 +12,7 @@ import { calculateReputation, scrapRoblox } from "../utils/roblox";
 import { ROBLOX_FETCH_INTEREST_PROMPT } from "../utils/aiPrompts";
 import { v4 as uuidv4 } from 'uuid';
 import { UserProfile } from "../entity/UserProfile";
-import { SmartProfile } from "../entity/smartProfile";
+import { SmartProfile } from "../entity/SmartProfile";
 
 
 dotenv.config();

@@ -14,7 +14,7 @@ import { generateNonce } from 'siwe';
 import { app } from "..";
 import { plainToInstance } from "class-transformer";
 import { v4 as uuidv4 } from 'uuid';
-import { SmartProfile } from "../entity/smartProfile";
+import { SmartProfile } from "../entity/SmartProfile";
 import  {SmartProfileMap}  from "../entity/SmartProfileMap";
 import axios from "axios";
 import { EarlyUser } from "../entity/EarlyUser";

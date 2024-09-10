@@ -10,7 +10,7 @@ import Logger from "../lib/logger";
 import { INTERNAL_SERVER_ERROR, REPUTATION_SCORE, TIMEOUT_ERROR, TWITTER_APP, memoryStoreProfile, memoryStoreSSE, memoryStoreToken } from "../utils/global";
 import { v4 as uuidv4 } from 'uuid';
 import { UserProfile } from "../entity/UserProfile";
-import { SmartProfile } from "../entity/smartProfile";
+import { SmartProfile } from "../entity/SmartProfile";
 dotenv.config();
 
 export const twitterRouter = express.Router();

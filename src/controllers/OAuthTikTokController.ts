@@ -12,7 +12,7 @@ import Logger from "../lib/logger";
 import { TIKTOK_FETCH_INTEREST_PROMPT } from "../utils/aiPrompts";
 import { v4 as uuidv4 } from 'uuid';
 import { UserProfile } from "../entity/UserProfile";
-import { SmartProfile } from "../entity/smartProfile";
+import { SmartProfile } from "../entity/SmartProfile";
 dotenv.config();
 
 export const tiktokRouter = express.Router();
