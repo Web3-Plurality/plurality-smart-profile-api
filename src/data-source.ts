@@ -9,7 +9,7 @@ export const AppDataSource = new DataSource({
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
     entities: ["src/entity/*.ts"],
-    synchronize: true,
+    synchronize: false,
     ssl: {
         require: true,
         rejectUnauthorized: true, // Set to true in production with a valid certificate
