@@ -136,13 +136,14 @@ robloxRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfileM
             timeout: 20000,
           }
         );
-
+        
         const prompt = createPrompt(ROBLOX_FETCH_INTEREST_PROMPT, userData?.data?.about);
         const interests = await analyze(prompt);
         robloxProfile.interests = interests?.Interests || [];
         robloxProfile.introTags = interests?.IntroTags || [];
         robloxProfile.idVerified = userData?.data?.idVerified;
         robloxProfile.premium = userData?.data?.premium;
+        robloxProfile.about = userData?.data?.about;
 
       } catch (error) {
         if (error.code === 'ECONNABORTED') {
@@ -203,7 +204,7 @@ robloxRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfileM
         robloxProfile.friends = robloxInsights?.friends;
         robloxProfile.followers = robloxInsights?.followers;
         robloxProfile.following = robloxInsights?.following;
-        robloxProfile.avatar = robloxInsights?.avtar;
+        robloxProfile.avatar = robloxInsights?.avatar;
 
       } catch (error) {
         if (error.code === 'ECONNABORTED') {
@@ -214,12 +215,12 @@ robloxRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfileM
       }
 
       robloxProfile.reputationScore += calculateReputation(robloxProfile);
-
       // Create user profile object
       const userProfile = new UserProfile();
       userProfile.username = robloxProfile?.name;
       userProfile.interests = robloxProfile?.interests;
       userProfile.avatar = robloxProfile?.avatar;
+      userProfile.bio = robloxProfile?.about;
       userProfile.scores.push({ score_type: REPUTATION_SCORE, score_value: robloxProfile?.reputationScore });
       userProfile.reputation_tags = robloxProfile?.introTags;
       userProfile.collections = robloxProfile?.assests;

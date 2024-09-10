@@ -16,6 +16,7 @@ export class RobloxProfile {
     interests: string[];
     introTags: string[];
     assests: any[];
+    about: string;
     preferred_username: string;
     reputationScore: number;
 
@@ -39,6 +40,7 @@ export class RobloxProfile {
         this.introTags =  [];
         this.assests =  [];    
         this.reputationScore = 0;
+        this.about = data?.about || "";
     }
 
 

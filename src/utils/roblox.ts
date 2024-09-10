@@ -1,6 +1,6 @@
 import puppeteer  from 'puppeteer';
 import { RobloxProfile } from '../entity/Roblox';
-import moment from 'moment';
+// import moment from 'moment';
 
 export const scrapRoblox =  async(url: string) => {
     // Launch a browser instance
@@ -19,7 +19,7 @@ export const scrapRoblox =  async(url: string) => {
       const followingVisitElement = document.querySelector("#profile-header-container > div > div > div > div.header-caption > div.header-details > ul.details-info > li:nth-child(3) > a > span")
       
       return {
-      avtar: imgElement ? imgElement.src : null,
+      avatar: imgElement ? imgElement.src : null,
       joinDate: joinElement ? joinElement.innerText : null,
       placesVisit: placesVisitElement ? placesVisitElement.innerText : null,
       friends: friendElement ? friendElement.innerText : null,
@@ -76,10 +76,10 @@ export const scrapRoblox =  async(url: string) => {
     }
     
     // Calculate reputation based on account creation date
-    if (joinDate) {       
-        const accountAgeInYears = moment().diff(moment(joinDate), 'years');
-        reputationScore += accountAgeInYears * createdAtWeight;
-    }
+    // if (joinDate) {       
+    //     const accountAgeInYears = moment().diff(moment(joinDate), 'years');
+    //     reputationScore += accountAgeInYears * createdAtWeight;
+    // }
 
     return reputationScore;
 }
