@@ -30,7 +30,7 @@ cloudinary.config({
 
 rsmRouter.post('/', async (req: Request, res: Response) => {
 try {
-    const {img, streamId} = req.body;
+    const {img, streamId, links} = req.body;
     // Upload an image
     let uploadResult;
     if (img) {
@@ -43,7 +43,7 @@ try {
             });
     }
     // Insert into RSM
-    const newRsm = await rsmRepository.create({streamId: streamId, logo: uploadResult?.secure_url});
+    const newRsm = await rsmRepository.create({streamId: streamId, logo: uploadResult?.secure_url,links: JSON.stringify(links)});
     await rsmRepository.save(newRsm);
     Logger.info(`RSM created: ${newRsm.id}`);
     return res.status(200).json({

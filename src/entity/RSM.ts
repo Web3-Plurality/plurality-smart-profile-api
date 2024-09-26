@@ -11,4 +11,7 @@ export class RsmPoc {
   @Column({nullable: true})
   logo: string;
 
+  @Column({nullable: true})
+  links: string;
+  
 }
