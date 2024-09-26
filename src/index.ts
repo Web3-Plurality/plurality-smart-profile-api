@@ -24,6 +24,7 @@ import { facebookRouter } from './controllers/OAuthFacebookController';
 import { fortniteRouter } from './controllers/OAuthFortniteController';
 import * as LitJsSdk from "@lit-protocol/lit-node-client";
 import { LitNetwork } from "@lit-protocol/constants";
+import { rsmRouter } from './controllers/RsmPocController';
 
 dotenv.config();
 
@@ -47,6 +48,7 @@ app.use("/permaweb", permawebRouter);
 app.use("/oauth-tiktok", tiktokRouter);
 app.use("/subgraph", subgraphRouter);
 app.use("/user", userRouter);
+app.use("/rsm", rsmRouter);
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 app.get('/', async (req: Request, res: Response): Promise<Response> => {
