@@ -1,20 +1,8 @@
-import express, { Request, response, Response } from "express";
+import express, { Request, Response } from "express";
 import * as dotenv from 'dotenv';
-import { body, validationResult } from 'express-validator';
 import { AppDataSource } from "../data-source";
 import Logger from "../lib/logger";
 import { v2 as cloudinary } from 'cloudinary';
-import { faker } from '@faker-js/faker';
-import { ethers } from "ethers";
-import jwt from 'jsonwebtoken';
-import { isAuthenticated, isValid } from "../middlewares/authMiddleware";
-import { calculateSocialScore, memoryStoreNonce, memoryStoreProfile } from "../utils/global";
-import { generateNonce } from 'siwe';
-import { app } from "..";
-import { plainToInstance } from "class-transformer";
-import { v4 as uuidv4 } from 'uuid';
-import { SmartProfile } from "../entity/SmartProfile";
-import axios from "axios";
 import { RsmPoc } from "../entity/RSM";
 
 export const rsmRouter = express.Router();
