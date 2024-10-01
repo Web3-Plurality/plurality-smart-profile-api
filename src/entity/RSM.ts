@@ -13,5 +13,8 @@ export class RsmPoc {
 
   @Column({nullable: true})
   links: string;
+
+  @Column({nullable: true})
+  domains: string;
   
 }
