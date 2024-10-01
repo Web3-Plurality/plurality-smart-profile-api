@@ -51,6 +51,7 @@ rsmRouter.put('/:id', async (req: Request, res: Response) => {
     try {
         const { img, streamId, links, domains } = req.body;
         const id = req.params.id;
+        
         // Upload an image
         let uploadResult;
         if (img) {
@@ -75,11 +76,10 @@ rsmRouter.put('/:id', async (req: Request, res: Response) => {
             links: links ? JSON.stringify(links) : data?.links,
             domains: domains ? JSON.stringify(domains) : data?.domains
         }
-        const updatedRsm = await rsmRepository.update({ id: id }, updataData);
-        Logger.info(`RSM updated: ${updatedRsm.id}`);
+        await rsmRepository.update({ id: id }, updataData);
+        Logger.info(`RSM updated: ${id}`);
         return res.status(200).json({
             message: 'RSM updated',
-            data: updatedRsm
         });
     } catch (error) {
         Logger.error(`Fatal error due to unknown reason: ${JSON.stringify(error)}`);
