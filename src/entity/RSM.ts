@@ -8,6 +8,9 @@ export class RsmPoc {
   @Column({nullable: true})
   streamId: string;
 
+  @Column({nullable: true, default:"Points"})
+  incentiveType: string;
+
   @Column({nullable: true})
   logo: string;
 
