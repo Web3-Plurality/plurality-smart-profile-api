@@ -7,7 +7,6 @@ import * as dotenv from 'dotenv';
 import { SiweMessage } from 'siwe';
 
 dotenv.config();
-
 const client = new stytch.Client({
   project_id: process.env.STYTCH_PROJECT_ID,
   secret: process.env.STYTCH_SECRET,
@@ -168,4 +167,3 @@ export const isProfileMapEmpty = async (req, res, next) => {
     return res.status(400).send('Invalid request');
   }
 };
-  
