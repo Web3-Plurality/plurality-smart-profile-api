@@ -5,11 +5,8 @@ import jwt from 'jsonwebtoken';
 import stytch from "stytch";
 import * as dotenv from 'dotenv';
 import { SiweMessage } from 'siwe';
-// import { AppDataSource } from "../data-source";
-// import { RsmPoc } from "../entity/RSM";
 
 dotenv.config();
-
 const client = new stytch.Client({
   project_id: process.env.STYTCH_PROJECT_ID,
   secret: process.env.STYTCH_SECRET,
@@ -165,21 +162,6 @@ export const isProfileMapEmpty = async (req, res, next) => {
     }else{
       return next();
     }
-  } catch (error) {
-    Logger.error(`error: ${error}`);
-    return res.status(400).send('Invalid request');
-  }
-};
-  
-// check valid domain
-export const isValidDomain = async (req, res, next) => {
-  try {
-
-    // if (!domain) {
-    //   Logger.error(`Invalid domain`);
-    //   return res.status(400).send('Invalid domain');
-    // }
-    return next();
   } catch (error) {
     Logger.error(`error: ${error}`);
     return res.status(400).send('Invalid request');

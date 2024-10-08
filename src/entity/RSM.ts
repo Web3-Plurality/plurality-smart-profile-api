@@ -1,15 +1,12 @@
 import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
 
-@Entity({ name: "rsm_poc" })
-export class RsmPoc {
+@Entity({ name: "rsm_apps" })
+export class RsmApp {
   @PrimaryGeneratedColumn("uuid")
   id!: string;
 
   @Column({nullable: true})
   streamId: string;
-
-  @Column({nullable: true, default:"Points"})
-  incentiveType: string;
 
   @Column({nullable: true})
   logo: string;
@@ -19,5 +16,8 @@ export class RsmPoc {
 
   @Column({nullable: true})
   domains: string;
+
+  @Column({nullable: true, default:"Points"})
+  incentiveType: string;
   
 }
