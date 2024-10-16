@@ -6,6 +6,7 @@ import { v2 as cloudinary } from 'cloudinary';
 import { RsmApp } from "../entity/RSM";
 // import { isValidDomain } from "../middlewares/authMiddleware";
 
+// rename rsm=clientApp 
 export const rsmRouter = express.Router();
 dotenv.config();
 const rsmRepository = AppDataSource.getRepository(RsmApp);

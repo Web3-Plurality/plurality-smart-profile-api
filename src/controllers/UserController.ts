@@ -44,7 +44,8 @@ const validateEmail = (value: string) => {
     }
     throw new Error('Invalid email address');
 };
-
+// add client id in request 
+// create post middleware
 userRouter.post("/", [
     body('data.email').trim().custom(validateEmail),
     body('data.address').trim().escape(),
@@ -209,6 +210,7 @@ userRouter.post("/", [
 //     }
 // })
 // body => { data: { username: string, bio: string, profileImg: string }, smartProfile: SmartProfile }
+// stream id in request/header
 userRouter.put("/", isAuthenticated, [
     body('data.username').optional().trim().isLength({ max: 50 }),
     body('data.bio').optional().trim().isLength({ max: 300 }),
@@ -247,14 +249,18 @@ userRouter.put("/", isAuthenticated, [
             Logger.error(`Fatal error due to improper request parameters to route GET /: ${JSON.stringify(errors)}`);
             return res.status(400).json({ errors: errors.array() });
         }
+        // load this dynamically from headers
         const profileTypeStreamId=process.env.PROFILE_TYPE_STREAM_ID;
         const user_update_req_data = JSON.parse(JSON.stringify(req.body.data));
         const smartProfile = plainToInstance(SmartProfile, JSON.parse(JSON.stringify(req?.body?.smartProfile)));
         //const { username, profileImg, bio} = user;
         const id = req?.user?.id;
+        // get from smartProfileMap
         const existingUser = await userRepository.findOne({
             where: {
                 id: id,
+                // userId
+                //profileTypeStreamId
             },
         });
 
@@ -277,17 +283,20 @@ userRouter.put("/", isAuthenticated, [
                 smartProfile.avatar = uploadResult?.secure_url || smartProfile?.avatar;
                 smartProfile.bio = user_update_req_data.bio || smartProfile?.bio;
 
+                // remove this below
                 const updatedUser = {
                     username: user_update_req_data.username || smartProfile?.username,
                     avatar: uploadResult?.secure_url || smartProfile?.avatar,
                     bio: user_update_req_data.bio ||  smartProfile?.bio,
                 }
-    
-                const existingProfileMap = await smartProfileMapRepository.findOne({ where: { userId: id } });
+                // use update
+                // await smartProfileMapRepository.update({ userId: id, profileTypeStreamId: profileTypeStreamId  }, updatedUser);
+                // remove this
+                const existingProfileMap = await smartProfileMapRepository.findOne({ where: { userId: id, profileTypeStreamId: profileTypeStreamId  } });
     
                 if (existingProfileMap) {
                 // Update the existing profile
-                await smartProfileMapRepository.update({ userId: req?.user?.id, profileTypeStreamId: profileTypeStreamId }, updatedUser);
+                await smartProfileMapRepository.update({ id: existingProfileMap.id }, updatedUser);
                 } else {
                 // Insert a new profile
                 const newSmartProfileMap = await smartProfileMapRepository.create({username: smartProfile?.username, avatar: smartProfile?.avatar, bio: smartProfile?.bio, connectedProfiles: smartProfile?.connected_profiles, scores: smartProfile?.scores, profileTypeStreamId: profileTypeStreamId, userId: req?.user?.id});
@@ -301,8 +310,8 @@ userRouter.put("/", isAuthenticated, [
             return res.status(400).json({ success: false, error: "user profile not found in the body" });
 
         } else {
-            // User does not exist
-            Logger.info(`This user does not exist!`);
+            // User with this profile does not exist
+            Logger.info(`This user with this profile does not exist!`);
             return res.status(404).json({ exists: false });
         }
     }
@@ -378,8 +387,10 @@ userRouter.get('/capacity', isAuthenticated, async (req, res) => {
 });
 // body => { smartProfile: SmartProfile }
 // header => { Authorization: Bearer token }
+// stream id in body or header
 userRouter.post('/smart-profile', isAuthenticated, async (req, res) => {
     try {
+        // load dynamically from header
         const profileTypeStreamId=process.env.PROFILE_TYPE_STREAM_ID;
         const id = req?.user?.uniqueSessionId;
         let memorySmartProfile = memoryStoreProfile.get(id);
