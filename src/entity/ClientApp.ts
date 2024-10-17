@@ -1,7 +1,7 @@
 import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
 
-@Entity({ name: "rsm_apps" })
-export class RsmApp {
+@Entity({ name: "client_apps" })
+export class ClientApp  {
   @PrimaryGeneratedColumn("uuid")
   id!: string;
 
