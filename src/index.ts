@@ -48,7 +48,7 @@ app.use("/permaweb", permawebRouter);
 app.use("/oauth-tiktok", tiktokRouter);
 app.use("/subgraph", subgraphRouter);
 app.use("/user", userRouter);
-app.use("/rsm", clientAppRouter); 
+app.use("/client-app", clientAppRouter); 
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 app.get('/', async (req: Request, res: Response): Promise<Response> => {

@@ -101,12 +101,20 @@ userRouter.post("/", [
                     await userRepository.update({ id: existingUser?.id }, updatedUser)
                     Logger.info(`Putting Lit address on the current user id ${existingUser?.id}`);
                     token = jwt.sign({ id: existingUser?.id, uniqueSessionId }, process.env.JWT_SECRET, { expiresIn: "1d" });
+                    //if client id exist then add in user client map
+                    if (user.data.clientId) {
+                        await AddUserClientMap(existingUser?.id, user.data.clientId);
+                    }
                     Logger.info(`All done! Returning...`);
                     return res.status(200).json({ success: true, token: token });
                 }
                 else if (existingUser?.address === user.data.address) {
                     Logger.info(`This user already exists!`);
                     token = jwt.sign({ id: existingUser?.id, uniqueSessionId }, process.env.JWT_SECRET, { expiresIn: "1d" });
+                    //if client id exist then add in user client map
+                    if (user.data.clientId) {
+                        await AddUserClientMap(existingUser?.id, user.data.clientId);
+                    }
                     Logger.info(`All done! Returning...`);
                     return res.status(200).json({ success: true, token: token });
                 }
@@ -125,11 +133,11 @@ userRouter.post("/", [
 
                 });
                 let addedUser = await userRepository.save(newUser);
+                token = jwt.sign({ id: addedUser?.id, uniqueSessionId }, process.env.JWT_SECRET, { expiresIn: "1d" });
                 //if client id exist then add in user client map
                 if (user.data.clientId) {
                     await AddUserClientMap(addedUser?.id, user.data.clientId);
                 }
-                token = jwt.sign({ id: addedUser?.id, uniqueSessionId }, process.env.JWT_SECRET, { expiresIn: "1d" });
                 Logger.info(`All done! Returning...`);
                 return res.status(200).json({ success: true, token: token });
             }
@@ -146,6 +154,10 @@ userRouter.post("/", [
             if (existingUser) {
                 Logger.info(`This user already exists!`);
                 token = jwt.sign({ id: existingUser?.id, uniqueSessionId }, process.env.JWT_SECRET, { expiresIn: "1d" });
+                //if client id exist then add in user client map
+                if (user.data.clientId) {
+                    await AddUserClientMap(existingUser?.id, user.data.clientId);
+                }
                 Logger.info(`All done! Returning...`);
                 return res.status(200).json({ success: true, token: token });
             } else {
@@ -157,15 +169,16 @@ userRouter.post("/", [
                     subscribe: false,
                 });
                 let addedUser = await userRepository.save(newUser);
+                
+                token = jwt.sign({ id: addedUser?.id, uniqueSessionId }, process.env.JWT_SECRET, { expiresIn: "1d" });
                 //if client id exist then add in user client map
                 if (user.data.clientId) {
                     await AddUserClientMap(addedUser?.id, user.data.clientId);
                 }
-
-                token = jwt.sign({ id: addedUser?.id, uniqueSessionId }, process.env.JWT_SECRET, { expiresIn: "1d" });
                 Logger.info(`All done! Returning...`);
                 return res.status(200).json({ success: true, token: token });
             }
+
         }
         else {
             Logger.error(`The request params (address or email) combination is not correct`);
@@ -277,6 +290,10 @@ userRouter.put("/", isAuthenticated, [
         }
         // load this dynamically from headers
         const profileTypeStreamId = req.headers['x-streamId'];
+        if (!profileTypeStreamId) {
+            Logger.error(`Fatal error due to missing profile type stream id`);
+            return res.status(400).json({ errors: "profile type stream id is missing" });            
+        }
         const user_update_req_data = JSON.parse(JSON.stringify(req.body.data));
         const smartProfile = plainToInstance(SmartProfile, JSON.parse(JSON.stringify(req?.body?.smartProfile)));
         const id = req?.user?.id;
@@ -313,18 +330,9 @@ userRouter.put("/", isAuthenticated, [
                     avatar: uploadResult?.secure_url || smartProfile?.avatar,
                     bio: user_update_req_data.bio || smartProfile?.bio,
                 }
-                // use update
-                // await smartProfileMapRepository.update({ userId: id, profileTypeStreamId: profileTypeStreamId  }, updatedUser);
-                // remove this
 
                 // Update the existing profile
                 await smartProfileMapRepository.update({ id: existingUser.id }, updatedUser);
-                // } else {
-                // // Insert a new profile
-                // const newSmartProfileMap = await smartProfileMapRepository.create({username: smartProfile?.username, avatar: smartProfile?.avatar, bio: smartProfile?.bio, connectedProfiles: smartProfile?.connected_profiles, scores: smartProfile?.scores, profileTypeStreamId: profileTypeStreamId, userId: req?.user?.id});
-                // await smartProfileMapRepository.save(newSmartProfileMap);
-                // }
-
                 Logger.info(`Smart profile updated locally for user id: ${id}`);
                 return res.status(200).json({ success: true, smartProfile: smartProfile });
             }
