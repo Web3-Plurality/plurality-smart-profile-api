@@ -289,7 +289,7 @@ userRouter.put("/", isAuthenticated, [
             return res.status(400).json({ errors: errors.array() });
         }
         // load this dynamically from headers
-        const profileTypeStreamId = req.headers['x-streamId'];
+        const profileTypeStreamId = req.headers['x-stream-id'];
         if (!profileTypeStreamId) {
             Logger.error(`Fatal error due to missing profile type stream id`);
             return res.status(400).json({ errors: "profile type stream id is missing" });            
@@ -424,7 +424,7 @@ userRouter.get('/capacity', isAuthenticated, async (req, res) => {
 userRouter.post('/smart-profile', isAuthenticated, async (req, res) => {
     try {
         // load dynamically from header
-        const profileTypeStreamId = req.headers['x-streamId'];
+        const profileTypeStreamId = req.headers['x-stream-id'];
         const id = req?.user?.uniqueSessionId;
         let memorySmartProfile = memoryStoreProfile.get(id);
         // profile exchange workflow - profiles are present in both request and memory
