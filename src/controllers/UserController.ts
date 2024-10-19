@@ -19,7 +19,7 @@ import { SmartProfileMap } from "../entity/SmartProfileMap";
 import axios from "axios";
 import { EarlyUser } from "../entity/EarlyUser";
 import { UserClientMap } from "../entity/UserClientMap";
-import { ClientApp } from "../entity/clientApp";
+import { ClientApp } from "../entity/ClientApp";
 
 
 

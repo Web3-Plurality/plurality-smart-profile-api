@@ -3,7 +3,7 @@ import * as dotenv from 'dotenv';
 import { AppDataSource } from "../data-source";
 import Logger from "../lib/logger";
 import { v2 as cloudinary } from 'cloudinary';
-import { ClientApp } from "../entity/clientApp";
+import { ClientApp } from "../entity/ClientApp";
 // import { isValidDomain } from "../middlewares/authMiddleware";
 
 // rename rsm=clientApp 
