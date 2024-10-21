@@ -1,5 +1,11 @@
 import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
 
+export enum AppType {
+  RSM = "RSM",
+  LOGIN = "LOGIN",
+}
+
+
 @Entity({ name: "client_apps" })
 export class ClientApp  {
   @PrimaryGeneratedColumn("uuid")
@@ -20,5 +26,15 @@ export class ClientApp  {
 
   @Column({nullable: true, default:"Points"})
   incentiveType: string;
+
+
+  @Column({
+    type: "enum",
+    enum: AppType,
+    default: AppType.LOGIN, // Optional: set a default value if needed
+  })
+  appType: AppType;
+
+
   
 }

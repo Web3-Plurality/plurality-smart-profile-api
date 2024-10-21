@@ -54,11 +54,29 @@ const AddUserClientMap = async (userId: string, clientId: string) => {
         const existingClient = await clientAppRepository.findOne({ where: { id: clientId } })
         if (existingClient) {
             // check if userId && clientId NOT exist on db for this month (Jun-2024 - MM-YYYY) -> save in db
+            const existingUserClientMap = await userClientMapRepository.findOne({
+                where: { userId: userId, clientId: clientId }, order: {
+                    timestamp: "DESC",
+                },
+            })
+            if (existingUserClientMap) {
+                const currentTimestamp = Math.floor(Date.now() / 1000);
+                const lastTimestamp = existingUserClientMap.timestamp;
+                const lastDate = new Date(lastTimestamp * 1000);
+                const currentDate = new Date(currentTimestamp * 1000);
+                if (lastDate.getMonth() === currentDate.getMonth() && lastDate.getFullYear() === currentDate.getFullYear()) {
+                    Logger.info(`UserClientMap already exist for this month`);
+                    return;
+                }
+            }
             const newUserClientMap = await userClientMapRepository.create({ userId: userId, clientId: clientId });
             await userClientMapRepository.save(newUserClientMap);
             Logger.info(`UserClientMap created: ${newUserClientMap.id}`);
         }
-        // else -> log  'invalid client id' and throw exception
+        else {
+            Logger.error(`Client id not found`);
+            throw new Error('Client id not found');
+        }
     }
     catch (error) {
         Logger.error(`Fatal error due to unknown reason: ${JSON.stringify(error)}`);
@@ -66,8 +84,6 @@ const AddUserClientMap = async (userId: string, clientId: string) => {
 }
 
 
-// add client id in request 
-// create post middleware
 userRouter.post("/", [
     body('data.email').trim().custom(validateEmail),
     body('data.address').trim().escape(),
@@ -172,7 +188,7 @@ userRouter.post("/", [
                     subscribe: false,
                 });
                 let addedUser = await userRepository.save(newUser);
-                
+
                 token = jwt.sign({ id: addedUser?.id, uniqueSessionId }, process.env.JWT_SECRET, { expiresIn: "1d" });
                 //if client id exist then add in user client map
                 if (user.data.clientId) {
@@ -294,9 +310,10 @@ userRouter.put("/", isAuthenticated, [
         // load this dynamically from headers
         // add a check if this profileTypeStreamId exists in client app table
         const profileTypeStreamId = req.headers['x-profile-type-stream-id'];
-        if (!profileTypeStreamId) {
-            Logger.error(`Fatal error due to missing profile type stream id`);
-            return res.status(400).json({ errors: "profile type stream id is missing" });            
+        const existingClient = await clientAppRepository.findOne({ where: { streamId: profileTypeStreamId } })
+        if (!existingClient) {
+            Logger.error(`Client id not found`);
+            return res.status(400).json({ error: "Client id not found" });
         }
         const user_update_req_data = JSON.parse(JSON.stringify(req.body.data));
         const smartProfile = plainToInstance(SmartProfile, JSON.parse(JSON.stringify(req?.body?.smartProfile)));
@@ -430,6 +447,11 @@ userRouter.post('/smart-profile', isAuthenticated, async (req, res) => {
         // load dynamically from header
         // add a check if this profileTypeStreamId exists in client app table
         const profileTypeStreamId = req.headers['x-profile-type-stream-id'];
+        const existingClient = await clientAppRepository.findOne({ where: { streamId: profileTypeStreamId } })
+        if (!existingClient) {
+            Logger.error(`Client id not found`);
+            return res.status(400).json({ error: "Client id not found" });
+        }
         // if (!profileTypeStreamId) { for database
         //     Logger.error(`Fatal error due to missing profile type stream id`);
         //     return res.status(400).json({ errors: "profile type stream id is missing" });            

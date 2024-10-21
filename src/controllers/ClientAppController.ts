@@ -3,7 +3,7 @@ import * as dotenv from 'dotenv';
 import { AppDataSource } from "../data-source";
 import Logger from "../lib/logger";
 import { v2 as cloudinary } from 'cloudinary';
-import { ClientApp } from "../entity/ClientApp";
+import { AppType, ClientApp } from "../entity/ClientApp";
 // import { isValidDomain } from "../middlewares/authMiddleware";
 
 // rename rsm=clientApp 
@@ -20,7 +20,7 @@ cloudinary.config({
 
 clientAppRouter.post('/', async (req: Request, res: Response) => {
     try {
-        const { img, streamId, links, domains , incentiveType} = req.body;
+        const { img, streamId, links, domains , incentiveType, appType} = req.body;
         // Upload an image
         let uploadResult;
         if (img) {
@@ -33,7 +33,9 @@ clientAppRouter.post('/', async (req: Request, res: Response) => {
                 });
         }
         // Insert into clientApp
-        const newClientApp = await clientAppRepository.create({ streamId: streamId, logo: uploadResult?.secure_url, incentiveType:incentiveType,links: JSON.stringify(links), domains: JSON.stringify(domains) });
+        const newClientApp = await clientAppRepository.create({ streamId: streamId, logo: uploadResult?.secure_url, incentiveType:incentiveType,links: JSON.stringify(links), domains: JSON.stringify(domains),
+            appType: appType.toLowerCase() == "login" ? AppType.LOGIN : AppType.RSM
+         });
         await clientAppRepository.save(newClientApp);
         Logger.info(`clientApp created: ${newClientApp.id}`);
         return res.status(200).json({
@@ -50,7 +52,7 @@ clientAppRouter.post('/', async (req: Request, res: Response) => {
 
 clientAppRouter.put('/:id', async (req: Request, res: Response) => {
     try {
-        const { img, streamId, links, domains, incentiveType } = req.body;
+        const { img, streamId, links, domains, incentiveType, appType } = req.body;
         const id = req.params.id;
         
         // Upload an image
@@ -71,14 +73,15 @@ clientAppRouter.put('/:id', async (req: Request, res: Response) => {
             }
         })
         // updated data
-        const updataData = {
+        const updateData = {
             streamId: streamId ? streamId : data?.streamId,
             logo: uploadResult?.secure_url ? uploadResult?.secure_url : data?.logo,
             links: links ? JSON.stringify(links) : data?.links,
             domains: domains ? JSON.stringify(domains) : data?.domains,
-            incentiveType: incentiveType ? incentiveType : data?.incentiveType
+            incentiveType: incentiveType ? incentiveType : data?.incentiveType,
+            appType: appType.toLowerCase() == "login" ? AppType.LOGIN : AppType.RSM
         }
-        await clientAppRepository.update({ id: id }, updataData);
+        await clientAppRepository.update({ id: id }, updateData);
         Logger.info(`clientApp updated: ${id}`);
         return res.status(200).json({
             message: 'clientApp updated',
