@@ -5,6 +5,7 @@ export class ClientApp  {
   @PrimaryGeneratedColumn("uuid")
   id!: string;
 
+  // profile type stream id
   @Column({nullable: true})
   streamId: string;
 

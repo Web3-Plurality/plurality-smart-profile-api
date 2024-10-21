@@ -53,10 +53,12 @@ const AddUserClientMap = async (userId: string, clientId: string) => {
     try {
         const existingClient = await clientAppRepository.findOne({ where: { id: clientId } })
         if (existingClient) {
+            // check if userId && clientId NOT exist on db for this month (Jun-2024 - MM-YYYY) -> save in db
             const newUserClientMap = await userClientMapRepository.create({ userId: userId, clientId: clientId });
             await userClientMapRepository.save(newUserClientMap);
             Logger.info(`UserClientMap created: ${newUserClientMap.id}`);
         }
+        // else -> log  'invalid client id' and throw exception
     }
     catch (error) {
         Logger.error(`Fatal error due to unknown reason: ${JSON.stringify(error)}`);
@@ -105,6 +107,7 @@ userRouter.post("/", [
                     if (user.data.clientId) {
                         await AddUserClientMap(existingUser?.id, user.data.clientId);
                     }
+                    // else log 'client id not found' and throw exception
                     Logger.info(`All done! Returning...`);
                     return res.status(200).json({ success: true, token: token });
                 }
@@ -289,6 +292,7 @@ userRouter.put("/", isAuthenticated, [
             return res.status(400).json({ errors: errors.array() });
         }
         // load this dynamically from headers
+        // add a check if this profileTypeStreamId exists in client app table
         const profileTypeStreamId = req.headers['x-profile-type-stream-id'];
         if (!profileTypeStreamId) {
             Logger.error(`Fatal error due to missing profile type stream id`);
@@ -424,7 +428,12 @@ userRouter.get('/capacity', isAuthenticated, async (req, res) => {
 userRouter.post('/smart-profile', isAuthenticated, async (req, res) => {
     try {
         // load dynamically from header
+        // add a check if this profileTypeStreamId exists in client app table
         const profileTypeStreamId = req.headers['x-profile-type-stream-id'];
+        // if (!profileTypeStreamId) { for database
+        //     Logger.error(`Fatal error due to missing profile type stream id`);
+        //     return res.status(400).json({ errors: "profile type stream id is missing" });            
+        // }
         const id = req?.user?.uniqueSessionId;
         let memorySmartProfile = memoryStoreProfile.get(id);
         // profile exchange workflow - profiles are present in both request and memory
