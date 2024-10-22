@@ -51,37 +51,22 @@ const validateEmail = (value: string) => {
 
 const AddUserClientMap = async (userId: string, clientId: string) => {
     try {
-        const existingClient = await clientAppRepository.findOne({ where: { id: clientId } })
-        if (existingClient) {
-            // check if userId && clientId NOT exist on db for this month (Jun-2024 - MM-YYYY) -> save in db
-            const existingUserClientMap = await userClientMapRepository.findOne({
-                where: { userId: userId, clientId: clientId }, order: {
-                    timestamp: "DESC",
-                },
-            })
-            if (existingUserClientMap) {
-                const currentTimestamp = Math.floor(Date.now() / 1000);
-                const lastTimestamp = existingUserClientMap.timestamp;
-                const lastDate = new Date(lastTimestamp * 1000);
-                const currentDate = new Date(currentTimestamp * 1000);
-                if (lastDate.getMonth() === currentDate.getMonth() && lastDate.getFullYear() === currentDate.getFullYear()) {
-                    Logger.info(`UserClientMap already exist for this month`);
-                    return;
-                }
-            }
-            const newUserClientMap = await userClientMapRepository.create({ userId: userId, clientId: clientId });
-            await userClientMapRepository.save(newUserClientMap);
-            Logger.info(`UserClientMap created: ${newUserClientMap.id}`);
+        // Check if the client exists
+        const existingClient = await clientAppRepository.findOne({ where: { id: clientId } });
+        if (!existingClient) {
+            Logger.error(`Client with id ${clientId} not found`);
+            throw new Error('Client not found');
         }
-        else {
-            Logger.error(`Client id not found`);
-            throw new Error('Client id not found');
-        }
+
+        // Create a new mapping
+        const newUserClientMap = userClientMapRepository.create({ userId, clientId });
+        await userClientMapRepository.save(newUserClientMap);
+        Logger.info(`UserClientMap created: ${newUserClientMap.id}`);
+    } catch (error) {
+        Logger.error(`Error in AddUserClientMap: ${error.message || JSON.stringify(error)}`);
+        throw error;
     }
-    catch (error) {
-        Logger.error(`Fatal error due to unknown reason: ${JSON.stringify(error)}`);
-    }
-}
+};
 
 
 userRouter.post("/", [
