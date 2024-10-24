@@ -3,7 +3,7 @@ import * as dotenv from 'dotenv';
 import { AppDataSource } from "../data-source";
 import Logger from "../lib/logger";
 import { v2 as cloudinary } from 'cloudinary';
-import { AppType, ClientApp } from "../entity/ClientApp";
+import { AppType, ClientApp, IncentiveType } from "../entity/ClientApp";
 // import { isValidDomain } from "../middlewares/authMiddleware";
 
 // rename rsm=clientApp 
@@ -33,8 +33,9 @@ clientAppRouter.post('/', async (req: Request, res: Response) => {
                 });
         }
         // Insert into clientApp
-        const newClientApp = await clientAppRepository.create({ streamId: streamId, logo: uploadResult?.secure_url, incentiveType:incentiveType,links: JSON.stringify(links), domains: JSON.stringify(domains),
-            appType: appType.toLowerCase() == "login" ? AppType.LOGIN : AppType.RSM
+        const newClientApp = await clientAppRepository.create({ streamId: streamId, logo: uploadResult?.secure_url,links: JSON.stringify(links), domains: JSON.stringify(domains),
+            appType: appType.toLowerCase() == "rsm" ?  AppType.RSM : AppType.LOGIN,
+            incentiveType:incentiveType.toLowerCase() == "stars" ? IncentiveType.STARS:  IncentiveType.POINTS 
          });
         await clientAppRepository.save(newClientApp);
         Logger.info(`clientApp created: ${newClientApp.id}`);
@@ -72,14 +73,15 @@ clientAppRouter.put('/:id', async (req: Request, res: Response) => {
                 id: id
             }
         })
+        console.log(data);
         // updated data
         const updateData = {
             streamId: streamId ? streamId : data?.streamId,
             logo: uploadResult?.secure_url ? uploadResult?.secure_url : data?.logo,
             links: links ? JSON.stringify(links) : data?.links,
             domains: domains ? JSON.stringify(domains) : data?.domains,
-            incentiveType: incentiveType ? incentiveType : data?.incentiveType,
-            appType: appType.toLowerCase() == "login" ? AppType.LOGIN : AppType.RSM
+            appType: appType?.toLowerCase() ? (appType?.toLowerCase() === "rsm"?  AppType.RSM : AppType.LOGIN ) : data?.appType,
+            incentiveType:incentiveType?.toLowerCase() ? (incentiveType?.toLowerCase() == "stars" ? IncentiveType.STARS :  IncentiveType.POINTS) : data?.incentiveType
         }
         await clientAppRepository.update({ id: id }, updateData);
         Logger.info(`clientApp updated: ${id}`);

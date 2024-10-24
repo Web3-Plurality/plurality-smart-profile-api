@@ -432,15 +432,15 @@ userRouter.post('/smart-profile', isAuthenticated, async (req, res) => {
         // load dynamically from header
         // add a check if this profileTypeStreamId exists in client app table
         const profileTypeStreamId = req.headers['x-profile-type-stream-id'];
+        if (!profileTypeStreamId) { 
+            Logger.error(`Fatal error due to missing profile type stream id`);
+            return res.status(400).json({ errors: "profile type stream id is missing" });            
+        }
         const existingClient = await clientAppRepository.findOne({ where: { streamId: profileTypeStreamId } })
         if (!existingClient) {
             Logger.error(`Client id not found`);
             return res.status(400).json({ error: "Client id not found" });
         }
-        // if (!profileTypeStreamId) { for database
-        //     Logger.error(`Fatal error due to missing profile type stream id`);
-        //     return res.status(400).json({ errors: "profile type stream id is missing" });            
-        // }
         const id = req?.user?.uniqueSessionId;
         let memorySmartProfile = memoryStoreProfile.get(id);
         // profile exchange workflow - profiles are present in both request and memory

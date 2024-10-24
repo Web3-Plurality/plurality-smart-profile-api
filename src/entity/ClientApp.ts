@@ -5,36 +5,37 @@ export enum AppType {
   LOGIN = "LOGIN",
 }
 
+export enum IncentiveType {
+  POINTS = "POINTS",
+  STARS = "STARS",
+}
 
 @Entity({ name: "client_apps" })
-export class ClientApp  {
+export class ClientApp {
   @PrimaryGeneratedColumn("uuid")
   id!: string;
 
   // profile type stream id
-  @Column({nullable: true})
+  @Column({ nullable: true })
   streamId: string;
 
-  @Column({nullable: true})
+  @Column({ nullable: true })
   logo: string;
 
-  @Column({nullable: true})
+  @Column({ nullable: true })
   links: string;
 
-  @Column({nullable: true})
+  @Column({ nullable: true })
   domains: string;
 
-  @Column({nullable: true, default:"Points"})
+  @Column({ nullable: true, default: IncentiveType.POITNS })
   incentiveType: string;
 
-
   @Column({
-    type: "enum",
-    enum: AppType,
-    default: AppType.LOGIN, // Optional: set a default value if needed
+    default: AppType.LOGIN,
   })
-  appType: AppType;
+  appType: string;
 
 
-  
+
 }
