@@ -49,7 +49,134 @@ const validateEmail = (value: string) => {
     throw new Error('Invalid email address');
 };
 
-const AddUserClientMap = async (userId: string, clientId: string) => {
+
+// capacity delegation
+export const capacityDelegation = async (walletAddress) => {
+    // owner wallet which has the capacity NFT
+    const DAPP_OWNER_WALLET = new ethers.Wallet(process.env.PUBLIC_DAPP_OWNER_WALLET_PRIVATE_KEY);
+    const currentTimestamp = Math.floor(Date.now() / 1000);
+    const litResponse = await axios.get(`https://yellowstone-explorer.litprotocol.com/api/v2/addresses/${DAPP_OWNER_WALLET.address}/nft?type=ERC-721%2CERC-404%2CERC-1155`)
+    let maxNft = { id: 0 }
+    for (let index = 0; index < litResponse?.data?.items.length; index++) {
+        if (Number(litResponse?.data?.items[index].id) > Number(maxNft?.id)) {
+            maxNft = litResponse?.data?.items[index];
+            if (currentTimestamp < Number(maxNft?.metadata?.attributes[0]?.value)) {
+                break;
+            }
+        }
+    }
+
+    if (currentTimestamp > Number(maxNft?.metadata?.attributes[0]?.value)) {
+        Logger.error(`Last NFT expired at: ${maxNft?.metadata?.attributes[0]?.value}`);
+        throw new Error('Capacity NFT expired');
+
+    }
+
+    const { capacityDelegationAuthSig } =
+        await app.locals.litNodeClient.createCapacityDelegationAuthSig({
+            uses: '100',
+            dAppOwnerWallet: DAPP_OWNER_WALLET,
+            capacityTokenId: maxNft?.id.toString(),
+            delegateeAddresses: [walletAddress],
+        });
+
+    return capacityDelegationAuthSig;
+}
+
+export const userRegisterViaEmail = async (email: string, address: string, subscribe: boolean, clientId: string) => {
+    const uniqueSessionId = uuidv4();
+    let token = ""
+    // Check if the user with the given email already exists
+    const existingUser = await userRepository.findOne({
+        where: {
+            email: email,
+        },
+    });
+    if (existingUser) {
+        if (!existingUser?.address) {
+            Logger.info(`The address against this email was not found`);
+            const updatedUser = {
+                address: address, // pkp address
+                subscribe: subscribe,
+            }
+            await userRepository.update({ id: existingUser?.id }, updatedUser)
+            Logger.info(`Putting Lit address on the current user id ${existingUser?.id}`);
+            token = jwt.sign({ id: existingUser?.id, uniqueSessionId }, process.env.JWT_SECRET, { expiresIn: "1d" });
+        }
+        else if (existingUser?.address === address) {
+            Logger.info(`This user already exists!`);
+            token = jwt.sign({ id: existingUser?.id, uniqueSessionId }, process.env.JWT_SECRET, { expiresIn: "1d" });
+        }
+        else {
+            Logger.error(`The address against this email is not correct`);
+            throw new Error('The address against this email is not correct');
+        }
+
+    } else {
+        // If the user doesn't exist, insert a new row
+        Logger.info(`This is a new user! Creating an entry with email: ${email}, address: ${address}, subscribe: ${subscribe} ...`);
+        let newUser = await userRepository.create({
+            email: email === "" ? null : email,
+            address: address === "" ? null : address,
+            subscribe: subscribe,
+
+        });
+        let addedUser = await userRepository.save(newUser);
+        token = jwt.sign({ id: addedUser?.id, uniqueSessionId }, process.env.JWT_SECRET, { expiresIn: "1d" });
+    }
+
+
+    //if client id exist then add in user client map
+    if (clientId) {
+        await AddUserClientMap(existingUser?.id, clientId);
+    }
+    else {
+        Logger.error(`Client id not found`);
+        throw new Error('Client id not found');
+    }
+    Logger.info(`jwt token generated for user id ${existingUser?.id}`);
+    return token;
+}
+
+
+export const userRegisterViaWallet = async (email: string, address: string, clientId: string) => {
+    const uniqueSessionId = uuidv4();
+    let token = ""
+    let addedUser = {}
+    // Check if the user with the given address already exists
+    const existingUser = await userRepository.findOne({
+        where: {
+            address: address,
+        },
+    });
+    if (existingUser) {
+        Logger.info(`This user already exists!`);
+        token = jwt.sign({ id: existingUser?.id, uniqueSessionId }, process.env.JWT_SECRET, { expiresIn: "1d" });
+    } else {
+        // If the user doesn't exist, insert a new row
+        const newUser = await userRepository.create({
+            email: email || null,
+            address: address,
+            subscribe: false,
+        });
+        Logger.info(`new user created with address: ${address}`);
+        addedUser = await userRepository.save(newUser);
+        token = jwt.sign({ id: addedUser?.id, uniqueSessionId }, process.env.JWT_SECRET, { expiresIn: "1d" });
+    }
+    //if client id exist then add in user client map
+    if (clientId) {
+        await AddUserClientMap(existingUser?.id ? existingUser?.id : addedUser?.id, clientId);
+    }
+    else {
+        Logger.error(`Client id not found`);
+        throw new Error('Client id not found');
+    }
+    Logger.info(`jwt token generated for user id ${existingUser?.id ? existingUser?.id : addedUser?.id}`);
+    return token;
+}
+
+
+export const AddUserClientMap = async (userId: string, clientId: string) => {
     try {
         // Check if the client exists
         const existingClient = await clientAppRepository.findOne({ where: { id: clientId } });
@@ -76,8 +203,7 @@ userRouter.post("/", [
     body('data.clientId').trim().escape(),
 ], isValid, async (req: Request, res: Response) => {
     try {
-        let token;
-        const uniqueSessionId = uuidv4();
+
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
             Logger.error(`Fatal error due to improper request parameters to route POST /: ${JSON.stringify(errors)}`);
@@ -88,101 +214,14 @@ userRouter.post("/", [
         // User registered via email 
         if (!!user.data.email && !!user.data.address) {
             Logger.info(`User register via email: ${user.data.email}`);
-            // Check if the user with the given email already exists
-            const existingUser = await userRepository.findOne({
-                where: {
-                    email: user.data.email,
-                },
-            });
-            if (existingUser) {
-                if (!existingUser?.address) {
-                    Logger.info(`The address against this email was not found`);
-                    const updatedUser = {
-                        address: user.data.address, // pkp address
-                        subscribe: user.data.subscribe,
-                    }
-                    await userRepository.update({ id: existingUser?.id }, updatedUser)
-                    Logger.info(`Putting Lit address on the current user id ${existingUser?.id}`);
-                    token = jwt.sign({ id: existingUser?.id, uniqueSessionId }, process.env.JWT_SECRET, { expiresIn: "1d" });
-                    //if client id exist then add in user client map
-                    if (user.data.clientId) {
-                        await AddUserClientMap(existingUser?.id, user.data.clientId);
-                    }
-                    // else log 'client id not found' and throw exception
-                    Logger.info(`All done! Returning...`);
-                    return res.status(200).json({ success: true, token: token });
-                }
-                else if (existingUser?.address === user.data.address) {
-                    Logger.info(`This user already exists!`);
-                    token = jwt.sign({ id: existingUser?.id, uniqueSessionId }, process.env.JWT_SECRET, { expiresIn: "1d" });
-                    //if client id exist then add in user client map
-                    if (user.data.clientId) {
-                        await AddUserClientMap(existingUser?.id, user.data.clientId);
-                    }
-                    Logger.info(`All done! Returning...`);
-                    return res.status(200).json({ success: true, token: token });
-                }
-                else {
-                    Logger.error(`The address against this email is not correct`);
-                    return res.status(400).json({ error: "Bad request" });
-                }
-
-            } else {
-                // If the user doesn't exist, insert a new row
-                Logger.info(`This is a new user! Creating an entry with email: ${user.data.email}, address: ${user.data.address}, subscribe: ${user.data.subscribe} ...`);
-                let newUser = await userRepository.create({
-                    email: user.data.email === "" ? null : user.data.email,
-                    address: user.data.address === "" ? null : user.data.address,
-                    subscribe: user.data.subscribe,
-
-                });
-                let addedUser = await userRepository.save(newUser);
-                token = jwt.sign({ id: addedUser?.id, uniqueSessionId }, process.env.JWT_SECRET, { expiresIn: "1d" });
-                //if client id exist then add in user client map
-                if (user.data.clientId) {
-                    await AddUserClientMap(addedUser?.id, user.data.clientId);
-                }
-                Logger.info(`All done! Returning...`);
-                return res.status(200).json({ success: true, token: token });
-            }
+            const token = await userRegisterViaEmail(user?.data?.email, user?.data?.address, user?.data?.subscribe, user?.data?.clientId)
+            return res.status(200).json({ success: true, token: token });
         }
         // User registered via Metamask
         else if (!user.data.email && !!user.data.address) {
             Logger.info(`User register via metamask address: ${user.data.address}`);
-            // Check if the user with the given address already exists
-            const existingUser = await userRepository.findOne({
-                where: {
-                    address: user.data.address,
-                },
-            });
-            if (existingUser) {
-                Logger.info(`This user already exists!`);
-                token = jwt.sign({ id: existingUser?.id, uniqueSessionId }, process.env.JWT_SECRET, { expiresIn: "1d" });
-                //if client id exist then add in user client map
-                if (user.data.clientId) {
-                    await AddUserClientMap(existingUser?.id, user.data.clientId);
-                }
-                Logger.info(`All done! Returning...`);
-                return res.status(200).json({ success: true, token: token });
-            } else {
-                // If the user doesn't exist, insert a new row
-                Logger.info(`This is a new user! Creating an entry with email: ${user.data.email}, address: ${user.data.address}, subscribe: false ...`);
-                const newUser = await userRepository.create({
-                    email: user.data.email === "" ? null : user.data.email,
-                    address: user.data.address === "" ? null : user.data.address,
-                    subscribe: false,
-                });
-                let addedUser = await userRepository.save(newUser);
-
-                token = jwt.sign({ id: addedUser?.id, uniqueSessionId }, process.env.JWT_SECRET, { expiresIn: "1d" });
-                //if client id exist then add in user client map
-                if (user.data.clientId) {
-                    await AddUserClientMap(addedUser?.id, user.data.clientId);
-                }
-                Logger.info(`All done! Returning...`);
-                return res.status(200).json({ success: true, token: token });
-            }
-
+            const token = await userRegisterViaWallet(user?.data?.email, user?.data?.address, user?.data?.clientId)
+            return res.status(200).json({ success: true, token: token });
         }
         else {
             Logger.error(`The request params (address or email) combination is not correct`);
@@ -390,32 +429,7 @@ userRouter.get('/capacity', isAuthenticated, async (req, res) => {
                 id: id,
             },
         });
-        // owner wallet which has the capacity NFT
-        const DAPP_OWNER_WALLET = new ethers.Wallet(process.env.PUBLIC_DAPP_OWNER_WALLET_PRIVATE_KEY);
-        const currentTimestamp = Math.floor(Date.now() / 1000);
-        const litResponse = await axios.get(`https://yellowstone-explorer.litprotocol.com/api/v2/addresses/${DAPP_OWNER_WALLET.address}/nft?type=ERC-721%2CERC-404%2CERC-1155`)
-        let maxNft = { id: 0 }
-        for (let index = 0; index < litResponse?.data?.items.length; index++) {
-            if (Number(litResponse?.data?.items[index].id) > Number(maxNft?.id)) {
-                maxNft = litResponse?.data?.items[index];
-                if (currentTimestamp < Number(maxNft?.metadata?.attributes[0]?.value)) {
-                    break;
-                }
-            }
-        }
-
-        if (currentTimestamp > Number(maxNft?.metadata?.attributes[0]?.value)) {
-            Logger.error(`Last NFT expired at: ${maxNft?.metadata?.attributes[0]?.value}`);
-            return res.status(500).json({ error: "Capacity NFT expired" });
-        }
-
-        const { capacityDelegationAuthSig } =
-            await app.locals.litNodeClient.createCapacityDelegationAuthSig({
-                uses: '100',
-                dAppOwnerWallet: DAPP_OWNER_WALLET,
-                capacityTokenId: maxNft?.id.toString(),
-                delegateeAddresses: [existingUser?.address],
-            });
+        const capacityDelegationAuthSig = await capacityDelegation(existingUser?.address);
         Logger.info(`Capacity delegation auth sig generated for user id: ${id}`);
         return res.status(200).json({ success: true, capacityDelegationAuthSig });
 

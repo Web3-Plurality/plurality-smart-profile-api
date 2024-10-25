@@ -25,7 +25,8 @@ import { fortniteRouter } from './controllers/OAuthFortniteController';
 import * as LitJsSdk from "@lit-protocol/lit-node-client";
 import { LitNetwork } from "@lit-protocol/constants";
 import { clientAppRouter } from './controllers/ClientAppController';
-import { authRouter } from './controllers/authController';
+import { authOTPRouter } from './controllers/AuthOTPController';
+import { authSiweRouter } from './controllers/AuthSIWEController';
 
 dotenv.config();
 
@@ -49,7 +50,9 @@ app.use("/permaweb", permawebRouter);
 app.use("/oauth-tiktok", tiktokRouter);
 app.use("/subgraph", subgraphRouter);
 app.use("/user", userRouter);
-app.use("/auth", authRouter);
+app.use("/auth/otp", authOTPRouter);
+app.use("/auth/siwe", authSiweRouter);
+
 
 app.use("/client-app", clientAppRouter); 
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
@@ -66,7 +69,6 @@ app.post('/post', async (req: Request, res: Response): Promise<Response> => {
     message: 'Hello World from post!',
   });
 });
-
 
 app.get('/register-event', async (req: Request, res: Response) => {
   initSSE(req, res)
