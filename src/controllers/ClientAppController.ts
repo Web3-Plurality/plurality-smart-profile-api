@@ -3,12 +3,13 @@ import * as dotenv from 'dotenv';
 import { AppDataSource } from "../data-source";
 import Logger from "../lib/logger";
 import { v2 as cloudinary } from 'cloudinary';
-import { RsmApp } from "../entity/RSM";
+import { AppType, ClientApp, IncentiveType } from "../entity/ClientApp";
 // import { isValidDomain } from "../middlewares/authMiddleware";
 
-export const rsmRouter = express.Router();
+// rename rsm=clientApp 
+export const clientAppRouter = express.Router();
 dotenv.config();
-const rsmRepository = AppDataSource.getRepository(RsmApp);
+const clientAppRepository = AppDataSource.getRepository(ClientApp);
 
 // Configuration
 cloudinary.config({
@@ -17,9 +18,9 @@ cloudinary.config({
     api_secret: process.env.CLOUDINARY_API_SECRET // Click 'View Credentials' below to copy your API secret
 });
 
-rsmRouter.post('/', async (req: Request, res: Response) => {
+clientAppRouter.post('/', async (req: Request, res: Response) => {
     try {
-        const { img, streamId, links, domains , incentiveType} = req.body;
+        const { img, streamId, links, domains , incentiveType, appType} = req.body;
         // Upload an image
         let uploadResult;
         if (img) {
@@ -31,13 +32,16 @@ rsmRouter.post('/', async (req: Request, res: Response) => {
                     console.log(error);
                 });
         }
-        // Insert into RSM
-        const newRsm = await rsmRepository.create({ streamId: streamId, logo: uploadResult?.secure_url, incentiveType:incentiveType,links: JSON.stringify(links), domains: JSON.stringify(domains) });
-        await rsmRepository.save(newRsm);
-        Logger.info(`RSM created: ${newRsm.id}`);
+        // Insert into clientApp
+        const newClientApp = await clientAppRepository.create({ streamId: streamId, logo: uploadResult?.secure_url,links: JSON.stringify(links), domains: JSON.stringify(domains),
+            appType: appType.toLowerCase() == "rsm" ?  AppType.RSM : AppType.LOGIN,
+            incentiveType:incentiveType.toLowerCase() == "stars" ? IncentiveType.STARS:  IncentiveType.POINTS 
+         });
+        await clientAppRepository.save(newClientApp);
+        Logger.info(`clientApp created: ${newClientApp.id}`);
         return res.status(200).json({
-            message: 'RSM created',
-            data: newRsm
+            message: 'clientApp created',
+            data: newClientApp
         });
     } catch (error) {
         Logger.error(`Fatal error due to unknown reason: ${JSON.stringify(error)}`);
@@ -47,9 +51,9 @@ rsmRouter.post('/', async (req: Request, res: Response) => {
 })
 
 
-rsmRouter.put('/:id', async (req: Request, res: Response) => {
+clientAppRouter.put('/:id', async (req: Request, res: Response) => {
     try {
-        const { img, streamId, links, domains, incentiveType } = req.body;
+        const { img, streamId, links, domains, incentiveType, appType } = req.body;
         const id = req.params.id;
         
         // Upload an image
@@ -64,23 +68,25 @@ rsmRouter.put('/:id', async (req: Request, res: Response) => {
                 });
         }
         // check customer exist already
-        const data = await rsmRepository.findOne({
+        const data = await clientAppRepository.findOne({
             where: {
                 id: id
             }
         })
+        console.log(data);
         // updated data
-        const updataData = {
+        const updateData = {
             streamId: streamId ? streamId : data?.streamId,
             logo: uploadResult?.secure_url ? uploadResult?.secure_url : data?.logo,
             links: links ? JSON.stringify(links) : data?.links,
             domains: domains ? JSON.stringify(domains) : data?.domains,
-            incentiveType: incentiveType ? incentiveType : data?.incentiveType
+            appType: appType?.toLowerCase() ? (appType?.toLowerCase() === "rsm"?  AppType.RSM : AppType.LOGIN ) : data?.appType,
+            incentiveType:incentiveType?.toLowerCase() ? (incentiveType?.toLowerCase() == "stars" ? IncentiveType.STARS :  IncentiveType.POINTS) : data?.incentiveType
         }
-        await rsmRepository.update({ id: id }, updataData);
-        Logger.info(`RSM updated: ${id}`);
+        await clientAppRepository.update({ id: id }, updateData);
+        Logger.info(`clientApp updated: ${id}`);
         return res.status(200).json({
-            message: 'RSM updated',
+            message: 'clientApp updated',
         });
     } catch (error) {
         Logger.error(`Fatal error due to unknown reason: ${JSON.stringify(error)}`);
@@ -89,13 +95,13 @@ rsmRouter.put('/:id', async (req: Request, res: Response) => {
 
 })
 
-rsmRouter.get('/', async (req: Request, res: Response) => {
+clientAppRouter.get('/', async (req: Request, res: Response) => {
     try {
 
         const origin=req.headers['x-domain'];
         console.log(origin);
         const id: any = req?.query?.uuid
-        const data = await rsmRepository.findOne({
+        const data = await clientAppRepository.findOne({
             where: {
                 id: id
             }
@@ -104,7 +110,7 @@ rsmRouter.get('/', async (req: Request, res: Response) => {
         const domains = JSON.parse(data?.domains)
         
         if (domains?.includes(origin)) {
-        Logger.info(`RSM fetched: ${id}`);
+        Logger.info(`clientApp fetched: ${id}`);
             return res.status(200).json({ data });
         }
 
