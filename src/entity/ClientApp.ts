@@ -10,6 +10,7 @@ export enum IncentiveType {
   STARS = "STARS",
 }
 
+
 @Entity({ name: "client_apps" })
 export class ClientApp {
   @PrimaryGeneratedColumn("uuid")
