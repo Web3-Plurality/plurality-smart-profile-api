@@ -86,7 +86,6 @@ authOTPRouter.post("/authenticate", async function (req, res) {
 
         let token = ""
         let addedUser = {};
-        let newPKP: IRelayPKP = { tokenId: "", publicKey: "", ethAddress: "" };
         const uniqueSessionId = uuidv4();
         const params: OTPsAuthenticateRequest = { code: req.body.code, session_duration_minutes: 60, method_id: req.body.email_id };
         // stytch authenticate
@@ -101,35 +100,15 @@ authOTPRouter.post("/authenticate", async function (req, res) {
         });
 
         if (existingUser) {
-            if (!existingUser?.address) {
-                Logger.info(`The address against this email was not found`);
-                newPKP = await generatePkp(resp.session_jwt);
-                const updatedUser = {
-                    address: newPKP?.ethAddress, // pkp address
-                    subscribe: req?.body?.subscribe,
-                }
-                await userRepository.update({ id: existingUser?.id }, updatedUser)
-                Logger.info(`Putting Lit address on the current user id ${existingUser?.id}`);
-                token = jwt.sign({ id: existingUser?.id, uniqueSessionId }, process.env.JWT_SECRET, { expiresIn: "1d" });
-            }//agr token and address dono miss ho gae?
-            else if (existingUser?.address === req?.body?.address) {
-                Logger.info(`This user already exists!`);
-                token = jwt.sign({ id: existingUser?.id, uniqueSessionId }, process.env.JWT_SECRET, { expiresIn: "1d" });
-            }
-            else {
-                Logger.error(`The address against this email is not correct`);
-                throw new Error('The address against this email is not correct');
-            }
+            Logger.info(`This user already exists!`);
+            token = jwt.sign({ id: existingUser?.id, uniqueSessionId }, process.env.JWT_SECRET, { expiresIn: "1d" });
+        }
 
-        } else {
+        else {
             // If the user doesn't exist, insert a new row
             Logger.info(`The user with this email was not found`);
-
-            //   generate PKP
-            newPKP = await generatePkp(resp.session_jwt);
             let newUser = await userRepository.create({
-                email: email, //resp
-                address: newPKP?.ethAddress,
+                email: email, 
                 subscribe: req?.body?.subscribe,
 
             });
@@ -140,7 +119,7 @@ authOTPRouter.post("/authenticate", async function (req, res) {
 
         //if client id exist then add in user client map
         if (req?.body?.clientId) {
-            await AddUserClientMap(existingUser?.id? existingUser?.id : addedUser?.id, req?.body?.clientId);
+            await AddUserClientMap(existingUser?.id ? existingUser?.id : addedUser?.id, req?.body?.clientId);
         }
         else {
             Logger.error(`Client id not found`);
@@ -148,9 +127,7 @@ authOTPRouter.post("/authenticate", async function (req, res) {
         }
 
         Logger.info(`jwt token generated for user id ${existingUser?.id ? existingUser?.id : addedUser?.id}`);
-        // capacity Delegation
-        const capacityDelegationAuthSig = await capacityDelegation(newPKP?.ethAddress ? newPKP?.ethAddress : req?.body?.address);
-        return res.status(200).json({ success: true, token: token, capacityDelegationAuthSig: capacityDelegationAuthSig, email: email, address: newPKP?.ethAddress ? newPKP?.ethAddress : req?.body?.address });
+        return res.status(200).json({ success: true, token: token, user: addedUser });
     } catch (err) {
         console.error(err);
         res.status(401).send('Authentication failed');

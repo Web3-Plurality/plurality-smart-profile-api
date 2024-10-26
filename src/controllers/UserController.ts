@@ -420,7 +420,7 @@ userRouter.get('/nonce/:wallet', (req, res) => {
     }
 });
 
-
+//body => address
 userRouter.get('/capacity', isAuthenticated, async (req, res) => {
     try {
         const id = req?.user?.id;
@@ -429,7 +429,17 @@ userRouter.get('/capacity', isAuthenticated, async (req, res) => {
                 id: id,
             },
         });
-        const capacityDelegationAuthSig = await capacityDelegation(existingUser?.address);
+        if (!existingUser?.address) {
+            Logger.info(`The address against this email was not found`);
+
+            const updatedUser = {
+                address: req?.body.address, // pkp address
+            }
+
+            await userRepository.update({ id: existingUser?.id }, updatedUser)
+            Logger.info(`Putting Lit address on the current user id ${existingUser?.id}`);
+        }
+        const capacityDelegationAuthSig = await capacityDelegation(req?.body.address);
         Logger.info(`Capacity delegation auth sig generated for user id: ${id}`);
         return res.status(200).json({ success: true, capacityDelegationAuthSig });
 
