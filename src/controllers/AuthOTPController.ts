@@ -61,7 +61,7 @@ const generatePkp = async (session_jwt: string) => {
 }
 
 // Start the authentication flow
-authOTPRouter.post("/otp/login", async function (req, res) {
+authOTPRouter.post("/login", async function (req, res) {
     try {
         const templateId = "sign_in_to_plurality_network";
         const options: OTPsEmailLoginOrCreateRequest = {
@@ -103,7 +103,6 @@ authOTPRouter.post("/authenticate", async function (req, res) {
             Logger.info(`This user already exists!`);
             token = jwt.sign({ id: existingUser?.id, uniqueSessionId }, process.env.JWT_SECRET, { expiresIn: "1d" });
         }
-
         else {
             // If the user doesn't exist, insert a new row
             Logger.info(`The user with this email was not found`);
@@ -127,7 +126,7 @@ authOTPRouter.post("/authenticate", async function (req, res) {
         }
 
         Logger.info(`jwt token generated for user id ${existingUser?.id ? existingUser?.id : addedUser?.id}`);
-        return res.status(200).json({ success: true, token: token, user: addedUser });
+        return res.status(200).json({ success: true, token: token, user: existingUser?.id ?  existingUser : addedUser });
     } catch (err) {
         console.error(err);
         res.status(401).send('Authentication failed');
