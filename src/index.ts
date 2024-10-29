@@ -3,30 +3,30 @@ import bodyParser from 'body-parser';
 import cors from "cors";
 import helmet from "helmet";
 import * as dotenv from 'dotenv';
-import { robloxRouter } from './controllers/OAuthRobloxController';
-import { twitterRouter } from './controllers/OAuthTwitterController';
+import { robloxRouter } from './Oauth-service/controllers/OAuthRobloxController';
+import { twitterRouter } from './Oauth-service/controllers/OAuthTwitterController';
 
 import session from 'express-session';
 import passport from "passport";
 import swaggerUi from "swagger-ui-express";
 import * as swaggerDocument from "./swagger.json";
-import { permawebRouter } from './controllers/PermawebUploadController';
-import { tiktokRouter } from './controllers/OAuthTikTokController';
-import { subgraphRouter } from './controllers/SubgraphController';
+import { permawebRouter } from './other-service/controllers/PermawebUploadController';
+import { tiktokRouter } from './Oauth-service/controllers/OAuthTikTokController';
+import { subgraphRouter } from './other-service/controllers/SubgraphController';
 import https from "https"
-import { userRouter } from './controllers/UserController';
+import { userRouter } from './user-service/controllers/UserController';
 import { AppDataSource } from './data-source';
 import fs from "fs";
 import { initSSE } from './utils/global';
-import { snapchatRouter } from './controllers/OAuthSnapChatController';
-import { instagramRouter } from './controllers/OAuthInstagramController';
-import { facebookRouter } from './controllers/OAuthFacebookController';
-import { fortniteRouter } from './controllers/OAuthFortniteController';
+import { snapchatRouter } from './Oauth-service/controllers/OAuthSnapChatController';
+import { instagramRouter } from './Oauth-service/controllers/OAuthInstagramController';
+import { facebookRouter } from './Oauth-service/controllers/OAuthFacebookController';
+import { fortniteRouter } from './Oauth-service/controllers/OAuthFortniteController';
 import * as LitJsSdk from "@lit-protocol/lit-node-client";
 import { LitNetwork } from "@lit-protocol/constants";
-import { clientAppRouter } from './controllers/ClientAppController';
-import { authOTPRouter } from './controllers/AuthOTPController';
-import { authSiweRouter } from './controllers/AuthSIWEController';
+import { clientAppRouter } from './client-service/controllers/ClientAppController';
+import { authOTPRouter } from './attestation-service/controllers/AuthOTPController';
+import { authSiweRouter } from './attestation-service/controllers/AuthSiweController';
 
 dotenv.config();
 
