@@ -8,7 +8,7 @@ const privateKey = process.env.PRIVATE_KEY;
 const wallet = new ethers.Wallet(privateKey);
 
 // The message you want to sign
-const nonce = "8Y0SNzUwJXpomq4sX";
+const nonce = "6gniVoelAi9n5FR5e";
 const address="0x843c97F8A229C7dF8667b6C0867f4c1732685707"
 const statement="I am the owner of this address"
 const domain = "localhost";
@@ -29,7 +29,7 @@ async function signMessage() {
             const msg = message.prepareMessage();
 
         const signature = await wallet.signMessage(msg);
-        console.log('Message:',encodeURIComponent(msg));
+        console.log('Message:\n',encodeURIComponent(msg));
         console.log('Signature:', signature);
 
         // // Verify the signature
