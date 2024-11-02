@@ -39,8 +39,10 @@
     "@types/uuid": "^10.0.0",
     "@typescript-eslint/eslint-plugin": "^5.12.1",
     "@typescript-eslint/parser": "^5.12.1",
-    "eslint": "^8.10.0",
+    "eslint": "^8.56.0",
+    "eslint-config-prettier": "^9.1.0",
     "husky": "^8.0.3",
+    "lint-staged": "^15.2.0",
     "nodemon": "^2.0.22",
     "prettier": "^2.5.1",
     "semantic-release": "^22.0.12",
@@ -89,5 +91,11 @@
     "typeorm": "^0.3.20",
     "uuid": "^10.0.0",
     "winston": "^3.13.0"
+  },
+  "lint-staged": {
+    "*.{ts,js}": "eslint --cache --fix",
+    "*.{ts,js,css,md}": "prettier --write",
+    "*.js": "eslint --cache --fix",
+    "*.{js,css,md}": "prettier --write"
   }
 }
