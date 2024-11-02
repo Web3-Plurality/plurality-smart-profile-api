@@ -1,17 +1,16 @@
 import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
 
-@Entity({ name: "users" })
+@Entity({ name: 'users' })
 export class User {
-  @PrimaryGeneratedColumn("uuid")
+  @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column({nullable: true})
+  @Column({ nullable: true })
   email: string;
 
-  @Column({nullable: true})
+  @Column({ nullable: true })
   address: string;
 
-  @Column({nullable: false, default: false})
+  @Column({ nullable: false, default: false })
   subscribe: boolean;
-
 }

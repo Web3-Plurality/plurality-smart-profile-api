@@ -11,8 +11,6 @@ interface Score {
   score_value: number;
 }
 
-
-
 @Entity()
 export class SmartProfileMap {
   @PrimaryGeneratedColumn('uuid')

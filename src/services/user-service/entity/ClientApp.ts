@@ -1,19 +1,18 @@
 import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
 
 export enum AppType {
-  RSM = "RSM",
-  LOGIN = "LOGIN",
+  RSM = 'RSM',
+  LOGIN = 'LOGIN',
 }
 
 export enum IncentiveType {
-  POINTS = "POINTS",
-  STARS = "STARS",
+  POINTS = 'POINTS',
+  STARS = 'STARS',
 }
 
-
-@Entity({ name: "client_apps" })
+@Entity({ name: 'client_apps' })
 export class ClientApp {
-  @PrimaryGeneratedColumn("uuid")
+  @PrimaryGeneratedColumn('uuid')
   id!: string;
 
   // profile type stream id
@@ -36,7 +35,4 @@ export class ClientApp {
     default: AppType.LOGIN,
   })
   appType: string;
-
-
-
 }

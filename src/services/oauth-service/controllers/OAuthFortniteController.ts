@@ -1,17 +1,23 @@
-import express, { Request, Response } from "express";
-import passport from "passport";
+import express, { Request, Response } from 'express';
+import passport from 'passport';
 import * as dotenv from 'dotenv';
-import axios from "axios";
-import { hasValidAccessTokenHeader, hasValidEventHeader, hasValidEventParam, isAuthenticated, isProfileMapEmpty } from "../middlewares/oauthMiddleware";
-import Logger from "../../../lib/logger";
-import { memoryStoreToken, memoryStoreSSE, memoryStoreProfile } from "../../../utils/global";
-import { FORTNITE_APP, INTERNAL_SERVER_ERROR, TIMEOUT_ERROR } from "../utils/constants";
-import OAuthFortniteStrategy from "../strategies/OAuthFortniteStrategy"
-import jwt from 'jsonwebtoken'
-import { FortniteProfile } from "../entity/Fortnite";
+import axios from 'axios';
+import {
+  hasValidAccessTokenHeader,
+  hasValidEventHeader,
+  hasValidEventParam,
+  isAuthenticated,
+  isProfileMapEmpty,
+} from '../middlewares/oauthMiddleware';
+import Logger from '../../../lib/logger';
+import { memoryStoreToken, memoryStoreSSE, memoryStoreProfile } from '../../../utils/global';
+import { FORTNITE_APP, INTERNAL_SERVER_ERROR, TIMEOUT_ERROR } from '../utils/constants';
+import OAuthFortniteStrategy from '../strategies/OAuthFortniteStrategy';
+import jwt from 'jsonwebtoken';
+import { FortniteProfile } from '../entity/Fortnite';
 import { v4 as uuidv4 } from 'uuid';
-import { UserProfile } from "../entity/UserProfile";
-import { SmartProfile } from "../../user-service/entity/SmartProfile";
+import { UserProfile } from '../entity/UserProfile';
+import { SmartProfile } from '../../user-service/entity/SmartProfile';
 dotenv.config();
 
 export const fortniteRouter = express.Router();
@@ -25,7 +31,7 @@ passport.deserializeUser(function (obj: any, done) {
 });
 
 passport.use(
-  "fortnite",
+  'fortnite',
   // Strategy initialization
   new OAuthFortniteStrategy(
     {
@@ -34,27 +40,22 @@ passport.use(
       clientID: process.env.FORTNITE_CLIENT_ID,
       clientSecret: process.env.FORTNITE_CLIENT_SECRET,
       callbackURL: process.env.FORTNITE_CALLBACK_URL,
-      scope: "basic_profile",// spaces
+      scope: 'basic_profile', // spaces
       state: true,
       pkce: true,
     },
     // Verify callback
     (accessToken: any, refreshToken: any, profile: any, done: any) => {
       return done(null, { accessToken, refreshToken, account_id: jwt.decode(accessToken)?.sub });
-    }
-  )
+    },
+  ),
 );
 
 // Start authentication flow
-fortniteRouter.get(
-  '/',
-  hasValidEventParam,
-  isProfileMapEmpty,
-  async (req: Request, res: Response, next) => {
-    Logger.info(`${FORTNITE_APP}: Request for Oauth has been received successfully on sse Id ${req.sseID}`)
-    passport.authenticate('fortnite')(req, res, next);
-  });
-
+fortniteRouter.get('/', hasValidEventParam, isProfileMapEmpty, async (req: Request, res: Response, next) => {
+  Logger.info(`${FORTNITE_APP}: Request for Oauth has been received successfully on sse Id ${req.sseID}`);
+  passport.authenticate('fortnite')(req, res, next);
+});
 
 // Callback handler
 fortniteRouter.get('/callback', passport.authenticate('fortnite', { session: false }), async (req, res) => {
@@ -62,7 +63,7 @@ fortniteRouter.get('/callback', passport.authenticate('fortnite', { session: fal
     const accessTokenId = uuidv4();
     memoryStoreToken.set(accessTokenId, {
       accessToken: req.user.accessToken,
-      account_id: req.user.account_id
+      account_id: req.user.account_id,
     });
     const url = `${process.env.WIDGET_UI_URL}?token_id=${accessTokenId}&app=${FORTNITE_APP}`;
     Logger.info(`${FORTNITE_APP}: Redirecting to ${url}`);
@@ -84,37 +85,35 @@ fortniteRouter.post(
       Logger.info(`${FORTNITE_APP}: Request body tokenUUID ${req?.accessTokenID}`);
       Logger.info(`${FORTNITE_APP}: Request body sseUUID ${req?.sseID}`);
       const serverSentEventResponse = memoryStoreSSE.get(req?.sseID);
-      serverSentEventResponse.write(`data: {"message":"received", "app":"${FORTNITE_APP}", "auth":"${req?.accessTokenID}"}\n\n`)
+      serverSentEventResponse.write(
+        `data: {"message":"received", "app":"${FORTNITE_APP}", "auth":"${req?.accessTokenID}"}\n\n`,
+      );
       Logger.info(`${FORTNITE_APP}: Server Side Event has been sent successfully`);
       memoryStoreSSE.delete(req?.sseID);
-      return res.status(200).json({ app: FORTNITE_APP, message: "success" });
+      return res.status(200).json({ app: FORTNITE_APP, message: 'success' });
     } catch (error) {
       Logger.info(`${FORTNITE_APP}: Error in sending SSE ${error.message}`);
-      return res.status(500).json({ app: FORTNITE_APP, message: "Internal Server error" });
+      return res.status(500).json({ app: FORTNITE_APP, message: 'Internal Server error' });
     }
-
-  });
+  },
+);
 
 // Return User Object
 fortniteRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfileMapEmpty, async (req, res) => {
   try {
     Logger.info(`${FORTNITE_APP}: Request for information has been received successfully with id ${req.accessTokenID}`);
     const { accessToken, account_id }: any = memoryStoreToken.get(req.accessTokenID);
-    let userFortnite = { data: {} }
+    let userFortnite = { data: {} };
 
     if (accessToken) {
       try {
-        userFortnite = await axios.get(
-          `https://api.epicgames.dev/epic/id/v2/accounts?accountId=${account_id}`,
-          {
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-              "Content-Type": "application/json",
-            },
-            timeout: 20000,
-          }
-        );
-
+        userFortnite = await axios.get(`https://api.epicgames.dev/epic/id/v2/accounts?accountId=${account_id}`, {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          },
+          timeout: 20000,
+        });
       } catch (error) {
         if (error.code === 'ECONNABORTED') {
           Logger.error(`${FORTNITE_APP}: Request timeout error in fetching userinfo: ${error.message}`);
@@ -131,17 +130,21 @@ fortniteRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfil
 
       if (!memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
         const smartProfile = new SmartProfile(userProfile);
-        smartProfile.connected_profiles = [{platform_name: FORTNITE_APP, user_platform_id: fortniteProfile?.accountId, username: fortniteProfile?.displayName}];
+        smartProfile.connected_profiles = [
+          {
+            platform_name: FORTNITE_APP,
+            user_platform_id: fortniteProfile?.accountId,
+            username: fortniteProfile?.displayName,
+          },
+        ];
         memoryStoreProfile.set(req?.user?.uniqueSessionId, smartProfile);
         memoryStoreToken.delete(req?.accessTokenID);
         Logger.info(`${FORTNITE_APP}: User information has been delivered successfully`);
-        return res.status(200).json({ app: FORTNITE_APP, message: "success", individualProfile: userProfile });
-      } 
-      else {
+        return res.status(200).json({ app: FORTNITE_APP, message: 'success', individualProfile: userProfile });
+      } else {
         Logger.error(`${FORTNITE_APP}: A profile already exists`);
         return res.status(500).json({ app: FORTNITE_APP, error: 'Unauthorized', message: INTERNAL_SERVER_ERROR });
       }
-
     } else {
       Logger.error(`${FORTNITE_APP}: Token has been expired.`);
       return res.status(500).json({ app: FORTNITE_APP, error: 'Unauthorized', message: INTERNAL_SERVER_ERROR });
@@ -150,8 +153,7 @@ fortniteRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfil
     if (error.code === 'ECONNABORTED') {
       Logger.error(`${FORTNITE_APP}: Request timeout error in fetching userinfo: ${error.message}`);
       return res.status(408).json({ app: FORTNITE_APP, message: TIMEOUT_ERROR });
-    }
-    else {
+    } else {
       Logger.error(`${FORTNITE_APP}: Error occurred in fetching user informantion: ${error.message}`);
       return res.status(500).json({ app: FORTNITE_APP, error: 'Unauthorized', message: INTERNAL_SERVER_ERROR });
     }

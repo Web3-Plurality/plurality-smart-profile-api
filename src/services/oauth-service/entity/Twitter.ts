@@ -20,25 +20,25 @@ export class TwitterProfile {
   introTags: string[];
 
   constructor(
-    id: string = "",
-    followersCount: number = 0,
-    followingCount: number = 0,
-    tweetCount: number = 0,
-    listedCount: number = 0,
-    likeCount: number = 0,
-    pinnedTweetId: string = "",
-    verifiedType: string = "",
-    protectedStatus: boolean = false,
-    username: string = "",
-    mostRecentTweetId: string = "",
-    verified: boolean = false,
-    description: string = "",
-    createdAt: string = "",
-    name: string = "",
-    profileImageUrl: string = "",
+    id = '',
+    followersCount = 0,
+    followingCount = 0,
+    tweetCount = 0,
+    listedCount = 0,
+    likeCount = 0,
+    pinnedTweetId = '',
+    verifiedType = '',
+    protectedStatus = false,
+    username = '',
+    mostRecentTweetId = '',
+    verified = false,
+    description = '',
+    createdAt = '',
+    name = '',
+    profileImageUrl = '',
     interests: string[] = [],
-    reputationScore: number = 0,
-    introTags: string[] = []
+    reputationScore = 0,
+    introTags: string[] = [],
   ) {
     this.id = id;
     this.followersCount = followersCount;

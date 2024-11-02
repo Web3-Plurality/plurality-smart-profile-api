@@ -1,10 +1,10 @@
-import { Request, Response } from "express";
-import { memoryStoreToken, memoryStoreSSE, memoryStoreProfile } from "../../../utils/global";
-import Logger from "../../../lib/logger";
+import { Request, Response } from 'express';
+import { memoryStoreToken, memoryStoreSSE, memoryStoreProfile } from '../../../utils/global';
+import Logger from '../../../lib/logger';
 import jwt from 'jsonwebtoken';
-import stytch from "stytch";
+import stytch from 'stytch';
 import * as dotenv from 'dotenv';
-import { ethers } from "ethers";
+import { ethers } from 'ethers';
 
 dotenv.config();
 
@@ -13,13 +13,12 @@ export function hasValidAccessTokenHeader(req: Request, res: Response, next) {
   if (accessTokenID) {
     const accessToken = memoryStoreToken.get(accessTokenID);
     if (!accessToken) {
-      Logger.error("Access token not found");
-      return res.status(400).send("Access token not found");
+      Logger.error('Access token not found');
+      return res.status(400).send('Access token not found');
     }
-  }
-  else {
-    Logger.error("Invalid token id");
-    return res.status(400).send("Invalid token id");
+  } else {
+    Logger.error('Invalid token id');
+    return res.status(400).send('Invalid token id');
   }
   req.accessTokenID = accessTokenID;
   return next();
@@ -30,13 +29,12 @@ export function hasValidEventHeader(req: Request, res: Response, next) {
   if (sseID) {
     const ssEvent = memoryStoreSSE.get(sseID);
     if (!ssEvent) {
-      Logger.error("SSE event not found");
-      return res.status(400).send("SSE event not found");
+      Logger.error('SSE event not found');
+      return res.status(400).send('SSE event not found');
     }
-  }
-  else {
-    Logger.error("Invalid event id");
-    return res.status(400).send("Invalid event id");
+  } else {
+    Logger.error('Invalid event id');
+    return res.status(400).send('Invalid event id');
   }
   req.sseID = sseID;
   return next();
@@ -47,13 +45,12 @@ export function hasValidEventParam(req: Request, res: Response, next) {
   if (sseID) {
     const ssEvent = memoryStoreSSE.get(sseID);
     if (!ssEvent) {
-      Logger.error("SSE event not found");
-      return res.status(400).send("SSE event not found");
+      Logger.error('SSE event not found');
+      return res.status(400).send('SSE event not found');
     }
-  }
-  else {
-    Logger.error("Invalid event id");
-    return res.status(400).send("Invalid event id");
+  } else {
+    Logger.error('Invalid event id');
+    return res.status(400).send('Invalid event id');
   }
   req.sseID = sseID;
   return next();
@@ -75,15 +72,13 @@ export const isAuthenticated = (req, res, next) => {
   });
 };
 
-
-
 export const isProfileMapEmpty = async (req, res, next) => {
-  try{
+  try {
     const profile = memoryStoreProfile.get(req?.user?.uniqueSessionId);
     if (profile) {
       Logger.error(`A profile is already stored in memory can not proceed to connect more profiles`);
       return res.status(400).send('A profile is already stored in memory');
-    }else{
+    } else {
       return next();
     }
   } catch (error) {
@@ -92,7 +87,6 @@ export const isProfileMapEmpty = async (req, res, next) => {
   }
 };
 
-
 export const isValidAddress = async (req, res, next) => {
   ethers.isAddress(req?.body?.data?.address) ? next() : res.status(400).send('Invalid address');
-}
+};

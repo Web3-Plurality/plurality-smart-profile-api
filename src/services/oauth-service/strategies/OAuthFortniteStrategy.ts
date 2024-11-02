@@ -1,20 +1,22 @@
 import OAuth2Strategy from 'passport-oauth2';
 class OAuthFortniteStrategy extends OAuth2Strategy {
   constructor(options: any, verify: any) {
-    super({
-      authorizationURL: options.authorizationURL,
-      tokenURL: options.tokenURL,
-      clientID: options.clientID,
-      clientSecret: options.clientSecret,
-      callbackURL: options.callbackURL,
-      scope: options.scope,
-      state: options.state,
-      pkce: options.pkce,
-      customHeaders: Object.assign({
-        Authorization: 'Basic ' +
-          Buffer.from(`${options?.clientID}:${options?.clientSecret}`).toString('base64'),
-      })
-    }, verify);
+    super(
+      {
+        authorizationURL: options.authorizationURL,
+        tokenURL: options.tokenURL,
+        clientID: options.clientID,
+        clientSecret: options.clientSecret,
+        callbackURL: options.callbackURL,
+        scope: options.scope,
+        state: options.state,
+        pkce: options.pkce,
+        customHeaders: Object.assign({
+          Authorization: 'Basic ' + Buffer.from(`${options?.clientID}:${options?.clientSecret}`).toString('base64'),
+        }),
+      },
+      verify,
+    );
   }
   // authorizationParams(options: any): any {
   //   return {
@@ -22,7 +24,6 @@ class OAuthFortniteStrategy extends OAuth2Strategy {
   //     clientType: 'confidential',
   //   }
   // }
-
 
   // tokenParams(options: any) {
   //   return {
@@ -32,10 +33,6 @@ class OAuthFortniteStrategy extends OAuth2Strategy {
   //     scope: "basic_profile",
   //   };
   // };
-
 }
-
-
-
 
 export default OAuthFortniteStrategy;

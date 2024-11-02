@@ -1,17 +1,23 @@
-import express, { Request, Response } from "express";
-import passport from "passport";
+import express, { Request, Response } from 'express';
+import passport from 'passport';
 import OAuthTwitterStrategy from '../strategies/OAuthTwitterStrategy';
 import * as dotenv from 'dotenv';
-import axios from "axios";
-import { scrape, calculateReputation } from "../utils/twitter";
-import { TwitterProfile } from "../entity/Twitter";
-import { hasValidAccessTokenHeader, hasValidEventHeader, hasValidEventParam, isAuthenticated, isProfileMapEmpty } from "../middlewares/oauthMiddleware";
-import Logger from "../../../lib/logger";
-import { memoryStoreProfile, memoryStoreSSE, memoryStoreToken, SCORE_TYPES } from "../../../utils/global";
-import { INTERNAL_SERVER_ERROR, TIMEOUT_ERROR, TWITTER_APP } from "../utils/constants";
+import axios from 'axios';
+import { scrape, calculateReputation } from '../utils/twitter';
+import { TwitterProfile } from '../entity/Twitter';
+import {
+  hasValidAccessTokenHeader,
+  hasValidEventHeader,
+  hasValidEventParam,
+  isAuthenticated,
+  isProfileMapEmpty,
+} from '../middlewares/oauthMiddleware';
+import Logger from '../../../lib/logger';
+import { memoryStoreProfile, memoryStoreSSE, memoryStoreToken, SCORE_TYPES } from '../../../utils/global';
+import { INTERNAL_SERVER_ERROR, TIMEOUT_ERROR, TWITTER_APP } from '../utils/constants';
 import { v4 as uuidv4 } from 'uuid';
-import { UserProfile } from "../entity/UserProfile";
-import { SmartProfile } from "../../user-service/entity/SmartProfile";
+import { UserProfile } from '../entity/UserProfile';
+import { SmartProfile } from '../../user-service/entity/SmartProfile';
 dotenv.config();
 
 export const twitterRouter = express.Router();
@@ -25,7 +31,7 @@ passport.deserializeUser(function (obj: any, done) {
 });
 
 passport.use(
-  "twitter",
+  'twitter',
   // Strategy initialization
   new OAuthTwitterStrategy(
     {
@@ -34,26 +40,22 @@ passport.use(
       clientID: process.env.TWITTER_CLIENT_ID,
       clientSecret: process.env.TWITTER_CLIENT_SECRET,
       callbackURL: process.env.TWITTER_CALLBACK_URL,
-      scope: "tweet.read users.read offline.access", //space
+      scope: 'tweet.read users.read offline.access', //space
       state: true,
       pkce: true,
     },
     // Verify callback
     (accessToken: any, refreshToken: any, profile: any, done: any) => {
       return done(null, { accessToken, refreshToken, profile });
-    }
-  )
+    },
+  ),
 );
 
 // Start authentication flow
-twitterRouter.get(
-  '/',
-  hasValidEventParam,
-  isProfileMapEmpty,
-  async (req: Request, res: Response, next) => {
-    Logger.info(`${TWITTER_APP}: Request for Twitter Oauth has been received successfully on sse Id ${req.sseID}`)
-    passport.authenticate('twitter')(req, res, next);
-  });
+twitterRouter.get('/', hasValidEventParam, isProfileMapEmpty, async (req: Request, res: Response, next) => {
+  Logger.info(`${TWITTER_APP}: Request for Twitter Oauth has been received successfully on sse Id ${req.sseID}`);
+  passport.authenticate('twitter')(req, res, next);
+});
 
 // Callback handler
 twitterRouter.get('/callback', passport.authenticate('twitter', { session: false }), async (req, res) => {
@@ -80,42 +82,81 @@ twitterRouter.post(
       Logger.info(`${TWITTER_APP}: Request body tokenUUID ${req?.accessTokenID}`);
       Logger.info(`${TWITTER_APP}: Request body sseUUID ${req?.sseID}`);
       const serverSentEventResponse = memoryStoreSSE.get(req?.sseID);
-      serverSentEventResponse.write(`data: {"message":"received", "app":"${TWITTER_APP}", "auth":"${req?.accessTokenID}"}\n\n`)
+      serverSentEventResponse.write(
+        `data: {"message":"received", "app":"${TWITTER_APP}", "auth":"${req?.accessTokenID}"}\n\n`,
+      );
       Logger.info(`${TWITTER_APP}: Server Side Event has been sent successfully`);
       memoryStoreSSE.delete(req?.sseID);
-      return res.status(200).json({ app: TWITTER_APP, message: "success" });
+      return res.status(200).json({ app: TWITTER_APP, message: 'success' });
     } catch (error) {
       Logger.info(`${TWITTER_APP}: Error in sending event ${error.message}`);
-      return res.status(500).json({ app: TWITTER_APP, message: "Internal Server error" });
+      return res.status(500).json({ app: TWITTER_APP, message: 'Internal Server error' });
     }
-
-  });
+  },
+);
 
 // Return User Object
 twitterRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfileMapEmpty, async (req, res) => {
   try {
     Logger.info(`${TWITTER_APP}: Request for information has been received successfully with id ${req.accessTokenID}`);
-    const accessToken = memoryStoreToken.get(req.accessTokenID)
-    let userTweet = { data: { data: {} } }
+    const accessToken = memoryStoreToken.get(req.accessTokenID);
+    let userTweet = { data: { data: {} } };
 
     if (accessToken) {
       const tweetFields = [
-        'attachments', 'author_id', 'context_annotations', 'conversation_id', 'created_at', 'edit_controls', 'entities', 'geo', 'id', 'in_reply_to_user_id', 'lang', 'non_public_metrics', 'public_metrics', 'organic_metrics', 'promoted_metrics', 'possibly_sensitive', 'referenced_tweets', 'reply_settings', 'source', 'text', 'withheld'
+        'attachments',
+        'author_id',
+        'context_annotations',
+        'conversation_id',
+        'created_at',
+        'edit_controls',
+        'entities',
+        'geo',
+        'id',
+        'in_reply_to_user_id',
+        'lang',
+        'non_public_metrics',
+        'public_metrics',
+        'organic_metrics',
+        'promoted_metrics',
+        'possibly_sensitive',
+        'referenced_tweets',
+        'reply_settings',
+        'source',
+        'text',
+        'withheld',
       ];
       const userFields = [
-        'created_at', 'description', 'entities', 'id', 'location', 'most_recent_tweet_id', 'name', 'pinned_tweet_id', 'profile_image_url', 'protected', 'public_metrics', 'url', 'username', 'verified', 'verified_type', 'withheld'
-      ]
+        'created_at',
+        'description',
+        'entities',
+        'id',
+        'location',
+        'most_recent_tweet_id',
+        'name',
+        'pinned_tweet_id',
+        'profile_image_url',
+        'protected',
+        'public_metrics',
+        'url',
+        'username',
+        'verified',
+        'verified_type',
+        'withheld',
+      ];
 
       try {
         userTweet = await axios.get(
-          `https://api.twitter.com/2/users/me?expansions=pinned_tweet_id&tweet.fields=${tweetFields.join(",")}&user.fields=${userFields.join(",")}`,
+          `https://api.twitter.com/2/users/me?expansions=pinned_tweet_id&tweet.fields=${tweetFields.join(
+            ',',
+          )}&user.fields=${userFields.join(',')}`,
           {
             headers: {
               Authorization: `Bearer ${accessToken}`,
-              "Content-Type": "application/json",
+              'Content-Type': 'application/json',
             },
             timeout: 20000,
-          }
+          },
         );
       } catch (error) {
         if (error.code === 'ECONNABORTED') {
@@ -126,8 +167,8 @@ twitterRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfile
       }
 
       const data: any = {
-        ...userTweet?.data?.data
-      }
+        ...userTweet?.data?.data,
+      };
       const public_metrics = data?.public_metrics;
       delete data?.public_metrics;
       let tweetUrl1 = '';
@@ -138,30 +179,29 @@ twitterRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfile
       let introTags: [] = [];
 
       if (data?.pinned_tweet_id !== data?.most_recent_tweet_id && data?.pinned_tweet_id && data?.most_recent_tweet_id) {
-        tweetUrl1 = `https://twitter.com/${data['username']}/status/${data['pinned_tweet_id']}`
-        tweetUrl2 = `https://twitter.com/${data['username']}/status/${data['most_recent_tweet_id']}`
+        tweetUrl1 = `https://twitter.com/${data['username']}/status/${data['pinned_tweet_id']}`;
+        tweetUrl2 = `https://twitter.com/${data['username']}/status/${data['most_recent_tweet_id']}`;
         pinnedTweet1 = await scrape(tweetUrl1);
         pinnedTweet2 = await scrape(tweetUrl2);
         interests = pinnedTweet1?.interests.concat(pinnedTweet2?.interests);
         introTags = pinnedTweet1?.introTags.concat(pinnedTweet2?.introTags);
-
-      }
-      else if (data?.pinned_tweet_id === data?.most_recent_tweet_id && data?.pinned_tweet_id && data?.most_recent_tweet_id) {
-        tweetUrl2 = `https://twitter.com/${data['username']}/status/${data['most_recent_tweet_id']}`
+      } else if (
+        data?.pinned_tweet_id === data?.most_recent_tweet_id &&
+        data?.pinned_tweet_id &&
+        data?.most_recent_tweet_id
+      ) {
+        tweetUrl2 = `https://twitter.com/${data['username']}/status/${data['most_recent_tweet_id']}`;
         pinnedTweet2 = await scrape(tweetUrl2);
         interests = pinnedTweet2?.interests;
         introTags = pinnedTweet2?.introTags;
-
-      }
-      else if (data?.pinned_tweet_id) {
-        tweetUrl1 = `https://twitter.com/${data['username']}/status/${data['pinned_tweet_id']}`
+      } else if (data?.pinned_tweet_id) {
+        tweetUrl1 = `https://twitter.com/${data['username']}/status/${data['pinned_tweet_id']}`;
         pinnedTweet1 = await scrape(tweetUrl1);
         interests = pinnedTweet1?.interests;
         introTags = pinnedTweet1?.introTags;
-      }
-      else if (data?.most_recent_tweet_id) {
-        tweetUrl2 = `https://twitter.com/${data['username']}/status/${data['most_recent_tweet_id']}`
-        pinnedTweet2 = await scrape(tweetUrl2)
+      } else if (data?.most_recent_tweet_id) {
+        tweetUrl2 = `https://twitter.com/${data['username']}/status/${data['most_recent_tweet_id']}`;
+        pinnedTweet2 = await scrape(tweetUrl2);
         interests = pinnedTweet2?.interests;
         introTags = pinnedTweet2?.introTags;
       }
@@ -185,39 +225,42 @@ twitterRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfile
         data?.profile_image_url,
         interests,
         0,
-        introTags
-      )
+        introTags,
+      );
       // Calculate reputation score
       const reputationScore = calculateReputation(twitterProfile);
       twitterProfile.reputationScore = reputationScore;
 
       // Create User Profile Objects
       const userProfile = new UserProfile();
-      userProfile.username = twitterProfile?.username
-      userProfile.avatar = twitterProfile?.profileImageUrl
-      userProfile.interests = twitterProfile?.interests
-      userProfile.reputation_tags = twitterProfile?.introTags
-      userProfile.scores.push({ score_type: SCORE_TYPES.REPUTATION_SCORE, score_value: twitterProfile?.reputationScore })
-      userProfile.extra.push({ field: "tweet count", value: twitterProfile?.tweetCount })
-      userProfile.extra.push({ field: "like count", value: twitterProfile?.likeCount })
-      userProfile.extra.push({ field: "listed count", value: twitterProfile?.listedCount })
-      userProfile.extra.push({ field: "followers count", value: twitterProfile?.followersCount })
-      userProfile.extra.push({ field: "following count", value: twitterProfile?.followingCount })
+      userProfile.username = twitterProfile?.username;
+      userProfile.avatar = twitterProfile?.profileImageUrl;
+      userProfile.interests = twitterProfile?.interests;
+      userProfile.reputation_tags = twitterProfile?.introTags;
+      userProfile.scores.push({
+        score_type: SCORE_TYPES.REPUTATION_SCORE,
+        score_value: twitterProfile?.reputationScore,
+      });
+      userProfile.extra.push({ field: 'tweet count', value: twitterProfile?.tweetCount });
+      userProfile.extra.push({ field: 'like count', value: twitterProfile?.likeCount });
+      userProfile.extra.push({ field: 'listed count', value: twitterProfile?.listedCount });
+      userProfile.extra.push({ field: 'followers count', value: twitterProfile?.followersCount });
+      userProfile.extra.push({ field: 'following count', value: twitterProfile?.followingCount });
 
       if (!memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
         const smartProfile = new SmartProfile(userProfile);
-        smartProfile.connected_profiles = [{platform_name: TWITTER_APP, user_platform_id: twitterProfile?.id, username: twitterProfile?.username}];
+        smartProfile.connected_profiles = [
+          { platform_name: TWITTER_APP, user_platform_id: twitterProfile?.id, username: twitterProfile?.username },
+        ];
         memoryStoreProfile.set(req?.user?.uniqueSessionId, smartProfile);
         memoryStoreToken.delete(req?.accessTokenID);
-      Logger.info(`${TWITTER_APP}: Session destroyed successfully`);
-      Logger.info(`${TWITTER_APP}: User information has been delivered successfully`);
-      return res.status(200).json({ app: TWITTER_APP, message: "success", individualProfile: userProfile });
-      }
-      else {
+        Logger.info(`${TWITTER_APP}: Session destroyed successfully`);
+        Logger.info(`${TWITTER_APP}: User information has been delivered successfully`);
+        return res.status(200).json({ app: TWITTER_APP, message: 'success', individualProfile: userProfile });
+      } else {
         Logger.error(`${TWITTER_APP}: A profile already exists`);
         return res.status(500).json({ app: TWITTER_APP, error: 'Unauthorized', message: INTERNAL_SERVER_ERROR });
       }
-      
     } else {
       Logger.error(`${TWITTER_APP}: Token has been expired.`);
       return res.status(500).json({ app: TWITTER_APP, message: INTERNAL_SERVER_ERROR });
@@ -226,8 +269,7 @@ twitterRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfile
     if (error.code === 'ECONNABORTED') {
       Logger.error(`${TWITTER_APP}: Request timeout error in fetching userinfo: ${error.message}`);
       return res.status(408).json({ app: TWITTER_APP, message: TIMEOUT_ERROR });
-    }
-    else {
+    } else {
       Logger.error(`${TWITTER_APP}: Error occurred in fetching user informantion: ${error.message}`);
       return res.status(500).json({ app: TWITTER_APP, message: INTERNAL_SERVER_ERROR });
     }
