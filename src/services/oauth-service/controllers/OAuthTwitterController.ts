@@ -1,5 +1,3 @@
-// twitter code is inconsistent as compared to others 
-
 import express, { Request, Response } from "express";
 import passport from "passport";
 import OAuthTwitterStrategy from '../strategies/OAuthTwitterStrategy';

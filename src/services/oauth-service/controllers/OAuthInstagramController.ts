@@ -138,11 +138,13 @@ instagramRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfi
                 }
             }
 
-            const prompt = createPrompt(INSTA_FETCH_INTEREST_PROMPT, instaMedia?.data?.data)
-            const interests = await analyze(prompt)
             const instaProfile = new InstaProfile(instaUser?.data);
-            instaProfile.interests = interests?.Interests || [];
-
+            if (instaMedia?.data?.data) {
+                const prompt = createPrompt(INSTA_FETCH_INTEREST_PROMPT, instaMedia?.data?.data)
+                const interests = await analyze(prompt)
+                instaProfile.interests = interests?.Interests || [];
+            }
+            
             // Create user profile object
             const userProfile = new UserProfile();
             userProfile.username = instaProfile?.username;

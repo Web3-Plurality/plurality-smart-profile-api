@@ -138,13 +138,15 @@ robloxRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfileM
           }
         );
         
-        const prompt = createPrompt(ROBLOX_FETCH_INTEREST_PROMPT, userData?.data?.about);
-        const interests = await analyze(prompt);
-        robloxProfile.interests = interests?.Interests || [];
-        robloxProfile.introTags = interests?.IntroTags || [];
-        robloxProfile.idVerified = userData?.data?.idVerified;
-        robloxProfile.premium = userData?.data?.premium;
-        robloxProfile.about = userData?.data?.about;
+        if (userData?.data?.about) {
+          const prompt = createPrompt(ROBLOX_FETCH_INTEREST_PROMPT, userData?.data?.about);
+          const interests = await analyze(prompt);
+          robloxProfile.interests = interests?.Interests || [];
+          robloxProfile.introTags = interests?.IntroTags || [];
+          robloxProfile.idVerified = userData?.data?.idVerified;
+          robloxProfile.premium = userData?.data?.premium;
+          robloxProfile.about = userData?.data?.about;
+        }
 
       } catch (error) {
         if (error.code === 'ECONNABORTED') {

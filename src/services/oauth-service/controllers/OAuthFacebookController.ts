@@ -145,8 +145,9 @@ facebookRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfil
 
             const prompt1 = createPrompt(FACEBOOK_FETCH_INTEREST_PROMPT, feedContent + "\n" + likesContent);
             const prompt2 = createPrompt(FACEBOOK_FETCH_INTEREST_FROM_NAMES_PROMPT, favoriteAthletesContent + "\n" + favoriteTeamsContent + "\n" + favoriteMusicContent);
-            const interests1 = await analyze(prompt1);
-            const interests2 = await analyze(prompt2);
+            const interests1 = feedContent + likesContent ? await analyze(prompt1): [];
+            const interests2 = favoriteAthletesContent + favoriteTeamsContent + favoriteMusicContent ? await analyze(prompt2) : [];
+
 
             facebookProfile.feed = feed;
             facebookProfile.favorite_athletes = favorite_athletes;
