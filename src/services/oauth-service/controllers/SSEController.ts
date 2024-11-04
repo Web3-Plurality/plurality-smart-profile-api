@@ -15,6 +15,6 @@ export function initSSE(req: Request, res: Response) {
   res.write(`data: {"message":"Connection established", "id":"${sseID}"}\n\n`);
 }
 
-sseRouter.get('/register-event', async (req: Request, res: Response) => {
+sseRouter.get('/', async (req: Request, res: Response) => {
   initSSE(req, res);
 });

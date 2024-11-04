@@ -54,7 +54,7 @@ export const capacityDelegation = async (walletAddress) => {
 };
 
 //body => address
-capacityRouter.get('/', isAuthenticated, isValidAddress, async (req, res) => {
+capacityRouter.post('/', isAuthenticated, isValidAddress, async (req, res) => {
   try {
     const id = req?.user?.id;
     const existingUser = await userRepository.findOne({
