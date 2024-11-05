@@ -11,21 +11,21 @@ import https from 'https';
 import { AppDataSource } from './data-source';
 import fs from 'fs';
 // user service routers
-import { authOTPRouter } from './services/user-service/controllers/AuthOTPController';
-import { authSiweRouter } from './services/user-service/controllers/AuthSiweController';
-import { smartProfileRouter } from './services/user-service/controllers/SmartProfileController';
-import { capacityRouter } from './services/user-service/controllers/CapacityController';
+import { authOTPRouter } from './services/user-service/controllers/auth-otp-controller';
+import { authSiweRouter } from './services/user-service/controllers/auth-siwe-controller';
+import { smartProfileRouter } from './services/user-service/controllers/smart-profile-controller';
+import { capacityRouter } from './services/user-service/controllers/capacity-controller';
 // oauth service routers
-import { robloxRouter } from './services/oauth-service/controllers/OAuthRobloxController';
-import { twitterRouter } from './services/oauth-service/controllers/OAuthTwitterController';
-import { tiktokRouter } from './services/oauth-service/controllers/OAuthTikTokController';
-import { snapchatRouter } from './services/oauth-service/controllers/OAuthSnapChatController';
-import { instagramRouter } from './services/oauth-service/controllers/OAuthInstagramController';
-import { facebookRouter } from './services/oauth-service/controllers/OAuthFacebookController';
-import { fortniteRouter } from './services/oauth-service/controllers/OAuthFortniteController';
-import { sseRouter } from './services/oauth-service/controllers/SSEController';
+import { robloxRouter } from './services/oauth-service/controllers/oauth-roblox-controller';
+import { twitterRouter } from './services/oauth-service/controllers/oauth-twitter-controller';
+import { tiktokRouter } from './services/oauth-service/controllers/oauth-tiktok-controller';
+import { snapchatRouter } from './services/oauth-service/controllers/oauth-snap-chat-controller';
+import { instagramRouter } from './services/oauth-service/controllers/oauth-instagram-controller';
+import { facebookRouter } from './services/oauth-service/controllers/oauth-facebook-controller';
+import { fortniteRouter } from './services/oauth-service/controllers/oauth-fortnite-controller';
+import { sseRouter } from './services/oauth-service/controllers/sse-controller';
 // crm service routers
-import { clientRouter } from './services/crm-service/controllers/ClientAppController';
+import { clientRouter } from './services/crm-service/controllers/client-app-controller';
 // Lit SDK
 import * as LitJsSdk from '@lit-protocol/lit-node-client';
 import { LitNetwork } from '@lit-protocol/constants';

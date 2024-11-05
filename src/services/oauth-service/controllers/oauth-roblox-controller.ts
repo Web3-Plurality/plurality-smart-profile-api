@@ -10,16 +10,16 @@ import {
   isProfileMapEmpty,
 } from '../middlewares/oauthMiddleware';
 import Logger from '../../../lib/logger';
-import { memoryStoreToken, memoryStoreSSE, memoryStoreProfile, SCORE_TYPES } from '../../../utils/global';
+import { memoryStoreToken, memoryStoreSSE, memoryStoreProfile, ScoreTypes } from '../../../utils/global';
 import { INTERNAL_SERVER_ERROR, ROBLOX_APP, TIMEOUT_ERROR } from '../utils/constants';
 import OAuthRobloxStrategy from '../strategies/OAuthRobloxStrategy';
-import { RobloxProfile } from '../entity/Roblox';
+import { RobloxProfile } from '../entity/roblox';
 import { analyze } from '../utils/groq';
 import { calculateReputation, scrapRoblox } from '../utils/roblox';
 import { createPrompt, ROBLOX_FETCH_INTEREST_PROMPT } from '../utils/aiPrompts';
 import { v4 as uuidv4 } from 'uuid';
-import { UserProfile } from '../entity/UserProfile';
-import { SmartProfile } from '../../user-service/entity/SmartProfile';
+import { UserProfile } from '../entity/user-profile';
+import { SmartProfile } from '../../user-service/entity/smart-profile';
 
 dotenv.config();
 
@@ -218,8 +218,8 @@ robloxRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfileM
       userProfile.avatar = robloxProfile?.avatar;
       userProfile.bio = robloxProfile?.about;
       userProfile.scores.push({
-        score_type: SCORE_TYPES.REPUTATION_SCORE,
-        score_value: robloxProfile?.reputationScore,
+        scoreType: ScoreTypes.reputationScore,
+        scoreValue: robloxProfile?.reputationScore,
       });
       userProfile.reputation_tags = robloxProfile?.introTags;
       userProfile.collections = robloxProfile?.assests;
@@ -228,10 +228,19 @@ robloxRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfileM
       userProfile.extra.push({ field: 'followers', value: robloxProfile?.followers });
       userProfile.extra.push({ field: 'following', value: robloxProfile?.following });
 
+      // profile attestation
+      const existingUser = await AppDataSource.getRepository(User).findOne({
+        where: {
+          id: req?.user?.id
+        },
+      });
+      const attestation = await attestProfile(req?.user?.id, userProfile, existingUser?.address || "");
+      userProfile.setAttestation(attestation)
+      
       if (!memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
         const smartProfile = new SmartProfile(userProfile);
         smartProfile.connected_profiles = [
-          { platform_name: ROBLOX_APP, user_platform_id: '', username: robloxProfile?.name },
+          { platformName: ROBLOX_APP, userPlatformId: '', username: robloxProfile?.name },
         ];
         memoryStoreProfile.set(req?.user?.uniqueSessionId, smartProfile);
         memoryStoreToken.delete(req?.accessTokenID);

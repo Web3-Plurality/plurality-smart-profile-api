@@ -3,7 +3,7 @@ export const calculateSocialScore = (profilesInMemory: any[], reqConnectedProfil
   let sumScore = 0;
 
   const reqConnectedPlatforms = reqConnectedProfiles?.map((profile) => {
-    return profile?.platform_name;
+    return profile?.platformName;
   });
   const newProfiles = profilesInMemory.filter((profile) => !reqConnectedPlatforms.includes(profile));
 

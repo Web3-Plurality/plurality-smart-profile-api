@@ -4,7 +4,7 @@ import OAuthTwitterStrategy from '../strategies/OAuthTwitterStrategy';
 import * as dotenv from 'dotenv';
 import axios from 'axios';
 import { scrape, calculateReputation } from '../utils/twitter';
-import { TwitterProfile } from '../entity/Twitter';
+import { TwitterProfile } from '../entity/twitter';
 import {
   hasValidAccessTokenHeader,
   hasValidEventHeader,
@@ -13,11 +13,14 @@ import {
   isProfileMapEmpty,
 } from '../middlewares/oauthMiddleware';
 import Logger from '../../../lib/logger';
-import { memoryStoreProfile, memoryStoreSSE, memoryStoreToken, SCORE_TYPES } from '../../../utils/global';
+import { memoryStoreProfile, memoryStoreSSE, memoryStoreToken, ScoreTypes } from '../../../utils/global';
 import { INTERNAL_SERVER_ERROR, TIMEOUT_ERROR, TWITTER_APP } from '../utils/constants';
 import { v4 as uuidv4 } from 'uuid';
-import { UserProfile } from '../entity/UserProfile';
-import { SmartProfile } from '../../user-service/entity/SmartProfile';
+import { UserProfile } from '../entity/user-profile';
+import { SmartProfile } from '../../user-service/entity/smart-profile';
+import { AppDataSource } from '../../../data-source';
+import { User } from '../../user-service/entity/user';
+import { attestProfile } from '../utils/eas';
 dotenv.config();
 
 export const twitterRouter = express.Router();
@@ -238,19 +241,27 @@ twitterRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfile
       userProfile.interests = twitterProfile?.interests;
       userProfile.reputation_tags = twitterProfile?.introTags;
       userProfile.scores.push({
-        score_type: SCORE_TYPES.REPUTATION_SCORE,
-        score_value: twitterProfile?.reputationScore,
+        scoreType: ScoreTypes.reputationScore,
+        scoreValue: twitterProfile?.reputationScore,
       });
       userProfile.extra.push({ field: 'tweet count', value: twitterProfile?.tweetCount });
       userProfile.extra.push({ field: 'like count', value: twitterProfile?.likeCount });
       userProfile.extra.push({ field: 'listed count', value: twitterProfile?.listedCount });
       userProfile.extra.push({ field: 'followers count', value: twitterProfile?.followersCount });
       userProfile.extra.push({ field: 'following count', value: twitterProfile?.followingCount });
-
+      // profile attestation
+      const existingUser = await AppDataSource.getRepository(User).findOne({
+        where: {
+          id: req?.user?.id
+        },
+      });
+      const attestation = await attestProfile(req?.user?.id, userProfile, existingUser?.address || "");
+      userProfile.setAttestation(attestation)
+      
       if (!memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
         const smartProfile = new SmartProfile(userProfile);
         smartProfile.connected_profiles = [
-          { platform_name: TWITTER_APP, user_platform_id: twitterProfile?.id, username: twitterProfile?.username },
+          { platformName: TWITTER_APP, userPlatformId: twitterProfile?.id, username: twitterProfile?.username },
         ];
         memoryStoreProfile.set(req?.user?.uniqueSessionId, smartProfile);
         memoryStoreToken.delete(req?.accessTokenID);

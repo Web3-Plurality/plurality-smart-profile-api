@@ -10,11 +10,11 @@ import {
   isProfileMapEmpty,
 } from '../middlewares/oauthMiddleware';
 import Logger from '../../../lib/logger';
-import { memoryStoreToken, memoryStoreSSE, memoryStoreProfile, SCORE_TYPES } from '../../../utils/global';
+import { memoryStoreToken, memoryStoreSSE, memoryStoreProfile, ScoreTypes } from '../../../utils/global';
 import { FACEBOOK_APP, INTERNAL_SERVER_ERROR, TIMEOUT_ERROR } from '../utils/constants';
 import OAuthFacebookStrategy from '../strategies/OAuthFacebookStrategy';
 import { analyze } from '../utils/groq';
-import { FacebookProfile } from '../entity/Facebook';
+import { FacebookProfile } from '../entity/facebook';
 import { calculateReputation, extractContent, getPagingData, sanitizeObject } from '../utils/facebook';
 import {
   createPrompt,
@@ -22,8 +22,12 @@ import {
   FACEBOOK_FETCH_INTEREST_PROMPT,
 } from '../utils/aiPrompts';
 import { v4 as uuidv4 } from 'uuid';
-import { UserProfile } from '../entity/UserProfile';
-import { SmartProfile } from '../../user-service/entity/SmartProfile';
+import { UserProfile } from '../entity/user-profile';
+import { SmartProfile } from '../../user-service/entity/smart-profile';
+import { AppDataSource } from '../../../data-source';
+import { User } from '../../user-service/entity/user';
+import { attestProfile } from '../utils/eas';
+
 dotenv.config();
 
 export const facebookRouter = express.Router();
@@ -169,19 +173,27 @@ facebookRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfil
       userProfile.username = facebookProfile?.name;
       userProfile.interests = facebookProfile?.interests;
       userProfile.scores.push({
-        score_type: SCORE_TYPES.REPUTATION_SCORE,
-        score_value: facebookProfile?.reputationScore,
+        scoreType: ScoreTypes.reputationScore,
+        scoreValue: facebookProfile?.reputationScore,
       });
       userProfile.extra.push({ field: 'friends count', value: facebookProfile?.friends_count });
       userProfile.extra.push({ field: 'likes count', value: facebookProfile?.likes_count });
       userProfile.extra.push({ field: 'music count', value: facebookProfile?.music_count });
       userProfile.extra.push({ field: 'athleast count', value: facebookProfile?.athletes_count });
       userProfile.extra.push({ field: 'favourite team count', value: facebookProfile?.favTeam_count });
+      // profile attestation
+      const existingUser = await AppDataSource.getRepository(User).findOne({
+        where: {
+          id: req?.user?.id
+        },
+      });
+      const attestation = await attestProfile(req?.user?.id, userProfile, existingUser?.address || "");
+      userProfile.setAttestation(attestation)
 
       if (!memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
         const smartProfile = new SmartProfile(userProfile);
         smartProfile.connected_profiles = [
-          { platform_name: FACEBOOK_APP, user_platform_id: '', username: facebookProfile?.name },
+          { platformName: FACEBOOK_APP, userPlatformId: '', username: facebookProfile?.name },
         ];
         memoryStoreProfile.set(req?.user?.uniqueSessionId, smartProfile);
         memoryStoreToken.delete(req?.accessTokenID);

@@ -1,14 +1,14 @@
 import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
 
 interface ConnectedProfiles {
-  platform_name: string;
-  user_platform_id: string | null;
+  platformName: string;
+  userPlatformId: string | null;
   username?: string | null;
 }
 
 interface Score {
-  score_type: string;
-  score_value: number;
+  scoreType: string;
+  scoreValue: number;
 }
 
 @Entity()

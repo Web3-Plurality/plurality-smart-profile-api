@@ -13,10 +13,13 @@ import Logger from '../../../lib/logger';
 import { memoryStoreProfile, memoryStoreSSE, memoryStoreToken } from '../../../utils/global';
 import { INTERNAL_SERVER_ERROR, SNAPCHAT_APP, TIMEOUT_ERROR } from '../utils/constants';
 import OAuthSnapChatStrategy from '../strategies/OAuthSnapChatStrategy';
-import { SnapChatProfile } from '../entity/Snapchat';
+import { SnapChatProfile } from '../entity/snapchat';
 import { v4 as uuidv4 } from 'uuid';
-import { UserProfile } from '../entity/UserProfile';
-import { SmartProfile } from '../../user-service/entity/SmartProfile';
+import { UserProfile } from '../entity/user-profile';
+import { SmartProfile } from '../../user-service/entity/smart-profile';
+import { AppDataSource } from '../../../data-source';
+import { User } from '../../user-service/entity/user';
+import { attestProfile } from '../utils/eas';
 dotenv.config();
 
 export const snapchatRouter = express.Router();
@@ -127,13 +130,21 @@ snapchatRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfil
       const userProfile = new UserProfile();
       userProfile.username = snapChatProfile.displayName;
       userProfile.avatar = snapChatProfile.bitmoji;
+      // profile attestation
+      const existingUser = await AppDataSource.getRepository(User).findOne({
+        where: {
+          id: req?.user?.id
+        },
+      });
+      const attestation = await attestProfile(req?.user?.id, userProfile, existingUser?.address || "");
+      userProfile.setAttestation(attestation)
 
       if (!memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
         const smartProfile = new SmartProfile(userProfile);
         smartProfile.connected_profiles = [
           {
-            platform_name: SNAPCHAT_APP,
-            user_platform_id: snapChatProfile?.externalId,
+            platformName: SNAPCHAT_APP,
+            userPlatformId: snapChatProfile?.externalId,
             username: snapChatProfile?.displayName,
           },
         ];

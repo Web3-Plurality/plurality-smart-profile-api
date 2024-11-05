@@ -1,4 +1,4 @@
-import { TikTokProfile } from '../entity/Tiktok';
+import { TikTokProfile } from '../entity/tiktok';
 
 export function calculateReputation(data: TikTokProfile): number {
   let reputationScore = 0;

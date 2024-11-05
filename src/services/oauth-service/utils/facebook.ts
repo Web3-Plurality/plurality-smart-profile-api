@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { FacebookProfile } from '../entity/Facebook';
+import { FacebookProfile } from '../entity/facebook';
 import Logger from '../../../lib/logger';
 import { FACEBOOK_APP } from '../utils/constants';
 

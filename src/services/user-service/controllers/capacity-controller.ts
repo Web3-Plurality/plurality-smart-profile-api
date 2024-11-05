@@ -1,7 +1,7 @@
 import express from 'express';
 import * as dotenv from 'dotenv';
 import { AppDataSource } from '../../../data-source';
-import { User } from '../entity/User';
+import { User } from '../entity/user';
 import Logger from '../../../lib/logger';
 import { v2 as cloudinary } from 'cloudinary';
 import { ethers } from 'ethers';

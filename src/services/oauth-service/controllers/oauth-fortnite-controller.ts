@@ -14,10 +14,13 @@ import { memoryStoreToken, memoryStoreSSE, memoryStoreProfile } from '../../../u
 import { FORTNITE_APP, INTERNAL_SERVER_ERROR, TIMEOUT_ERROR } from '../utils/constants';
 import OAuthFortniteStrategy from '../strategies/OAuthFortniteStrategy';
 import jwt from 'jsonwebtoken';
-import { FortniteProfile } from '../entity/Fortnite';
+import { FortniteProfile } from '../entity/fortnite';
 import { v4 as uuidv4 } from 'uuid';
-import { UserProfile } from '../entity/UserProfile';
-import { SmartProfile } from '../../user-service/entity/SmartProfile';
+import { UserProfile } from '../entity/user-profile';
+import { SmartProfile } from '../../user-service/entity/smart-profile';
+import { attestProfile } from '../utils/eas';
+import { AppDataSource } from '../../../data-source';
+import { User } from '../../user-service/entity/user';
 dotenv.config();
 
 export const fortniteRouter = express.Router();
@@ -127,13 +130,21 @@ fortniteRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfil
       // Create user profile object
       const userProfile = new UserProfile();
       userProfile.username = fortniteProfile?.displayName;
+      // profile attestation
+      const existingUser = await AppDataSource.getRepository(User).findOne({
+        where: {
+          id: req?.user?.id
+        },
+      });
+      const attestation = await attestProfile(req?.user?.id, userProfile, existingUser?.address || "");
+      userProfile.setAttestation(attestation)
 
       if (!memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
         const smartProfile = new SmartProfile(userProfile);
         smartProfile.connected_profiles = [
           {
-            platform_name: FORTNITE_APP,
-            user_platform_id: fortniteProfile?.accountId,
+            platformName: FORTNITE_APP,
+            userPlatformId: fortniteProfile?.accountId,
             username: fortniteProfile?.displayName,
           },
         ];

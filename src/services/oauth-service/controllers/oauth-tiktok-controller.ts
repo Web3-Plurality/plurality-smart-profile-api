@@ -3,8 +3,8 @@ import * as dotenv from 'dotenv';
 import TikTokOAuth2Strategy from '../strategies/OAuthTikTokStrategy';
 import passport from 'passport';
 import axios from 'axios';
-import { TikTokProfile } from '../entity/Tiktok';
-import { memoryStoreToken, memoryStoreSSE, memoryStoreProfile, SCORE_TYPES } from '../../../utils/global';
+import { TikTokProfile } from '../entity/tiktok';
+import { memoryStoreToken, memoryStoreSSE, memoryStoreProfile, ScoreTypes } from '../../../utils/global';
 import { INTERNAL_SERVER_ERROR, TIKTOK_APP } from '../utils/constants';
 import {
   hasValidAccessTokenHeader,
@@ -18,8 +18,11 @@ import { calculateReputation } from '../utils/tiktok';
 import Logger from '../../../lib/logger';
 import { createPrompt, TIKTOK_FETCH_INTEREST_PROMPT } from '../utils/aiPrompts';
 import { v4 as uuidv4 } from 'uuid';
-import { UserProfile } from '../entity/UserProfile';
-import { SmartProfile } from '../../user-service/entity/SmartProfile';
+import { UserProfile } from '../entity/user-profile';
+import { SmartProfile } from '../../user-service/entity/smart-profile';
+import { AppDataSource } from '../../../data-source';
+import { User } from '../../user-service/entity/user';
+import { attestProfile } from '../utils/eas';
 dotenv.config();
 
 export const tiktokRouter = express.Router();
@@ -199,18 +202,27 @@ tiktokRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfileM
       userProfile.interests = tiktokProfile?.interests;
       userProfile.reputation_tags = tiktokProfile?.introTags;
       userProfile.scores.push({
-        score_type: SCORE_TYPES.REPUTATION_SCORE,
-        score_value: tiktokProfile?.reputationScore,
+        scoreType: ScoreTypes.reputationScore,
+        scoreValue: tiktokProfile?.reputationScore,
       });
       userProfile.extra.push({ field: 'follower count', value: tiktokProfile?.user.followerCount });
       userProfile.extra.push({ field: 'following count', value: tiktokProfile?.user.followingCount });
       userProfile.extra.push({ field: 'video count', value: tiktokProfile?.user.videoCount });
       userProfile.extra.push({ field: 'likes count', value: tiktokProfile?.user.likesCount });
 
+      // profile attestation
+      const existingUser = await AppDataSource.getRepository(User).findOne({
+        where: {
+          id: req?.user?.id
+        },
+      });
+      const attestation = await attestProfile(req?.user?.id, userProfile, existingUser?.address || "");
+      userProfile.setAttestation(attestation)
+
       if (!memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
         const smartProfile = new SmartProfile(userProfile);
         smartProfile.connected_profiles = [
-          { platform_name: TIKTOK_APP, user_platform_id: '', username: tiktokProfile?.user?.username },
+          { platformName: TIKTOK_APP, userPlatformId: '', username: tiktokProfile?.user?.username },
         ];
         memoryStoreProfile.set(req?.user?.uniqueSessionId, smartProfile);
         memoryStoreToken.delete(req?.accessTokenID);

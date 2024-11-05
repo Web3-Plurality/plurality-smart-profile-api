@@ -5,7 +5,7 @@ export const memoryStoreNonce = new Map(); // key: address, value: nonce
 export const memoryStoreProfile = new Map(); // key: unique session uuid , value: smart profile
 
 // scores Field -> this should go to database if we convert to microservice
-export enum SCORE_TYPES {
-  REPUTATION_SCORE = 'reputation_score',
-  SOCIAL_SCORE = 'social_score',
+export enum ScoreTypes {
+  reputationScore = 'reputation_score',
+  socialScore = 'social_score',
 }

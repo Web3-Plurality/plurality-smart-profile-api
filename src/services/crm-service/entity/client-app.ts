@@ -1,13 +1,13 @@
 import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
 
 export enum AppType {
-  RSM = 'RSM',
-  LOGIN = 'LOGIN',
+  rsm = 'RSM',
+  login = 'login',
 }
 
 export enum IncentiveType {
-  POINTS = 'POINTS',
-  STARS = 'STARS',
+  points = 'POINTS',
+  stars = 'STARS',
 }
 
 @Entity({ name: 'client_apps' })
@@ -28,11 +28,11 @@ export class ClientApp {
   @Column({ nullable: true })
   domains: string;
 
-  @Column({ nullable: true, default: IncentiveType.POINTS })
+  @Column({ nullable: true, default: IncentiveType.POITNS })
   incentiveType: string;
 
   @Column({
-    default: AppType.LOGIN,
+    default: AppType.login,
   })
   appType: string;
 }

@@ -3,7 +3,7 @@ import * as dotenv from 'dotenv';
 import { AppDataSource } from '../../../data-source';
 import Logger from '../../../lib/logger';
 import { v2 as cloudinary } from 'cloudinary';
-import { AppType, ClientApp, IncentiveType } from '../entity/ClientApp';
+import { AppType, ClientApp, IncentiveType } from '../entity/client-app';
 
 export const clientRouter = express.Router();
 dotenv.config();
@@ -32,8 +32,8 @@ clientRouter.post('/', async (req: Request, res: Response) => {
       logo: uploadResult?.secure_url,
       links: JSON.stringify(links),
       domains: JSON.stringify(domains),
-      appType: appType.toLowerCase() == 'rsm' ? AppType.RSM : AppType.LOGIN,
-      incentiveType: incentiveType.toLowerCase() == 'stars' ? IncentiveType.STARS : IncentiveType.POINTS,
+      appType: appType.toLowerCase() == 'RSM' ? AppType.rsm : AppType.login,
+      incentiveType: incentiveType.toLowerCase() == 'STARS' ? IncentiveType.stars : IncentiveType.points,
     });
     await clientAppRepository.save(newClientApp);
     Logger.info(`clientApp created: ${newClientApp.id}`);
@@ -74,13 +74,13 @@ clientRouter.put('/:id', async (req: Request, res: Response) => {
       domains: domains ? JSON.stringify(domains) : data?.domains,
       appType: appType?.toLowerCase()
         ? appType?.toLowerCase() === 'rsm'
-          ? AppType.RSM
-          : AppType.LOGIN
+          ? AppType.rsm
+          : AppType.login
         : data?.appType,
       incentiveType: incentiveType?.toLowerCase()
         ? incentiveType?.toLowerCase() == 'stars'
-          ? IncentiveType.STARS
-          : IncentiveType.POINTS
+          ? IncentiveType.stars
+          : IncentiveType.points
         : data?.incentiveType,
     };
     await clientAppRepository.update({ id: id }, updateData);

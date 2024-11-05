@@ -2,7 +2,7 @@ import stytch, { OTPsAuthenticateRequest, OTPsEmailLoginOrCreateRequest } from '
 import express from 'express';
 import Logger from '../../../lib/logger';
 import { AppDataSource } from '../../../data-source';
-import { User } from '../entity/User';
+import { User } from '../entity/user';
 import { v4 as uuidv4 } from 'uuid';
 import jwt from 'jsonwebtoken';
 import { AddUserClientMap } from '../utils/user';

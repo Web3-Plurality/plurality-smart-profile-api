@@ -6,13 +6,15 @@ import Logger from '../../../lib/logger';
 import { v2 as cloudinary } from 'cloudinary';
 import { faker } from '@faker-js/faker';
 import { isAuthenticated } from '../../oauth-service/middlewares/oauthMiddleware';
-import { memoryStoreProfile, SCORE_TYPES } from '../../../utils/global';
+import { memoryStoreProfile, ScoreTypes } from '../../../utils/global';
 import { calculateSocialScore } from '../utils/score';
 import { plainToInstance } from 'class-transformer';
-import { SmartProfile } from '../entity/SmartProfile';
-import { SmartProfileMap } from '../entity/SmartProfileMap';
-import { EarlyUser } from '../entity/EarlyUser';
-import { ClientApp } from '../../crm-service/entity/ClientApp';
+import { SmartProfile } from '../entity/smart-profile';
+import { SmartProfileMap } from '../entity/smart-profile-map';
+import { EarlyUser } from '../entity/early-user';
+import { ClientApp } from '../../crm-service/entity/client-app';
+import { isValidAttestation } from '../middlewares/auth-middleware';
+import { attestProfile } from '../../oauth-service/utils/eas';
 
 export const smartProfileRouter = express.Router();
 dotenv.config();
@@ -135,7 +137,7 @@ smartProfileRouter.put(
 
 // body => { smartProfile: SmartProfile }
 // header => { Authorization: Bearer token. x-profile-type-stream-id }
-smartProfileRouter.post('/', isAuthenticated, async (req, res) => {
+smartProfileRouter.post('/', isAuthenticated, isValidAttestation, async (req, res) => {
   try {
     // load dynamically from header
     // add a check if this profileTypeStreamId exists in client app table
@@ -184,9 +186,9 @@ smartProfileRouter.post('/', isAuthenticated, async (req, res) => {
       }
 
       // check if the current platform is already connected
-      if (smartProfile.connected_platforms.includes(memorySmartProfile?.connected_profiles[0]?.platform_name)) {
+      if (smartProfile.connected_platforms.includes(memorySmartProfile?.connected_profiles[0]?.platformName)) {
         // If this platform is already connected there is no need to add this one to profile
-        Logger.info(`The profile is already connected: ${memorySmartProfile.connected_profiles[0]?.platform_name}`);
+        Logger.info(`The profile is already connected: ${memorySmartProfile.connected_profiles[0]?.platformName}`);
         memoryStoreProfile.delete(id);
         return res.status(400).json({ error: 'Bad request' });
       }
@@ -195,12 +197,12 @@ smartProfileRouter.post('/', isAuthenticated, async (req, res) => {
         memorySmartProfile?.connected_profiles,
         smartProfile?.connected_profiles,
       );
-      memorySmartProfile.updateScoreValue(SCORE_TYPES.SOCIAL_SCORE, socialScore);
+      memorySmartProfile.updateScoreValue(ScoreTypes.socialScore, socialScore);
 
       // Now we aggregate profiles
       smartProfile.aggregateProfile(memorySmartProfile);
       smartProfile.connected_platforms = smartProfile.connected_profiles.map((profile) => {
-        return profile.platform_name;
+        return profile.platformName;
       });
       memoryStoreProfile.delete(id);
 
@@ -215,6 +217,15 @@ smartProfileRouter.post('/', isAuthenticated, async (req, res) => {
         updatedSmartProfileMap,
       );
       Logger.info(`Smart profile updated for user id: ${req?.user?.id}`);
+
+      // profile attestation
+      const existingUser = await userRepository.findOne({
+        where: {
+          id: req?.user?.id
+        },
+      });
+      const attestation = await attestProfile(req?.user?.id, smartProfile, existingUser?.address || "");
+      smartProfile.setAttestation(attestation);
       return res.status(200).json({ success: true, smartProfile: smartProfile });
     }
     // new profile creation
@@ -242,7 +253,7 @@ smartProfileRouter.post('/', isAuthenticated, async (req, res) => {
           bio: '',
         });
         newProfile.updateScoreValue(
-          SCORE_TYPES.SOCIAL_SCORE,
+          ScoreTypes.socialScore,
           earlyUser?.username ? 1000 : Number(process.env.DEFAULT_SOCIAL_SCORE),
         );
 
@@ -258,6 +269,14 @@ smartProfileRouter.post('/', isAuthenticated, async (req, res) => {
         console.log(newSmartProfileMap);
         await smartProfileMapRepository.save(newSmartProfileMap);
         Logger.info(`New smart profile created for user id: ${id}`);
+        // profile attestation
+        const existingUser = await userRepository.findOne({
+          where: {
+            id: req?.user?.id
+          },
+        });
+        const attestation = await attestProfile(req?.user?.id, newProfile, existingUser?.address || "");
+        newProfile.setAttestation(attestation);
         return res.status(200).json({ success: true, smartProfile: newProfile });
       } else {
         // if profile map exists in database we return the smart profile based on the map
@@ -270,13 +289,20 @@ smartProfileRouter.post('/', isAuthenticated, async (req, res) => {
           //scores: profileMapping?.scores,
           connected_profiles: profileMapping?.connectedProfiles,
           connected_platforms: profileMapping?.connectedProfiles?.map((profile) => {
-            return profile.platform_name;
+            return profile.platformName;
           }),
         });
         // need to set this explicitly
         oldProfile.scores = profileMapping?.scores;
-        console.log(oldProfile);
         Logger.info(`Old version of smart profile returned from profile map: ${id}, This is not normal workflow`);
+        // profile attestation
+        const existingUser = await userRepository.findOne({
+          where: {
+            id: req?.user?.id
+          },
+        });
+        const attestation = await attestProfile(req?.user?.id, oldProfile, existingUser?.address || "");
+        oldProfile.setAttestation(attestation);
         return res.status(200).json({ success: true, smartProfile: oldProfile });
       }
     } else {

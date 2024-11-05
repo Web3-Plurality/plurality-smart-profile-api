@@ -5,7 +5,7 @@ import { generateNonce, SiweMessage } from 'siwe';
 import { ethers } from 'ethers';
 import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
-import { User } from '../entity/User';
+import { User } from '../entity/user';
 import { AppDataSource } from '../../../data-source';
 import { AddUserClientMap } from '../utils/user';
 import * as dotenv from 'dotenv';

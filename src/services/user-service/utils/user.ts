@@ -1,7 +1,7 @@
 import { AppDataSource } from '../../../data-source';
 import Logger from '../../../lib/logger';
-import { ClientApp } from '../entity/ClientApp';
-import { UserClientMap } from '../entity/UserClientMap';
+import { ClientApp } from '../entity/client-app';
+import { UserClientMap } from '../entity/user-client-map';
 
 const userClientMapRepository = AppDataSource.getRepository(UserClientMap);
 const clientAppRepository = AppDataSource.getRepository(ClientApp);
