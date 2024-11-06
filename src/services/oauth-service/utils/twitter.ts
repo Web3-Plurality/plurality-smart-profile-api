@@ -3,7 +3,7 @@ import { TwitterProfile } from '../entity/twitter';
 import puppeteer from 'puppeteer';
 import { analyze } from './groq';
 import Logger from '../../../lib/logger';
-import { createPrompt, TWITTER_FETCH_INTEREST_PROMPT } from './aiPrompts';
+import { createPrompt, TWITTER_FETCH_INTEREST_PROMPT } from './ai-prompts';
 
 export function calculateReputation(data: TwitterProfile): number {
   let reputationScore = 0;

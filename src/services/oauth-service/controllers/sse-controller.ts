@@ -6,9 +6,9 @@ export const sseRouter = express.Router();
 
 export function initSSE(req: Request, res: Response) {
   res.writeHead(200, {
-    'Content-Type': 'text/event-stream',
-    'Cache-Control': 'no-cache',
-    Connection: 'keep-alive',
+    'Content-Type': 'text/event-stream', // eslint-disable-line
+    'Cache-Control': 'no-cache', // eslint-disable-line
+    Connection: 'keep-alive', // eslint-disable-line
   });
   const sseID = uuidv4();
   memoryStoreSSE.set(sseID, res);

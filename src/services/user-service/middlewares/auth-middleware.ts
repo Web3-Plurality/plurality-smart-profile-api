@@ -103,18 +103,17 @@ export const isValidAddress = async (req, res, next) => {
 };
 
 export const isValidAttestation = async (req, res, next) => {
-  try{
+  try {
     const attestation = req?.body?.smartProfile?.attestation;
     if (!attestation) {
-      Logger.info('Attestaion not exist')
+      Logger.info('Attestaion not exist');
       return next();
     }
     const isValid: bool = verifyOffcahinAttestation(attestation);
     if (isValid) {
-      Logger.info('Attestaion is verified')
+      Logger.info('Attestaion is verified');
       return next();
-    }
-    else{
+    } else {
       return res.status(400).send('Attestaion is not valid');
     }
   } catch (error) {

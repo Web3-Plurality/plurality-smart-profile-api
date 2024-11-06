@@ -8,17 +8,20 @@ import {
   hasValidEventParam,
   isAuthenticated,
   isProfileMapEmpty,
-} from '../middlewares/oauthMiddleware';
+} from '../middlewares/oauth-middleware';
 import Logger from '../../../lib/logger';
 import { memoryStoreToken, memoryStoreSSE, memoryStoreProfile } from '../../../utils/global';
 import { INSTAGRAM_APP, INTERNAL_SERVER_ERROR, TIMEOUT_ERROR } from '../utils/constants';
 import OAuthInstagramStrategy from '../strategies/OAuthInstagramStrategy';
 import { InstaProfile } from '../entity/instagram';
 import { analyze } from '../utils/groq';
-import { createPrompt, INSTA_FETCH_INTEREST_PROMPT } from '../utils/aiPrompts';
+import { createPrompt, INSTA_FETCH_INTEREST_PROMPT } from '../utils/ai-prompts';
 import { v4 as uuidv4 } from 'uuid';
 import { UserProfile } from '../entity/user-profile';
 import { SmartProfile } from '../../user-service/entity/smart-profile';
+// import { attestProfile } from '../utils/eas';
+// import { AppDataSource } from '../../../data-source';
+// import { User } from '../../user-service/entity/user';
 dotenv.config();
 
 export const instagramRouter = express.Router();
@@ -110,7 +113,7 @@ instagramRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfi
       try {
         instaUser = await axios.get(`https://graph.instagram.com/me?fields=id,username&access_token=${accessToken}`, {
           headers: {
-            'Content-Type': 'application/json',
+            'Content-Type': 'application/json', // eslint-disable-line
           },
           timeout: 20000,
         });
@@ -127,7 +130,7 @@ instagramRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfi
           `https://graph.instagram.com/me/media?fields=id,caption&access_token=${accessToken}`,
           {
             headers: {
-              'Content-Type': 'application/json',
+              'Content-Type': 'application/json', // eslint-disable-line
             },
             timeout: 20000,
           },
@@ -152,16 +155,17 @@ instagramRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfi
       userProfile.username = instaProfile?.username;
       userProfile.interests = instaProfile?.interests;
       // profile attestation
-      const existingUser = await AppDataSource.getRepository(User).findOne({
-        where: {
-          id: req?.user?.id
-        },
-      });
-      const attestation = await attestProfile(req?.user?.id, userProfile, existingUser?.address || "");
-      userProfile.setAttestation(attestation)
+      // const existingUser = await AppDataSource.getRepository(User).findOne({
+      //   where: {
+      //     id: req?.user?.id
+      //   },
+      // });
+      // const attestation = await attestProfile(req?.user?.id, userProfile, existingUser?.address || "");
+      // userProfile.setAttestation(attestation)
+
       if (!memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
         const smartProfile = new SmartProfile(userProfile);
-        smartProfile.connected_profiles = [
+        smartProfile.connectedProfiles = [
           { platformName: INSTAGRAM_APP, userPlatformId: instaProfile?.id, username: instaProfile?.username },
         ];
         memoryStoreProfile.set(req?.user?.uniqueSessionId, smartProfile);

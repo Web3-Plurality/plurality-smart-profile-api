@@ -14,7 +14,7 @@ class TikTokOAuth2Strategy extends OAuth2Strategy {
       verify,
     );
   }
-
+  /* eslint-disable */
   authorizationParams(options: any): any {
     return {
       ...options,
@@ -30,5 +30,5 @@ class TikTokOAuth2Strategy extends OAuth2Strategy {
     };
   }
 }
-
+/* eslint-enable */
 export default TikTokOAuth2Strategy;

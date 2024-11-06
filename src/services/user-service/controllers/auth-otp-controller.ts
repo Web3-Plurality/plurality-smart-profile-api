@@ -12,24 +12,27 @@ dotenv.config();
 export const authOTPRouter = express.Router();
 const userRepository = AppDataSource.getRepository(User);
 
+/* eslint-disable */
 const stytchClient = new stytch.Client({
   project_id: 'project-test-1b1bd75d-90d4-4c94-91b2-44f03f4a1d29',
   secret: 'secret-test-FjWeo6SN_f6QcP-izJycjlBIIRQuVu53qBU=',
 });
+/* eslint-enable */
 
 // Start the authentication flow
-
 authOTPRouter.post('/login', async function (req, res) {
   try {
     const templateId = 'sign_in_to_plurality_network';
+    /* eslint-disable */
     const options: OTPsEmailLoginOrCreateRequest = {
       email: req.body.email,
       login_template_id: templateId,
       expiration_minutes: 2,
     };
+    /* eslint-enable */
     const resp = await stytchClient.otps.email.loginOrCreate(options);
     Logger.info('OTP sent successfully');
-    res.status(200).json({ success: true, message: 'OTP sent successfully',emailId: resp?.email_id});
+    res.status(200).json({ success: true, message: 'OTP sent successfully', emailId: resp?.email_id });
   } catch (err) {
     console.error(err);
     res.status(400).send('Authentication failed');
@@ -43,11 +46,14 @@ authOTPRouter.post('/authenticate', async function (req, res) {
     let token = '';
     let addedUser = {};
     const uniqueSessionId = uuidv4();
+    /* eslint-disable */
     const params: OTPsAuthenticateRequest = {
       code: req?.body?.code,
       session_duration_minutes: 60,
       method_id: req?.body?.email_id,
     };
+    /* eslint-enable */
+
     // stytch authenticate
     const resp = await stytchClient.otps.authenticate(params);
     Logger.info('stytch Authenticated successfully');
@@ -84,7 +90,15 @@ authOTPRouter.post('/authenticate', async function (req, res) {
     }
 
     Logger.info(`jwt token generated for user id ${existingUser?.id ? existingUser?.id : addedUser?.id}`);
-    return res.status(200).json({ success: true,  pluralityToken: token, stytchToken: resp?.session_jwt, user: existingUser?.id ? existingUser : addedUser,  user_id: resp?.user_id });
+    return res
+      .status(200)
+      .json({
+        success: true,
+        pluralityToken: token,
+        stytchToken: resp?.session_jwt,
+        user: existingUser?.id ? existingUser : addedUser,
+        userId: resp?.user_id,
+      });
   } catch (err) {
     console.error(err);
     res.status(401).send('Authentication failed');

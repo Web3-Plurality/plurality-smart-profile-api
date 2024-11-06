@@ -12,7 +12,7 @@ async function main() {
       { role: "user", content: "Fetch interests and tags from this tweet and make json of it " + "'#Estonian #mobility unicorn \n @boltappis preparing for an IPO, raising additional €220M of funding. The company, currently operating in over 45 countries, eyes a much bigger expansion.'" },
     ],
     model: "gpt-3.5-turbo-0125",
-    response_format: { type: "json_object" },
+    response_format: { type: "json_object" },// eslint-disable-line
   });
   console.log(completion.choices[0].message.content);
 }

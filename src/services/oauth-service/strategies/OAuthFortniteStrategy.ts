@@ -12,7 +12,7 @@ class OAuthFortniteStrategy extends OAuth2Strategy {
         state: options.state,
         pkce: options.pkce,
         customHeaders: Object.assign({
-          Authorization: 'Basic ' + Buffer.from(`${options?.clientID}:${options?.clientSecret}`).toString('base64'),
+          Authorization: 'Basic ' + Buffer.from(`${options?.clientID}:${options?.clientSecret}`).toString('base64'), // eslint-disable-line
         }),
       },
       verify,

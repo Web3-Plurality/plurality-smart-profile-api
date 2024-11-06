@@ -14,14 +14,14 @@ export function calculateReputation(data: FacebookProfile): number {
   const musicCountWeight = 0.1;
 
   // Extract data from facebook profile
-  const { friends_count, athletes_count, favTeam_count, likes_count, music_count } = data;
+  const { friendsCount, athletesCount, favTeamCount, likesCount, musicCount } = data;
 
   // Calculate reputation score based on weighted factors
-  reputationScore += friends_count * friendsWeight;
-  reputationScore += athletes_count * athletesCountWeight;
-  reputationScore += favTeam_count * favTeamCountWeight;
-  reputationScore += likes_count * likeCountWeight;
-  reputationScore += music_count * musicCountWeight;
+  reputationScore += friendsCount * friendsWeight;
+  reputationScore += athletesCount * athletesCountWeight;
+  reputationScore += favTeamCount * favTeamCountWeight;
+  reputationScore += likesCount * likeCountWeight;
+  reputationScore += musicCount * musicCountWeight;
 
   // Consider verified status
   // if (verified) {
@@ -91,7 +91,7 @@ export const getPagingData = async (nextUrl: string) => {
       try {
         const moreFeed = await axios.get(url, {
           headers: {
-            'Content-Type': 'application/json',
+            'Content-Type': 'application/json', // eslint-disable-line
           },
           timeout: 20000,
         });

@@ -8,7 +8,7 @@ import {
   hasValidEventParam,
   isAuthenticated,
   isProfileMapEmpty,
-} from '../middlewares/oauthMiddleware';
+} from '../middlewares/oauth-middleware';
 import Logger from '../../../lib/logger';
 import { memoryStoreToken, memoryStoreSSE, memoryStoreProfile, ScoreTypes } from '../../../utils/global';
 import { FACEBOOK_APP, INTERNAL_SERVER_ERROR, TIMEOUT_ERROR } from '../utils/constants';
@@ -20,13 +20,13 @@ import {
   createPrompt,
   FACEBOOK_FETCH_INTEREST_FROM_NAMES_PROMPT,
   FACEBOOK_FETCH_INTEREST_PROMPT,
-} from '../utils/aiPrompts';
+} from '../utils/ai-prompts';
 import { v4 as uuidv4 } from 'uuid';
 import { UserProfile } from '../entity/user-profile';
 import { SmartProfile } from '../../user-service/entity/smart-profile';
-import { AppDataSource } from '../../../data-source';
-import { User } from '../../user-service/entity/user';
-import { attestProfile } from '../utils/eas';
+// import { AppDataSource } from '../../../data-source';
+// import { User } from '../../user-service/entity/user';
+// import { attestProfile } from '../utils/eas';
 
 dotenv.config();
 
@@ -117,7 +117,7 @@ facebookRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfil
           `https://graph.facebook.com/v20.0/me?fields=id,name,email,languages,location,feed{description,message},likes{about,bio,category},music{about,bio,category,name},posts{caption,description,message},favorite_athletes,friends,favorite_teams&access_token=${accessToken}`,
           {
             headers: {
-              'Content-Type': 'application/json',
+              'Content-Type': 'application/json', // eslint-disable-line
             },
             timeout: 20000,
           },
@@ -140,15 +140,15 @@ facebookRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfil
 
       const facebookProfile = new FacebookProfile(fbUser?.data);
       const feed = sanitizeObject(facebookProfile?.feed);
-      const favorite_athletes = sanitizeObject(facebookProfile?.favorite_athletes);
-      const favorite_teams = sanitizeObject(facebookProfile?.favorite_teams);
-      const favorite_music = sanitizeObject(facebookProfile?.music);
+      const favoriteAthletes = sanitizeObject(facebookProfile?.favoriteAthletes);
+      const favoriteTeams = sanitizeObject(facebookProfile?.favoriteTeams);
+      const favoriteMusic = sanitizeObject(facebookProfile?.music);
       const likes = sanitizeObject(facebookProfile?.likes);
 
       const feedContent = extractContent(feed);
-      const favoriteAthletesContent = extractContent(favorite_athletes);
-      const favoriteTeamsContent = extractContent(favorite_teams);
-      const favoriteMusicContent = extractContent(favorite_music);
+      const favoriteAthletesContent = extractContent(favoriteAthletes);
+      const favoriteTeamsContent = extractContent(favoriteTeams);
+      const favoriteMusicContent = extractContent(favoriteMusic);
       const likesContent = extractContent(likes);
 
       const prompt1 = createPrompt(FACEBOOK_FETCH_INTEREST_PROMPT, feedContent + '\n' + likesContent);
@@ -161,9 +161,9 @@ facebookRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfil
         favoriteAthletesContent + favoriteTeamsContent + favoriteMusicContent ? await analyze(prompt2) : [];
 
       facebookProfile.feed = feed;
-      facebookProfile.favorite_athletes = favorite_athletes;
-      facebookProfile.favorite_teams = favorite_teams;
-      facebookProfile.music = favorite_music;
+      facebookProfile.favoriteAthletes = favoriteAthletes;
+      facebookProfile.favoriteTeams = favoriteTeams;
+      facebookProfile.music = favoriteMusic;
       facebookProfile.likes = likes;
       facebookProfile.interests = interests1?.Interests?.concat(interests2?.Interests);
       facebookProfile.reputationScore = calculateReputation(facebookProfile);
@@ -176,19 +176,19 @@ facebookRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfil
         scoreType: ScoreTypes.reputationScore,
         scoreValue: facebookProfile?.reputationScore,
       });
-      userProfile.extra.push({ field: 'friends count', value: facebookProfile?.friends_count });
-      userProfile.extra.push({ field: 'likes count', value: facebookProfile?.likes_count });
-      userProfile.extra.push({ field: 'music count', value: facebookProfile?.music_count });
-      userProfile.extra.push({ field: 'athleast count', value: facebookProfile?.athletes_count });
-      userProfile.extra.push({ field: 'favourite team count', value: facebookProfile?.favTeam_count });
+      userProfile.extra.push({ field: 'friends count', value: facebookProfile?.friendsCount });
+      userProfile.extra.push({ field: 'likes count', value: facebookProfile?.likesCount });
+      userProfile.extra.push({ field: 'music count', value: facebookProfile?.musicCount });
+      userProfile.extra.push({ field: 'athleast count', value: facebookProfile?.athletesCount });
+      userProfile.extra.push({ field: 'favourite team count', value: facebookProfile?.favTeamCount });
       // profile attestation
-      const existingUser = await AppDataSource.getRepository(User).findOne({
-        where: {
-          id: req?.user?.id
-        },
-      });
-      const attestation = await attestProfile(req?.user?.id, userProfile, existingUser?.address || "");
-      userProfile.setAttestation(attestation)
+      // const existingUser = await AppDataSource.getRepository(User).findOne({
+      //   where: {
+      //     id: req?.user?.id
+      //   },
+      // });
+      // const attestation = await attestProfile(req?.user?.id, userProfile, existingUser?.address || "");
+      // userProfile.setAttestation(attestation)
 
       if (!memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
         const smartProfile = new SmartProfile(userProfile);

@@ -47,7 +47,7 @@ const userRegisterViaWallet = async (email: string, address: string, clientId: s
     throw new Error('Client id not found');
   }
   Logger.info(`jwt token generated for user id ${existingUser?.id ? existingUser?.id : addedUser?.id}`);
-  return {token, user: existingUser?.id ? existingUser : addedUser};
+  return { token, user: existingUser?.id ? existingUser : addedUser };
 };
 
 //generate random string to take user signature
@@ -95,7 +95,7 @@ authSiweRouter.post('/authenticate', async function (req, res) {
     }
     // create jwt token
     Logger.info(`user authenticated successfully by address ${req?.body?.address}`);
-    const { token, user} = await userRegisterViaWallet(req?.body?.email, req?.body?.address, req?.body?.clientId);
+    const { token, user } = await userRegisterViaWallet(req?.body?.email, req?.body?.address, req?.body?.clientId);
     return res.status(200).json({ success: true, token, user });
   } catch (err) {
     Logger.error(`Error occurred: ${err}`);

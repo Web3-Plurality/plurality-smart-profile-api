@@ -8,7 +8,7 @@ import {
   hasValidEventParam,
   isAuthenticated,
   isProfileMapEmpty,
-} from '../middlewares/oauthMiddleware';
+} from '../middlewares/oauth-middleware';
 import Logger from '../../../lib/logger';
 import { memoryStoreToken, memoryStoreSSE, memoryStoreProfile, ScoreTypes } from '../../../utils/global';
 import { INTERNAL_SERVER_ERROR, ROBLOX_APP, TIMEOUT_ERROR } from '../utils/constants';
@@ -16,7 +16,7 @@ import OAuthRobloxStrategy from '../strategies/OAuthRobloxStrategy';
 import { RobloxProfile } from '../entity/roblox';
 import { analyze } from '../utils/groq';
 import { calculateReputation, scrapRoblox } from '../utils/roblox';
-import { createPrompt, ROBLOX_FETCH_INTEREST_PROMPT } from '../utils/aiPrompts';
+import { createPrompt, ROBLOX_FETCH_INTEREST_PROMPT } from '../utils/ai-prompts';
 import { v4 as uuidv4 } from 'uuid';
 import { UserProfile } from '../entity/user-profile';
 import { SmartProfile } from '../../user-service/entity/smart-profile';
@@ -110,8 +110,8 @@ robloxRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfileM
       try {
         userRoblox = await axios.get(`https://apis.roblox.com/oauth/v1/userinfo`, {
           headers: {
-            Authorization: `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
+            Authorization: `Bearer ${accessToken}`, // eslint-disable-line
+            'Content-Type': 'application/json', // eslint-disable-line
           },
           timeout: 20000,
         });
@@ -128,8 +128,8 @@ robloxRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfileM
       try {
         const userData = await axios.get(`https://apis.roblox.com/cloud/v2/users/${userRoblox?.data?.sub}`, {
           headers: {
-            Authorization: `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
+            Authorization: `Bearer ${accessToken}`, // eslint-disable-line
+            'Content-Type': 'application/json', // eslint-disable-line
           },
           timeout: 20000,
         });
@@ -156,8 +156,8 @@ robloxRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfileM
           `https://apis.roblox.com/cloud/v2/users/${userRoblox?.data?.sub}/inventory-items`,
           {
             headers: {
-              Authorization: `Bearer ${accessToken}`,
-              'Content-Type': 'application/json',
+              Authorization: `Bearer ${accessToken}`, // eslint-disable-line
+              'Content-Type': 'application/json', // eslint-disable-line
             },
             timeout: 20000,
           },
@@ -221,7 +221,7 @@ robloxRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfileM
         scoreType: ScoreTypes.reputationScore,
         scoreValue: robloxProfile?.reputationScore,
       });
-      userProfile.reputation_tags = robloxProfile?.introTags;
+      userProfile.reputationTags = robloxProfile?.introTags;
       userProfile.collections = robloxProfile?.assests;
       userProfile.extra.push({ field: 'places visit', value: robloxProfile?.placesVisit });
       userProfile.extra.push({ field: 'friends', value: robloxProfile?.friends });
@@ -229,17 +229,17 @@ robloxRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfileM
       userProfile.extra.push({ field: 'following', value: robloxProfile?.following });
 
       // profile attestation
-      const existingUser = await AppDataSource.getRepository(User).findOne({
-        where: {
-          id: req?.user?.id
-        },
-      });
-      const attestation = await attestProfile(req?.user?.id, userProfile, existingUser?.address || "");
-      userProfile.setAttestation(attestation)
-      
+      // const existingUser = await AppDataSource.getRepository(User).findOne({
+      //   where: {
+      //     id: req?.user?.id
+      //   },
+      // });
+      // const attestation = await attestProfile(req?.user?.id, userProfile, existingUser?.address || "");
+      // userProfile.setAttestation(attestation)
+
       if (!memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
         const smartProfile = new SmartProfile(userProfile);
-        smartProfile.connected_profiles = [
+        smartProfile.connectedProfiles = [
           { platformName: ROBLOX_APP, userPlatformId: '', username: robloxProfile?.name },
         ];
         memoryStoreProfile.set(req?.user?.uniqueSessionId, smartProfile);

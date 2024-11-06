@@ -8,7 +8,7 @@ import {
   hasValidEventParam,
   isAuthenticated,
   isProfileMapEmpty,
-} from '../middlewares/oauthMiddleware';
+} from '../middlewares/oauth-middleware';
 import Logger from '../../../lib/logger';
 import { memoryStoreToken, memoryStoreSSE, memoryStoreProfile } from '../../../utils/global';
 import { FORTNITE_APP, INTERNAL_SERVER_ERROR, TIMEOUT_ERROR } from '../utils/constants';
@@ -18,9 +18,9 @@ import { FortniteProfile } from '../entity/fortnite';
 import { v4 as uuidv4 } from 'uuid';
 import { UserProfile } from '../entity/user-profile';
 import { SmartProfile } from '../../user-service/entity/smart-profile';
-import { attestProfile } from '../utils/eas';
-import { AppDataSource } from '../../../data-source';
-import { User } from '../../user-service/entity/user';
+// import { attestProfile } from '../utils/eas';
+// import { AppDataSource } from '../../../data-source';
+// import { User } from '../../user-service/entity/user';
 dotenv.config();
 
 export const fortniteRouter = express.Router();
@@ -49,7 +49,7 @@ passport.use(
     },
     // Verify callback
     (accessToken: any, refreshToken: any, profile: any, done: any) => {
-      return done(null, { accessToken, refreshToken, account_id: jwt.decode(accessToken)?.sub });
+      return done(null, { accessToken, refreshToken, accountId: jwt.decode(accessToken)?.sub });
     },
   ),
 );
@@ -66,7 +66,7 @@ fortniteRouter.get('/callback', passport.authenticate('fortnite', { session: fal
     const accessTokenId = uuidv4();
     memoryStoreToken.set(accessTokenId, {
       accessToken: req.user.accessToken,
-      account_id: req.user.account_id,
+      accountId: req.user.accountId,
     });
     const url = `${process.env.WIDGET_UI_URL}?token_id=${accessTokenId}&app=${FORTNITE_APP}`;
     Logger.info(`${FORTNITE_APP}: Redirecting to ${url}`);
@@ -105,15 +105,15 @@ fortniteRouter.post(
 fortniteRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfileMapEmpty, async (req, res) => {
   try {
     Logger.info(`${FORTNITE_APP}: Request for information has been received successfully with id ${req.accessTokenID}`);
-    const { accessToken, account_id }: any = memoryStoreToken.get(req.accessTokenID);
+    const { accessToken, accountId }: any = memoryStoreToken.get(req.accessTokenID);
     let userFortnite = { data: {} };
 
     if (accessToken) {
       try {
-        userFortnite = await axios.get(`https://api.epicgames.dev/epic/id/v2/accounts?accountId=${account_id}`, {
+        userFortnite = await axios.get(`https://api.epicgames.dev/epic/id/v2/accounts?accountId=${accountId}`, {
           headers: {
-            Authorization: `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
+            Authorization: `Bearer ${accessToken}`, // eslint-disable-line
+            'Content-Type': 'application/json', // eslint-disable-line
           },
           timeout: 20000,
         });
@@ -131,17 +131,17 @@ fortniteRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfil
       const userProfile = new UserProfile();
       userProfile.username = fortniteProfile?.displayName;
       // profile attestation
-      const existingUser = await AppDataSource.getRepository(User).findOne({
-        where: {
-          id: req?.user?.id
-        },
-      });
-      const attestation = await attestProfile(req?.user?.id, userProfile, existingUser?.address || "");
-      userProfile.setAttestation(attestation)
+      // const existingUser = await AppDataSource.getRepository(User).findOne({
+      //   where: {
+      //     id: req?.user?.id
+      //   },
+      // });
+      // const attestation = await attestProfile(req?.user?.id, userProfile, existingUser?.address || "");
+      // userProfile.setAttestation(attestation)
 
       if (!memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
         const smartProfile = new SmartProfile(userProfile);
-        smartProfile.connected_profiles = [
+        smartProfile.connectedProfiles = [
           {
             platformName: FORTNITE_APP,
             userPlatformId: fortniteProfile?.accountId,

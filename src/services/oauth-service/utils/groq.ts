@@ -26,7 +26,9 @@ async function getGroqChatCompletion(prompt: any) {
     model: 'llama3-8b-8192',
     temperature: 0.5,
     stream: false,
+    // eslint-disable-next-line
     response_format: {
+      
       type: 'json_object',
     },
     stop: null,

@@ -2,7 +2,6 @@ import { Request, Response } from 'express';
 import { memoryStoreToken, memoryStoreSSE, memoryStoreProfile } from '../../../utils/global';
 import Logger from '../../../lib/logger';
 import jwt from 'jsonwebtoken';
-import stytch from 'stytch';
 import * as dotenv from 'dotenv';
 import { ethers } from 'ethers';
 

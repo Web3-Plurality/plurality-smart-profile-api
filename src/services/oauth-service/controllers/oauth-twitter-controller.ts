@@ -11,16 +11,17 @@ import {
   hasValidEventParam,
   isAuthenticated,
   isProfileMapEmpty,
-} from '../middlewares/oauthMiddleware';
+} from '../middlewares/oauth-middleware';
 import Logger from '../../../lib/logger';
 import { memoryStoreProfile, memoryStoreSSE, memoryStoreToken, ScoreTypes } from '../../../utils/global';
 import { INTERNAL_SERVER_ERROR, TIMEOUT_ERROR, TWITTER_APP } from '../utils/constants';
 import { v4 as uuidv4 } from 'uuid';
 import { UserProfile } from '../entity/user-profile';
 import { SmartProfile } from '../../user-service/entity/smart-profile';
-import { AppDataSource } from '../../../data-source';
-import { User } from '../../user-service/entity/user';
-import { attestProfile } from '../utils/eas';
+// import { AppDataSource } from '../../../data-source';
+// import { User } from '../../user-service/entity/user';
+// import { attestProfile } from '../utils/eas';
+
 dotenv.config();
 
 export const twitterRouter = express.Router();
@@ -155,8 +156,8 @@ twitterRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfile
           )}&user.fields=${userFields.join(',')}`,
           {
             headers: {
-              Authorization: `Bearer ${accessToken}`,
-              'Content-Type': 'application/json',
+              Authorization: `Bearer ${accessToken}`, // eslint-disable-line
+              'Content-Type': 'application/json', // eslint-disable-line
             },
             timeout: 20000,
           },
@@ -172,7 +173,7 @@ twitterRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfile
       const data: any = {
         ...userTweet?.data?.data,
       };
-      const public_metrics = data?.public_metrics;
+      const publicMetrics = data?.public_metrics;
       delete data?.public_metrics;
       let tweetUrl1 = '';
       let tweetUrl2 = '';
@@ -211,11 +212,11 @@ twitterRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfile
 
       const twitterProfile = new TwitterProfile(
         data?.id,
-        public_metrics?.followers_count,
-        public_metrics?.following_count,
-        public_metrics?.tweet_count,
-        public_metrics?.listed_count,
-        public_metrics?.like_count,
+        publicMetrics?.followers_count,
+        publicMetrics?.following_count,
+        publicMetrics?.tweet_count,
+        publicMetrics?.listed_count,
+        publicMetrics?.like_count,
         data?.pinned_tweet_id,
         data?.verified_type,
         data?.protected,
@@ -239,7 +240,7 @@ twitterRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfile
       userProfile.username = twitterProfile?.username;
       userProfile.avatar = twitterProfile?.profileImageUrl;
       userProfile.interests = twitterProfile?.interests;
-      userProfile.reputation_tags = twitterProfile?.introTags;
+      userProfile.reputationTags = twitterProfile?.introTags;
       userProfile.scores.push({
         scoreType: ScoreTypes.reputationScore,
         scoreValue: twitterProfile?.reputationScore,
@@ -250,17 +251,17 @@ twitterRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfile
       userProfile.extra.push({ field: 'followers count', value: twitterProfile?.followersCount });
       userProfile.extra.push({ field: 'following count', value: twitterProfile?.followingCount });
       // profile attestation
-      const existingUser = await AppDataSource.getRepository(User).findOne({
-        where: {
-          id: req?.user?.id
-        },
-      });
-      const attestation = await attestProfile(req?.user?.id, userProfile, existingUser?.address || "");
-      userProfile.setAttestation(attestation)
-      
+      // const existingUser = await AppDataSource.getRepository(User).findOne({
+      //   where: {
+      //     id: req?.user?.id
+      //   },
+      // });
+      // const attestation = await attestProfile(req?.user?.id, userProfile, existingUser?.address || "");
+      // userProfile.setAttestation(attestation)
+
       if (!memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
         const smartProfile = new SmartProfile(userProfile);
-        smartProfile.connected_profiles = [
+        smartProfile.connectedProfiles = [
           { platformName: TWITTER_APP, userPlatformId: twitterProfile?.id, username: twitterProfile?.username },
         ];
         memoryStoreProfile.set(req?.user?.uniqueSessionId, smartProfile);

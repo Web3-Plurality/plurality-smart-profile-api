@@ -12,17 +12,18 @@ import {
   hasValidEventParam,
   isAuthenticated,
   isProfileMapEmpty,
-} from '../middlewares/oauthMiddleware';
+} from '../middlewares/oauth-middleware';
 import { analyze } from '../utils/groq';
 import { calculateReputation } from '../utils/tiktok';
 import Logger from '../../../lib/logger';
-import { createPrompt, TIKTOK_FETCH_INTEREST_PROMPT } from '../utils/aiPrompts';
+import { createPrompt, TIKTOK_FETCH_INTEREST_PROMPT } from '../utils/ai-prompts';
 import { v4 as uuidv4 } from 'uuid';
 import { UserProfile } from '../entity/user-profile';
 import { SmartProfile } from '../../user-service/entity/smart-profile';
-import { AppDataSource } from '../../../data-source';
-import { User } from '../../user-service/entity/user';
-import { attestProfile } from '../utils/eas';
+// import { AppDataSource } from '../../../data-source';
+// import { User } from '../../user-service/entity/user';
+// import { attestProfile } from '../utils/eas';
+
 dotenv.config();
 
 export const tiktokRouter = express.Router();
@@ -144,8 +145,8 @@ tiktokRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfileM
         // request for user info
         userData = await axios.get(`https://open.tiktokapis.com/v2/user/info/?fields=${userObjField.join(',')}`, {
           headers: {
-            Authorization: `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
+            Authorization: `Bearer ${accessToken}`, // eslint-disable-line
+            'Content-Type': 'application/json', // eslint-disable-line
           },
           timeout: 20000,
         });
@@ -162,12 +163,12 @@ tiktokRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfileM
         videoList = await axios.post(
           `https://open.tiktokapis.com/v2/video/list/?fields=${videoObjFields.join(',')}`,
           {
-            max_count: 20, // env variable put
+            max_count: 20, // eslint-disable-line
           },
           {
             headers: {
-              Authorization: `Bearer ${accessToken}`,
-              'Content-Type': 'application/json',
+              Authorization: `Bearer ${accessToken}`, // eslint-disable-line
+              'Content-Type': 'application/json', // eslint-disable-line
             },
             timeout: 20000,
           },
@@ -200,7 +201,7 @@ tiktokRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfileM
       userProfile.username = tiktokProfile?.user.username;
       userProfile.avatar = tiktokProfile?.user.avatarUrl;
       userProfile.interests = tiktokProfile?.interests;
-      userProfile.reputation_tags = tiktokProfile?.introTags;
+      userProfile.reputationTags = tiktokProfile?.introTags;
       userProfile.scores.push({
         scoreType: ScoreTypes.reputationScore,
         scoreValue: tiktokProfile?.reputationScore,
@@ -211,17 +212,17 @@ tiktokRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfileM
       userProfile.extra.push({ field: 'likes count', value: tiktokProfile?.user.likesCount });
 
       // profile attestation
-      const existingUser = await AppDataSource.getRepository(User).findOne({
-        where: {
-          id: req?.user?.id
-        },
-      });
-      const attestation = await attestProfile(req?.user?.id, userProfile, existingUser?.address || "");
-      userProfile.setAttestation(attestation)
+      // const existingUser = await AppDataSource.getRepository(User).findOne({
+      //   where: {
+      //     id: req?.user?.id
+      //   },
+      // });
+      // const attestation = await attestProfile(req?.user?.id, userProfile, existingUser?.address || "");
+      // userProfile.setAttestation(attestation)
 
       if (!memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
         const smartProfile = new SmartProfile(userProfile);
-        smartProfile.connected_profiles = [
+        smartProfile.connectedProfiles = [
           { platformName: TIKTOK_APP, userPlatformId: '', username: tiktokProfile?.user?.username },
         ];
         memoryStoreProfile.set(req?.user?.uniqueSessionId, smartProfile);

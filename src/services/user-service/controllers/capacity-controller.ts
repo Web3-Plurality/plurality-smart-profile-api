@@ -5,7 +5,7 @@ import { User } from '../entity/user';
 import Logger from '../../../lib/logger';
 import { v2 as cloudinary } from 'cloudinary';
 import { ethers } from 'ethers';
-import { isAuthenticated, isValidAddress } from '../../oauth-service/middlewares/oauthMiddleware';
+import { isAuthenticated, isValidAddress } from '../../oauth-service/middlewares/oauth-middleware';
 import { app } from '../../..';
 import axios from 'axios';
 
@@ -13,12 +13,13 @@ export const capacityRouter = express.Router();
 dotenv.config();
 const userRepository = AppDataSource.getRepository(User);
 
-// Configuration
+/* eslint-disable */
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET, // Click 'View Credentials' below to copy your API secret
 });
+/* eslint-enable */
 
 // capacity delegation
 export const capacityDelegation = async (walletAddress) => {
