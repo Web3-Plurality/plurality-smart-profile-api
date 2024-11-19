@@ -15,19 +15,36 @@ function App() {
   const [sseID, setSSEID] = useState("");
   const [tokenID, setTokenID] = useState("null");
 
-
-
-
-
-
-
-
-
 // const handle = ()=>{
 //   axios.get('http://localhost:5000/register').then((res)=>{
 // console.log("register")
 // })
 // }
+
+// For Google Login
+useEffect(() => {
+  const handleMessage = (event: MessageEvent) => {
+    // if (event.origin !== "https://app.plurality.local") return
+
+    if (event.data.type === 'AUTH_SUCCESS') {
+      localStorage.setItem('token', event.data.pluralityToken);
+      localStorage.setItem('googleToken', event.data.googleAccessToken);
+
+      // getUser();
+    }
+
+    if (event.data.type === "AUTH_ERROR") {
+      console.error("Authentication failed", event.data)
+      // setAuthError(event.data.message)
+    }
+  }
+
+  window.addEventListener("message", handleMessage)
+
+  return () => {
+    window.removeEventListener("message", handleMessage)
+  }
+}, [])
 
 const handleAPI = ()=>{
   setupSSE()
@@ -98,7 +115,16 @@ const handleAPI = ()=>{
     })
   
   };
-
+const googleLogin = () => {
+  console.log("google login")
+  const oauthWindow = window.open(`${'https://app.plurality.local/user/auth/google/login'}`, 'oauth', 'width=500,height=600');
+  if (oauthWindow) {
+    setPopup(oauthWindow);
+    console.log('Window opened:', oauthWindow);
+  } else {
+    console.error('Failed to open window. It might be blocked by a popup blocker.');
+  }
+}
   return (
     <div className="App">
       <h1>SSE and OAuth Example</h1>
@@ -109,6 +135,9 @@ const handleAPI = ()=>{
       <div>
         <h2>SSE Message:</h2>
         <p>{sseMessage}</p>
+      </div>
+      <div>
+        <button onClick={googleLogin}>Login With Google</button>
       </div>
     </div>
   );

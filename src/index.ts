@@ -29,6 +29,7 @@ import { clientRouter } from './services/crm-service/controllers/client-app-cont
 // Lit SDK
 import * as LitJsSdk from '@lit-protocol/lit-node-client';
 import { LitNetwork } from '@lit-protocol/constants';
+import { authGoogleRouter } from './services/user-service/controllers/auth-google-controller';
 
 dotenv.config();
 
@@ -47,6 +48,8 @@ app.use('/user/smart-profile', smartProfileRouter);
 app.use('/user/capacity', capacityRouter);
 app.use('/user/auth/otp', authOTPRouter);
 app.use('/user/auth/siwe', authSiweRouter);
+app.use('/user/auth/google', authGoogleRouter);
+
 // oauth service routers
 app.use('/oauth-twitter', twitterRouter);
 app.use('/oauth-snapchat', snapchatRouter);
@@ -74,6 +77,7 @@ try {
     litNetwork: LitNetwork.Datil,
   });
 
+  
   // Only for development
   if (process.env.NODE_ENV === 'development') {
     const options = {
