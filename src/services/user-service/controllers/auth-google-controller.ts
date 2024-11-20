@@ -12,7 +12,7 @@ import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
 import { ethers } from 'ethers';
 import { memoryStoreSSE, memoryStoreToken } from '../../../utils/global';
-import { hasValidAccessTokenHeader, hasValidEventHeader } from '../../oauth-service/middlewares/oauth-middleware';
+import { hasValidAccessTokenHeader, hasValidEventHeader, hasValidEventParam } from '../../oauth-service/middlewares/oauth-middleware';
 
 dotenv.config();
 export const authGoogleRouter = express.Router();
@@ -33,15 +33,13 @@ passport.use(
 );
 
 // Start the authentication flow
-authGoogleRouter.get('/login', async (req: Request, res: Response, next) => {
+authGoogleRouter.get('/login',hasValidEventParam, async (req: Request, res: Response, next) => {
   // Logger.info(`${FACEBOOK_APP}: Request for Oauth has been received successfully on sse Id ${req.sseID}`);
   passport.authenticate('google', { scope: ['email'] })(req, res, next);
 });
 
 authGoogleRouter.get('/callback', passport.authenticate('google', { session: false }), async (req, res) => {
-
   try {
-
     let token = '';
     let addedUser = {};
     const accessTokenId = uuidv4();
@@ -102,26 +100,21 @@ authGoogleRouter.get('/callback', passport.authenticate('google', { session: fal
   }
 });
 
-authGoogleRouter.post(
-  '/event',
-  hasValidEventHeader,
-  hasValidAccessTokenHeader,
-  async (req, res) => {
-    try {
-      Logger.info(`Request body tokenUUID ${req?.accessTokenID}`);
-      Logger.info(`Request body sseUUID ${req?.sseID}`);
-      const tokenObj = memoryStoreToken.get(req?.accessTokenID);
-      const serverSentEventResponse = memoryStoreSSE.get(req?.sseID);
-      serverSentEventResponse.write(
-        `data: {"message":"received", "googleAccessToken":"${tokenObj?.googleAccessToken}", pluralityToken: "${tokenObj?.pluralityToken}"}\n\n`,
-      );
-      Logger.info(` Server Side Event has been sent successfully`);
-      memoryStoreSSE.delete(req?.sseID);
-      memoryStoreSSE.delete(req?.accessTokenID);
-      return res.status(200).json({ message: 'success' });
-    } catch (error) {
-      Logger.info(`Error in sending SSE ${error.message}`);
-      return res.status(500).json({ message: 'Internal Server error' });
-    }
-  },
-);
+authGoogleRouter.post('/event', hasValidEventHeader, hasValidAccessTokenHeader, async (req, res) => {
+  try {
+    Logger.info(`Request body tokenUUID ${req?.accessTokenID}`);
+    Logger.info(`Request body sseUUID ${req?.sseID}`);
+    const tokenObj = memoryStoreToken.get(req?.accessTokenID);
+    const serverSentEventResponse = memoryStoreSSE.get(req?.sseID);
+    serverSentEventResponse.write(
+      `data: {"message":"received", "googleAccessToken":"${tokenObj?.googleAccessToken}", "pluralityToken": "${tokenObj?.pluralityToken}"}\n\n`,
+    );
+    Logger.info(` Server Side Event has been sent successfully`);
+    memoryStoreSSE.delete(req?.sseID);
+    memoryStoreSSE.delete(req?.accessTokenID);
+    return res.status(200).json({ message: 'success' });
+  } catch (error) {
+    Logger.info(`Error in sending SSE ${error.message}`);
+    return res.status(500).json({ message: 'Internal Server error' });
+  }
+});
