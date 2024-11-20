@@ -77,7 +77,6 @@ try {
     litNetwork: LitNetwork.Datil,
   });
 
-  
   // Only for development
   if (process.env.NODE_ENV === 'development') {
     const options = {
