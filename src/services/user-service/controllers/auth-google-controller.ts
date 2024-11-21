@@ -107,7 +107,7 @@ authGoogleRouter.post('/event', hasValidEventHeader, hasValidAccessTokenHeader, 
     const tokenObj = memoryStoreToken.get(req?.accessTokenID);
     const serverSentEventResponse = memoryStoreSSE.get(req?.sseID);
     serverSentEventResponse.write(
-      `data: {"message":"received", "googleAccessToken":"${tokenObj?.googleAccessToken}", "pluralityToken": "${tokenObj?.pluralityToken}"}\n\n`,
+      `data: {"message":"received", "app":"google", "googleAccessToken":"${tokenObj?.googleAccessToken}", "pluralityToken": "${tokenObj?.pluralityToken}"}\n\n`,
     );
     Logger.info(` Server Side Event has been sent successfully`);
     memoryStoreSSE.delete(req?.sseID);
