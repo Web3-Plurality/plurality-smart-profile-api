@@ -19,7 +19,7 @@ import { capacityRouter } from './services/user-service/controllers/capacity-con
 import { robloxRouter } from './services/oauth-service/controllers/oauth-roblox-controller';
 import { twitterRouter } from './services/oauth-service/controllers/oauth-twitter-controller';
 import { tiktokRouter } from './services/oauth-service/controllers/oauth-tiktok-controller';
-import { snapchatRouter } from './services/oauth-service/controllers/oauth-snap-chat-controller';
+import { snapchatRouter } from './services/oauth-service/controllers/oauth-snapchat-controller';
 import { instagramRouter } from './services/oauth-service/controllers/oauth-instagram-controller';
 import { facebookRouter } from './services/oauth-service/controllers/oauth-facebook-controller';
 import { fortniteRouter } from './services/oauth-service/controllers/oauth-fortnite-controller';
