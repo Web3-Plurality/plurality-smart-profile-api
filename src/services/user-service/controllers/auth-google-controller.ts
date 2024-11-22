@@ -12,7 +12,11 @@ import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
 import { ethers } from 'ethers';
 import { memoryStoreSSE, memoryStoreToken } from '../../../utils/global';
-import { hasValidAccessTokenHeader, hasValidEventHeader, hasValidEventParam } from '../../oauth-service/middlewares/oauth-middleware';
+import {
+  hasValidAccessTokenHeader,
+  hasValidEventHeader,
+  hasValidEventParam,
+} from '../../oauth-service/middlewares/oauth-middleware';
 
 dotenv.config();
 export const authGoogleRouter = express.Router();
@@ -26,14 +30,15 @@ passport.use(
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
       callbackURL: process.env.GOOGLE_CALLBACK_URL,
     },
-    function (accessToken, refreshToken, profile, done) {
-      return done('', { email: profile?._json?.email, googleAccessToken: accessToken });
+    function (accessToken, refreshToken, params, profile, done) {
+      console.log('jwt', params?.id_token);
+      return done('', { email: profile?._json?.email, googleJwtToken: params?.id_token });
     },
   ),
 );
 
 // Start the authentication flow
-authGoogleRouter.get('/login',hasValidEventParam, async (req: Request, res: Response, next) => {
+authGoogleRouter.get('/login', hasValidEventParam, async (req: Request, res: Response, next) => {
   // Logger.info(`${FACEBOOK_APP}: Request for Oauth has been received successfully on sse Id ${req.sseID}`);
   passport.authenticate('google', { scope: ['email'] })(req, res, next);
 });
@@ -89,7 +94,7 @@ authGoogleRouter.get('/callback', passport.authenticate('google', { session: fal
     // res?.redirect(
     //   'http://localhost:3000/google-login?pluralityToken=' + token + '&googleAccessToken=' + req?.user?.googleAccessToken,
     // );
-    memoryStoreToken.set(accessTokenId, { googleAccessToken: req?.user?.googleAccessToken, pluralityToken: token });
+    memoryStoreToken.set(accessTokenId, { googleJwtToken: req?.user?.googleJwtToken, pluralityToken: token });
     const url = `${process.env.WIDGET_UI_URL}?token_id=${accessTokenId}`;
 
     Logger.info(`Redirecting to ${url}`);
@@ -107,7 +112,7 @@ authGoogleRouter.post('/event', hasValidEventHeader, hasValidAccessTokenHeader, 
     const tokenObj = memoryStoreToken.get(req?.accessTokenID);
     const serverSentEventResponse = memoryStoreSSE.get(req?.sseID);
     serverSentEventResponse.write(
-      `data: {"message":"received", "app":"google", "googleAccessToken":"${tokenObj?.googleAccessToken}", "pluralityToken": "${tokenObj?.pluralityToken}"}\n\n`,
+      `data: {"message":"received", "app":"google", "googleJwtToken":"${tokenObj?.googleJwtToken}", "pluralityToken": "${tokenObj?.pluralityToken}"}\n\n`,
     );
     Logger.info(` Server Side Event has been sent successfully`);
     memoryStoreSSE.delete(req?.sseID);
