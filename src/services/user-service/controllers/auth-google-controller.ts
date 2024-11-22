@@ -1,5 +1,3 @@
-import { LitAuthClient } from '@lit-protocol/lit-auth-client';
-import { ProviderType } from '@lit-protocol/constants';
 import * as dotenv from 'dotenv';
 import express from 'express';
 import GoogleStrategy from 'passport-google-oauth20';
@@ -10,13 +8,14 @@ import { AppDataSource } from '../../../data-source';
 import { User } from '../entity/user';
 import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
-import { ethers } from 'ethers';
 import { memoryStoreSSE, memoryStoreToken } from '../../../utils/global';
 import {
   hasValidAccessTokenHeader,
   hasValidEventHeader,
   hasValidEventParam,
 } from '../../oauth-service/middlewares/oauth-middleware';
+import { GOOGLE_APP } from '../../oauth-service/utils/constants';
+import { AddUserClientMap } from '../utils/user';
 
 dotenv.config();
 export const authGoogleRouter = express.Router();
@@ -31,7 +30,6 @@ passport.use(
       callbackURL: process.env.GOOGLE_CALLBACK_URL,
     },
     function (accessToken, refreshToken, params, profile, done) {
-      console.log('jwt', params?.id_token);
       return done('', { email: profile?._json?.email, googleJwtToken: params?.id_token });
     },
   ),
@@ -39,7 +37,7 @@ passport.use(
 
 // Start the authentication flow
 authGoogleRouter.get('/login', hasValidEventParam, async (req: Request, res: Response, next) => {
-  // Logger.info(`${FACEBOOK_APP}: Request for Oauth has been received successfully on sse Id ${req.sseID}`);
+  Logger.info(`${GOOGLE_APP}: Request for Oauth has been received successfully on sse Id ${req.sseID}`);
   passport.authenticate('google', { scope: ['email'] })(req, res, next);
 });
 
@@ -71,29 +69,6 @@ authGoogleRouter.get('/callback', passport.authenticate('google', { session: fal
     }
     Logger.info(`jwt token generated for user id ${existingUser?.id ? existingUser?.id : addedUser?.id}`);
 
-    // return res
-    //     .status(200)
-    //     .json({
-    //         success: true,
-    //         pluralityToken: token,
-    //         googleAccessToken: req?.user?.googleAccessToken,
-    //         user: existingUser?.id ? existingUser : addedUser,
-    //     });
-
-    // const nonce = ethers.hexlify(ethers.randomBytes(16));
-    // console.log(nonce);
-    // res.setHeader(
-    //   'Content-Security-Policy',
-    //   `script-src 'self' 'nonce-${nonce}';`
-    // );
-
-    // res.setHeader(
-    //     'Content-Security-Policy',
-    //     "script-src 'self' 'unsafe-inline';"
-    //   );
-    // res?.redirect(
-    //   'http://localhost:3000/google-login?pluralityToken=' + token + '&googleAccessToken=' + req?.user?.googleAccessToken,
-    // );
     memoryStoreToken.set(accessTokenId, { googleJwtToken: req?.user?.googleJwtToken, pluralityToken: token });
     const url = `${process.env.WIDGET_UI_URL}?token_id=${accessTokenId}`;
 
@@ -117,6 +92,14 @@ authGoogleRouter.post('/event', hasValidEventHeader, hasValidAccessTokenHeader, 
     Logger.info(` Server Side Event has been sent successfully`);
     memoryStoreSSE.delete(req?.sseID);
     memoryStoreSSE.delete(req?.accessTokenID);
+    //if client id exist then add in user client map
+    if (req?.body?.clientId) {
+      console.log('clientId', req?.body?.clientId);
+      await AddUserClientMap(jwt.decode(tokenObj?.pluralityToken)?.id, req?.body?.clientId);
+    } else {
+      Logger.error(`Client id not found`);
+      throw new Error('Client id not found');
+    }
     return res.status(200).json({ message: 'success' });
   } catch (error) {
     Logger.info(`Error in sending SSE ${error.message}`);
