@@ -16,6 +16,9 @@ import {
 } from '../../oauth-service/middlewares/oauth-middleware';
 import { GOOGLE_APP } from '../../oauth-service/utils/constants';
 import { AddUserClientMap } from '../utils/user';
+import { ethers } from 'ethers';
+import { AUTH_METHOD_SCOPE, LIT_NETWORK, LIT_RPC } from '@lit-protocol/constants';
+import { LitContracts } from '@lit-protocol/contracts-sdk';
 
 dotenv.config();
 export const authGoogleRouter = express.Router();
@@ -105,4 +108,44 @@ authGoogleRouter.post('/event', hasValidEventHeader, hasValidAccessTokenHeader, 
     Logger.info(`Error in sending SSE ${error.message}`);
     return res.status(500).json({ message: 'Internal Server error' });
   }
+});
+
+
+authGoogleRouter.get('/mint-pkp', async (req, res) => {
+  const EOA_PRIVATE_KEY =
+process.env.PUBLIC_DAPP_OWNER_WALLET_PRIVATE_KEY || "";
+  const signer = new ethers.Wallet(
+    EOA_PRIVATE_KEY,
+new  ethers.providers.JsonRpcProvider(LIT_RPC.CHRONICLE_YELLOWSTONE)
+  );
+
+  console.log("Step 1 outputData:", await signer.getAddress());
+  const litContracts = new LitContracts({
+    signer: signer,
+    debug: false,
+    network: LIT_NETWORK.DatilDev,
+  });
+
+  await litContracts.connect();
+
+  console.log("Step 2 outputData:", litContracts);
+
+
+  const eoaWalletOwnedPkp = (
+    await litContracts.pkpNftContractUtils.write.mint()
+  ).pkp;
+
+  console.log("Step 3 outputData:", eoaWalletOwnedPkp);
+  const customAuthMethod = {
+    authMethodType: 1001,
+    authMethodId: "app-id-xxx:user-id-yyy",
+  };
+  const receipt = await litContracts.addPermittedAuthMethod({
+    pkpTokenId: eoaWalletOwnedPkp.tokenId,
+    authMethodType: customAuthMethod.authMethodType,
+    authMethodId: customAuthMethod.authMethodId,
+    authMethodScopes: [AUTH_METHOD_SCOPE.SignAnything],
+  });
+
+  res.status(200).json({ message: 'success', pkp: eoaWalletOwnedPkp });
 });
