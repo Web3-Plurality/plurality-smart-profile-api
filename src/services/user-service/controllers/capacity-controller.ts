@@ -31,7 +31,7 @@ export const capacityDelegation = async (walletAddress) => {
   );
   let maxNft = { id: 0 };
   for (let index = 0; index < litResponse?.data?.items.length; index++) {
-    if (Number(litResponse?.data?.items[index].id) > Number(maxNft?.id)) {
+    if (Number(litResponse?.data?.items[index].id) > Number(maxNft?.id) && litResponse?.data?.items[index].metadata.attributes[0].trait_type === 'Expiration Date') {
       maxNft = litResponse?.data?.items[index];
       if (currentTimestamp < Number(maxNft?.metadata?.attributes[0]?.value)) {
         break;
