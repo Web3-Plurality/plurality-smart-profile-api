@@ -28,7 +28,6 @@ async function getGroqChatCompletion(prompt: any) {
     stream: false,
     // eslint-disable-next-line
     response_format: {
-      
       type: 'json_object',
     },
     stop: null,

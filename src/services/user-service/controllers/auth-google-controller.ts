@@ -69,7 +69,7 @@ authGoogleRouter.get('/callback', passport.authenticate('google', { session: fal
       if (!existingUser.loginType) {
         Logger.info(`user ${existingUser.id} does not have login type, updating login type to google`);
         await userRepository.update(existingUser.id, { loginType: LoginType.google });
-      }else if (existingUser.loginType !== LoginType.google && existingUser.loginType === LoginType.stytch) {
+      } else if (existingUser.loginType !== LoginType.google && existingUser.loginType === LoginType.stytch) {
         Logger.info(`user ${existingUser.id} is not authorized to login with google`);
         const templateId = 'sign_in_to_plurality_network';
         /* eslint-disable */
@@ -81,9 +81,9 @@ authGoogleRouter.get('/callback', passport.authenticate('google', { session: fal
         /* eslint-enable */
         const resp = await stytchClient.otps.email.loginOrCreate(options);
         Logger.info('OTP sent successfully');
-        return res.status(200).json({ success: true, message: 'OTP sent successfully', emailId: resp?.email_id });      
+        return res.status(200).json({ success: true, message: 'OTP sent successfully', emailId: resp?.email_id });
       }
-        token = jwt.sign({ id: existingUser?.id, uniqueSessionId }, process.env.JWT_SECRET, { expiresIn: '1d' });
+      token = jwt.sign({ id: existingUser?.id, uniqueSessionId }, process.env.JWT_SECRET, { expiresIn: '1d' });
     } else {
       // If the user doesn't exist, insert a new row
       Logger.info(`The user with this email was not found`);
@@ -135,17 +135,14 @@ authGoogleRouter.post('/event', hasValidEventHeader, hasValidAccessTokenHeader, 
   }
 });
 
-
-
-
 authGoogleRouter.get('/mint-pkp', async (req, res) => {
-  const EOA_PRIVATE_KEY =
-process.env.PUBLIC_DAPP_OWNER_WALLET_PRIVATE_KEY || "";
+  const EOA_PRIVATE_KEY = process.env.PUBLIC_DAPP_OWNER_WALLET_PRIVATE_KEY || '';
   const signer = new ethers.Wallet(
-    EOA_PRIVATE_KEY, new  ethers.providers.JsonRpcProvider(LIT_RPC.CHRONICLE_YELLOWSTONE)
+    EOA_PRIVATE_KEY,
+    new ethers.providers.JsonRpcProvider(LIT_RPC.CHRONICLE_YELLOWSTONE),
   );
 
-  console.log("Step 1 outputData:", await signer.getAddress());
+  console.log('Step 1 outputData:', await signer.getAddress());
   const litContracts = new LitContracts({
     signer: signer,
     debug: false,
@@ -154,23 +151,16 @@ process.env.PUBLIC_DAPP_OWNER_WALLET_PRIVATE_KEY || "";
 
   await litContracts.connect();
 
-  console.log("Step 2 outputData:", litContracts);
+  console.log('Step 2 outputData:', litContracts);
 
-  
-  const eoaWalletOwnedPkp = (
-    await litContracts.pkpNftContractUtils.write.mint()
-  ).pkp;
+  const eoaWalletOwnedPkp = (await litContracts.pkpNftContractUtils.write.mint()).pkp;
 
-  console.log("Step 3 outputData:", eoaWalletOwnedPkp);
-  const authMethodType = ethers.utils.keccak256(
-    ethers.utils.toUtf8Bytes("Plurality Login")
-  );
-  const authMethodId = ethers.utils.keccak256(
-    ethers.utils.toUtf8Bytes(`plurality:${req.body.id}`)
-  );
+  console.log('Step 3 outputData:', eoaWalletOwnedPkp);
+  const authMethodType = ethers.utils.keccak256(ethers.utils.toUtf8Bytes('Plurality Login'));
+  const authMethodId = ethers.utils.keccak256(ethers.utils.toUtf8Bytes(`plurality:${req.body.id}`));
   const customAuthMethod = {
     authMethodType: 1001,
-    authMethodId: "app-id-xxx:user-id-yyy",
+    authMethodId: 'app-id-xxx:user-id-yyy',
   };
   const receipt = await litContracts.addPermittedAuthMethod({
     pkpTokenId: eoaWalletOwnedPkp.tokenId,
@@ -181,7 +171,3 @@ process.env.PUBLIC_DAPP_OWNER_WALLET_PRIVATE_KEY || "";
 
   res.status(200).json({ message: 'success', pkp: eoaWalletOwnedPkp });
 });
-
-authGoogleRouter.post('/add-pkp', async (req, res) => {
-
-})

@@ -1,10 +1,9 @@
 import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
 
-
 export enum LoginType {
   stytch = 'STYTCH',
   google = 'GOOGLE',
-  metamask='METAMASK',
+  metamask = 'METAMASK',
 }
 
 @Entity({ name: 'users' })
@@ -21,7 +20,6 @@ export class User {
   @Column({ nullable: false, default: false })
   subscribe: boolean;
 
-  @Column({ nullable: false, default: ""})
+  @Column({ nullable: false, default: '' })
   loginType: string;
-
 }

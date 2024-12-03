@@ -67,15 +67,19 @@ authOTPRouter.post('/authenticate', async function (req, res) {
     });
 
     if (existingUser) {
-        Logger.info(`This user already exists!`);
+      Logger.info(`This user already exists!`);
       if (!existingUser.loginType) {
         Logger.info(`user ${existingUser.id} does not have login type, updating login type to stytch`);
         await userRepository.update(existingUser.id, { loginType: LoginType.stytch });
-      }else if (existingUser.loginType !== LoginType.stytch) {
+      } else if (existingUser.loginType !== LoginType.stytch) {
         Logger.error(`user ${existingUser.id} is not authorized to login with stytch`);
-        return res.status(400).json({message: `you are not authorized to login with OTP, please use ${existingUser.loginType} method to login`});       
+        return res
+          .status(400)
+          .json({
+            message: `you are not authorized to login with OTP, please use ${existingUser.loginType} method to login`,
+          });
       }
-        token = jwt.sign({ id: existingUser?.id, uniqueSessionId }, process.env.JWT_SECRET, { expiresIn: '1d' });
+      token = jwt.sign({ id: existingUser?.id, uniqueSessionId }, process.env.JWT_SECRET, { expiresIn: '1d' });
     } else {
       // If the user doesn't exist, insert a new row
       Logger.info(`The user with this email was not found`);
@@ -98,15 +102,13 @@ authOTPRouter.post('/authenticate', async function (req, res) {
     }
 
     Logger.info(`jwt token generated for user id ${existingUser?.id ? existingUser?.id : addedUser?.id}`);
-    return res
-      .status(200)
-      .json({
-        success: true,
-        pluralityToken: token,
-        stytchToken: resp?.session_jwt,
-        user: existingUser?.id ? existingUser : addedUser,
-        userId: resp?.user_id,
-      });
+    return res.status(200).json({
+      success: true,
+      pluralityToken: token,
+      stytchToken: resp?.session_jwt,
+      user: existingUser?.id ? existingUser : addedUser,
+      userId: resp?.user_id,
+    });
   } catch (err) {
     console.error(err);
     res.status(401).send('Authentication failed');
