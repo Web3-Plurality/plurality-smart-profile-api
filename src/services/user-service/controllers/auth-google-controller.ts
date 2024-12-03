@@ -5,7 +5,7 @@ import passport from 'passport';
 import { Request, Response } from 'groq-sdk/_shims/auto/types';
 import Logger from '../../../lib/logger';
 import { AppDataSource } from '../../../data-source';
-import { User } from '../entity/user';
+import { LoginType, User } from '../entity/user';
 import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
 import { memoryStoreSSE, memoryStoreToken } from '../../../utils/global';
@@ -19,11 +19,18 @@ import { AddUserClientMap } from '../utils/user';
 import { ethers } from 'ethers';
 import { AUTH_METHOD_SCOPE, LIT_NETWORK, LIT_RPC } from '@lit-protocol/constants';
 import { LitContracts } from '@lit-protocol/contracts-sdk';
+import stytch, { OTPsAuthenticateRequest, OTPsEmailLoginOrCreateRequest } from 'stytch';
 
 dotenv.config();
 export const authGoogleRouter = express.Router();
 
 const userRepository = AppDataSource.getRepository(User);
+
+/* eslint-disable */
+const stytchClient = new stytch.Client({
+  project_id: 'project-test-1b1bd75d-90d4-4c94-91b2-44f03f4a1d29',
+  secret: 'secret-test-FjWeo6SN_f6QcP-izJycjlBIIRQuVu53qBU=',
+});
 
 passport.use(
   new GoogleStrategy(
@@ -59,12 +66,30 @@ authGoogleRouter.get('/callback', passport.authenticate('google', { session: fal
 
     if (existingUser) {
       Logger.info(`This user already exists!`);
-      token = jwt.sign({ id: existingUser?.id, uniqueSessionId }, process.env.JWT_SECRET, { expiresIn: '1d' });
+      if (!existingUser.loginType) {
+        Logger.info(`user ${existingUser.id} does not have login type, updating login type to google`);
+        await userRepository.update(existingUser.id, { loginType: LoginType.google });
+      }else if (existingUser.loginType !== LoginType.google && existingUser.loginType === LoginType.stytch) {
+        Logger.info(`user ${existingUser.id} is not authorized to login with google`);
+        const templateId = 'sign_in_to_plurality_network';
+        /* eslint-disable */
+        const options: OTPsEmailLoginOrCreateRequest = {
+          email: existingUser?.email,
+          login_template_id: templateId,
+          expiration_minutes: 2,
+        };
+        /* eslint-enable */
+        const resp = await stytchClient.otps.email.loginOrCreate(options);
+        Logger.info('OTP sent successfully');
+        return res.status(200).json({ success: true, message: 'OTP sent successfully', emailId: resp?.email_id });      
+      }
+        token = jwt.sign({ id: existingUser?.id, uniqueSessionId }, process.env.JWT_SECRET, { expiresIn: '1d' });
     } else {
       // If the user doesn't exist, insert a new row
       Logger.info(`The user with this email was not found`);
       const newUser = await userRepository.create({
         email: email,
+        loginType: LoginType.google,
       });
       addedUser = await userRepository.save(newUser);
       Logger.info(`new user created successfully with id ${addedUser?.id}`);
@@ -111,12 +136,13 @@ authGoogleRouter.post('/event', hasValidEventHeader, hasValidAccessTokenHeader, 
 });
 
 
+
+
 authGoogleRouter.get('/mint-pkp', async (req, res) => {
   const EOA_PRIVATE_KEY =
 process.env.PUBLIC_DAPP_OWNER_WALLET_PRIVATE_KEY || "";
   const signer = new ethers.Wallet(
-    EOA_PRIVATE_KEY,
-new  ethers.providers.JsonRpcProvider(LIT_RPC.CHRONICLE_YELLOWSTONE)
+    EOA_PRIVATE_KEY, new  ethers.providers.JsonRpcProvider(LIT_RPC.CHRONICLE_YELLOWSTONE)
   );
 
   console.log("Step 1 outputData:", await signer.getAddress());
@@ -130,12 +156,18 @@ new  ethers.providers.JsonRpcProvider(LIT_RPC.CHRONICLE_YELLOWSTONE)
 
   console.log("Step 2 outputData:", litContracts);
 
-
+  
   const eoaWalletOwnedPkp = (
     await litContracts.pkpNftContractUtils.write.mint()
   ).pkp;
 
   console.log("Step 3 outputData:", eoaWalletOwnedPkp);
+  const authMethodType = ethers.utils.keccak256(
+    ethers.utils.toUtf8Bytes("Plurality Login")
+  );
+  const authMethodId = ethers.utils.keccak256(
+    ethers.utils.toUtf8Bytes(`plurality:${req.body.id}`)
+  );
   const customAuthMethod = {
     authMethodType: 1001,
     authMethodId: "app-id-xxx:user-id-yyy",
@@ -149,3 +181,7 @@ new  ethers.providers.JsonRpcProvider(LIT_RPC.CHRONICLE_YELLOWSTONE)
 
   res.status(200).json({ message: 'success', pkp: eoaWalletOwnedPkp });
 });
+
+authGoogleRouter.post('/add-pkp', async (req, res) => {
+
+})

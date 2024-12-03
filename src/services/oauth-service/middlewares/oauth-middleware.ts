@@ -87,5 +87,5 @@ export const isProfileMapEmpty = async (req, res, next) => {
 };
 
 export const isValidAddress = async (req, res, next) => {
-  ethers.isAddress(req?.body?.address) ? next() : res.status(400).send('Invalid address');
+  ethers.utils.isAddress(req?.body?.address) ? next() : res.status(400).send('Invalid address');
 };
