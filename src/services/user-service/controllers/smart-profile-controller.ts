@@ -140,29 +140,13 @@ smartProfileRouter.put(
 // body => { smartProfile: SmartProfile }
 // header => { Authorization: Bearer token. x-profile-type-stream-id }
 // isValidAttestation middleware checks if the attestation is valid
-smartProfileRouter.post('/', isAuthenticated, [body('smartProfile')
-  .optional() // Only validate if it exists
-  .custom((value) => {
-    // If the value is empty or undefined, allow it to pass
-    if (!value) {
-      return true;
-    }
-    // Ensure the object is an instance of SmartProfile
-    if (!(plainToInstance(SmartProfile, value) instanceof SmartProfile)) {
-      throw new Error('smartProfile must be an instance of SmartProfile');
-    }
-    return true;
-  })], async (req: Request, res: Response) => {
-    /*
-      #swagger.tags = ['Users']
-      #swagger.requestBody = {
-            required: false,
-            schema: { $ref: "#/components/schemas/smartProfile" }
-    } */
+smartProfileRouter.post('/', isAuthenticated, async (req: Request, res: Response) => {
+      // #swagger.tags = ['Users']
     try {
       // load dynamically from header
       // add a check if this profileTypeStreamId exists in client app table
       const profileTypeStreamId = req.headers['x-profile-type-stream-id'];
+      const {smartProfile: reqSmartProfile} = req.body.smartProfile;
       if (!profileTypeStreamId) {
         Logger.error(`Fatal error due to missing profile type stream id`);
         return res.status(400).json({ errors: 'profile type stream id is missing' });
@@ -175,9 +159,9 @@ smartProfileRouter.post('/', isAuthenticated, [body('smartProfile')
       const id = req?.user?.uniqueSessionId;
       const memorySmartProfile = memoryStoreProfile.get(id);
       // profile exchange workflow - profiles are present in both request and memory
-      if (memorySmartProfile && req?.body?.smartProfile && profileTypeStreamId) {
+      if (memorySmartProfile && reqSmartProfile&& profileTypeStreamId) {
         Logger.info(`Profile exchange workflow`);
-        const smartProfile = plainToInstance(SmartProfile, req?.body?.smartProfile);
+        const smartProfile = plainToInstance(SmartProfile, reqSmartProfile);
 
         // this is not the first time this profile is being created - make sure the profile mapping exists in our database
         const profileMapping = await smartProfileMapRepository.findOne({
@@ -247,7 +231,7 @@ smartProfileRouter.post('/', isAuthenticated, [body('smartProfile')
         return res.status(200).json({ success: true, smartProfile: smartProfile });
       }
       // new profile creation
-      else if (!memorySmartProfile && !req?.body?.smartProfile && profileTypeStreamId) {
+      else if (!memorySmartProfile && !reqSmartProfile && profileTypeStreamId) {
         Logger.info(`New profile creation workflow`);
         // check if the profile map between user id and profile type exists
         const profileMapping = await smartProfileMapRepository.findOne({

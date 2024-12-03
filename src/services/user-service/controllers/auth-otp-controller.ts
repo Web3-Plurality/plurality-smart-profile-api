@@ -22,12 +22,12 @@ const stytchClient = new stytch.Client({
 // Start the authentication flow
 authOTPRouter.post('/login', async function (req, res) {
   // #swagger.tags = ['Users']
-  
   try {
+    const email: string = req.body.email;
     const templateId = 'sign_in_to_plurality_network';
     /* eslint-disable */
     const options: OTPsEmailLoginOrCreateRequest = {
-      email: req.body.email,
+      email: email,
       login_template_id: templateId,
       expiration_minutes: 2,
     };
@@ -64,15 +64,17 @@ authOTPRouter.post('/login', async function (req, res) {
 // parameters : code, email_id, address, subscribe, clientId
 authOTPRouter.post('/authenticate', async function (req, res) {
   // #swagger.tags = ['Users']
+  
   try {
     let token = '';
     let addedUser = {};
+    const { code, email_id, subscribe, clientId } = req.body;
     const uniqueSessionId = uuidv4();
     /* eslint-disable */
     const params: OTPsAuthenticateRequest = {
-      code: req?.body?.code,
+      code: code,
       session_duration_minutes: 60,
-      method_id: req?.body?.email_id,
+      method_id: email_id,
     };
     /* eslint-enable */
 
@@ -105,8 +107,8 @@ authOTPRouter.post('/authenticate', async function (req, res) {
     }
 
     //if client id exist then add in user client map
-    if (req?.body?.clientId) {
-      await AddUserClientMap(existingUser?.id ? existingUser?.id : addedUser?.id, req?.body?.clientId);
+    if (clientId) {
+      await AddUserClientMap(existingUser?.id ? existingUser?.id : addedUser?.id, clientId);
     } else {
       Logger.error(`Client id not found`);
       throw new Error('Client id not found');

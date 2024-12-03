@@ -59,6 +59,7 @@ export const capacityDelegation = async (walletAddress) => {
 capacityRouter.post('/', isAuthenticated, isValidAddress, async (req, res) => {
   // #swagger.tags = ['Users']
   try {
+    const {address} = req.body;
     const id = req?.user?.id;
     const existingUser = await userRepository.findOne({
       where: {
@@ -69,19 +70,19 @@ capacityRouter.post('/', isAuthenticated, isValidAddress, async (req, res) => {
       Logger.info(`The address against this email was not found`);
 
       const updatedUser = {
-        address: req?.body.address, // pkp address
+        address: address, // pkp address
       };
 
       await userRepository.update({ id: existingUser?.id }, updatedUser);
       Logger.info(`Putting Lit address on the current user id ${existingUser?.id}`);
     } else {
       Logger.info(`The address against this email is already found`);
-      if (req?.body?.address !== existingUser?.address) {
+      if (address !== existingUser?.address) {
         Logger.error(`The address against this email is not correct`);
         return res.status(400).json({ error: 'The address against this email is not correct' });
       }
     }
-    const capacityDelegationAuthSig = await capacityDelegation(req?.body.address);
+    const capacityDelegationAuthSig = await capacityDelegation(address);
     Logger.info(`Capacity delegation auth sig generated for user id: ${id}`);
     return res.status(200).json({ success: true, capacityDelegationAuthSig });
   } catch (error) {

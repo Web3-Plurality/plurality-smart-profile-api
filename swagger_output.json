@@ -132,6 +132,18 @@
             "name": "authorization",
             "in": "header",
             "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "smartProfile": {
+                  "example": "any"
+                }
+              }
+            }
           }
         ],
         "responses": {
@@ -164,6 +176,18 @@
             "name": "authorization",
             "in": "header",
             "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "address": {
+                  "example": "any"
+                }
+              }
+            }
           }
         ],
         "responses": {
@@ -221,6 +245,29 @@
           "Users"
         ],
         "description": "",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "code": {
+                  "example": "any"
+                },
+                "email_id": {
+                  "example": "any"
+                },
+                "subscribe": {
+                  "example": "any"
+                },
+                "clientId": {
+                  "example": "any"
+                }
+              }
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK"
@@ -237,6 +284,20 @@
           "Users"
         ],
         "description": "",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "address": {
+                  "example": "any"
+                }
+              }
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK"
@@ -261,6 +322,24 @@
             "name": "x-siwe",
             "in": "header",
             "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "address": {
+                  "example": "any"
+                },
+                "clientId": {
+                  "example": "any"
+                },
+                "email": {
+                  "example": "any"
+                }
+              }
+            }
           }
         ],
         "responses": {
@@ -1129,6 +1208,47 @@
             "description": "Internal Server Error"
           }
         }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "smartProfile": {
+        "username": "",
+        "avatar": "",
+        "bio": "",
+        "interests": [],
+        "scores": [
+          {
+            "scoreType": "",
+            "scoreValue": 0
+          }
+        ],
+        "reputationTags": [],
+        "badges": [],
+        "collections": [],
+        "extra": [
+          {
+            "field": "",
+            "value": 0
+          }
+        ],
+        "linkedAddress": [
+          {
+            "chainName": "",
+            "chainId": "",
+            "address": ""
+          }
+        ],
+        "connectedProfiles": [
+          {
+            "platformName": "",
+            "userPlatformId": "",
+            "username": ""
+          }
+        ],
+        "connectedPlatforms": [],
+        "attestation": {}
       }
     }
   }

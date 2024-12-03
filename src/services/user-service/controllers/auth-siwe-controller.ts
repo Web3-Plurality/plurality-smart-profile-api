@@ -54,7 +54,7 @@ const userRegisterViaWallet = async (email: string, address: string, clientId: s
 authSiweRouter.post('/login', (req, res) => {
   // #swagger.tags = ['Users']
   try {
-    const walletAddress = req?.body?.address;
+    const walletAddress : string = req.body.address;
     if (!ethers.isAddress(walletAddress)) {
       Logger.error(`Fatal error due to invalid wallet address: ${walletAddress}`);
       return res.status(400).json({ error: 'Invalid wallet address' });
@@ -73,10 +73,11 @@ authSiweRouter.post('/login', (req, res) => {
 authSiweRouter.post('/authenticate', async function (req, res) {
   // #swagger.tags = ['Users']
   try {
+    const {address, clientId, email} : {address: string, clientId: string, email: string } = req.body;
     const siweObj = req.headers['x-siwe'] ? JSON.parse(req.headers['x-siwe']) : '';
     const siweToken = siweObj?.siwe;
     const message = decodeURIComponent(siweObj?.message);
-    const nonce = memoryStoreNonce.get(req?.body?.address);
+    const nonce = memoryStoreNonce.get(address);
     const siweMessage = new SiweMessage(message);
     const siweResponse = await siweMessage.verify({ signature: siweToken });
     // check nonce
@@ -85,19 +86,19 @@ authSiweRouter.post('/authenticate', async function (req, res) {
       return res.status(400).send('Invalid nonce');
     }
     // delete nonce with the address
-    delete memoryStoreNonce[req?.body?.address];
+    delete memoryStoreNonce[address];
     // check signature
     if (!siweResponse.success) {
       Logger.error(`Invalid siwe token`);
       return res.status(400).send('Invalid siwe token');
     }
-    if (siweMessage?.address?.toLowerCase() !== req?.body?.address?.toLowerCase()) {
+    if (siweMessage?.address?.toLowerCase() !== address?.toLowerCase()) {
       Logger.error(`Invalid siwe token`);
       return res.status(400).send('Invalid siwe token');
     }
     // create jwt token
-    Logger.info(`user authenticated successfully by address ${req?.body?.address}`);
-    const { token, user } = await userRegisterViaWallet(req?.body?.email, req?.body?.address, req?.body?.clientId);
+    Logger.info(`user authenticated successfully by address ${address}`);
+    const { token, user } = await userRegisterViaWallet(email, address, clientId);
     return res.status(200).json({ success: true, token, user });
   } catch (err) {
     Logger.error(`Error occurred: ${err}`);

@@ -1,8 +1,8 @@
-import swaggerAutogen from 'swagger-autogen';
+const swaggerAutogen = require('swagger-autogen')();
 
 const outputFile = './swagger_output.json'; // File to write Swagger JSON
 const endpointsFiles = ['./src/index.ts']; // File(s) containing API routes
-import {SmartProfile} from './src/services/user-service/entity/smart-profile.ts';
+
 
 const doc = {
     info: {
@@ -10,14 +10,43 @@ const doc = {
         description: 'Description of Plurality API',
     },
     components: {
-        schemas:{
-            smartProfile: SmartProfile
+        schemas: {
+            smartProfile: {
+                username: "",
+                avatar: "",
+                bio: "",
+                interests: [],
+                scores: [{
+                    scoreType: "",
+                    scoreValue: 0,
+                  }
+                  ],
+                reputationTags: [],
+                badges: [],
+                collections: [],
+                extra: [{
+                    field: "",
+                    value: 0,
+                }],
+                linkedAddress: [{
+                    chainName: "",
+                    chainId: "",
+                    address: ""
+                }],
+                connectedProfiles: [{
+                    platformName: "",
+                    userPlatformId: "",
+                    username: "",
+                }],
+                connectedPlatforms: [],
+                attestation: {}
+            }
         }
     },
-    tags: [                   // by default: empty Array
+    tags: [
         {
-            name: 'Users',             // Tag name
-            description: 'user service'       // Tag description
+            name: 'Users',  // Tag name
+            description: 'user service'  // Tag description
         },
 
         {
