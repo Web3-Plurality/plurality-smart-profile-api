@@ -57,6 +57,7 @@ passport.use(
 
 // Start authentication flow
 tiktokRouter.get('/', hasValidEventParam, isProfileMapEmpty, async (req: Request, res: Response, next) => {
+  // #swagger.tags = ['OAuth-TikTok']
   Logger.info(`${TIKTOK_APP}: Request for Tiktok Oauth has been received successfully on sse Id ${req.sseID}`);
   const csrfState = Math.random().toString(36).substring(2);
   passport.authenticate('tiktok', { state: csrfState })(req, res, next);
@@ -64,6 +65,7 @@ tiktokRouter.get('/', hasValidEventParam, isProfileMapEmpty, async (req: Request
 
 // Callback handler
 tiktokRouter.get('/callback', passport.authenticate('tiktok', { session: false }), async (req, res) => {
+  // #swagger.tags = ['OAuth-TikTok']
   try {
     const accessTokenId = uuidv4();
     memoryStoreToken.set(accessTokenId, req.user.accessToken);
@@ -83,6 +85,7 @@ tiktokRouter.post(
   hasValidAccessTokenHeader,
   isProfileMapEmpty,
   async (req: Request, res: Response) => {
+    // #swagger.tags = ['OAuth-TikTok']
     try {
       Logger.info(`${TIKTOK_APP}: Request body tokenUUID ${req?.accessTokenID}`);
       Logger.info(`${TIKTOK_APP}: Request body sseUUID ${req?.sseID}`);
@@ -102,6 +105,7 @@ tiktokRouter.post(
 
 // Return User Object
 tiktokRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfileMapEmpty, async (req, res) => {
+  // #swagger.tags = ['OAuth-TikTok']
   try {
     Logger.info(`${TIKTOK_APP}: Request for information has been received successfully with id ${req.accessTokenID}`);
     const accessToken = memoryStoreToken.get(req.accessTokenID);

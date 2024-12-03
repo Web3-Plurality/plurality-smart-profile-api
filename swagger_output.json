@@ -1,0 +1,1135 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Plurality API",
+    "description": "Description of Plurality API",
+    "version": "1.0.0"
+  },
+  "host": "app.plurality.local:443",
+  "basePath": "/",
+  "tags": [
+    {
+      "name": "Users",
+      "description": "user service"
+    },
+    {
+      "name": "Client App",
+      "description": "client app service"
+    },
+    {
+      "name": "OAuth-Facebook",
+      "description": "OAuth service"
+    },
+    {
+      "name": "OAuth-Fortnite",
+      "description": "OAuth service"
+    },
+    {
+      "name": "OAuth-Instagram",
+      "description": "OAuth service"
+    },
+    {
+      "name": "OAuth-Roblox",
+      "description": "OAuth service"
+    },
+    {
+      "name": "OAuth-Snapchat",
+      "description": "OAuth service"
+    },
+    {
+      "name": "OAuth-TikTok",
+      "description": "OAuth service"
+    },
+    {
+      "name": "OAuth-Twitter",
+      "description": "OAuth service"
+    },
+    {
+      "name": "Test",
+      "description": "for api testing"
+    }
+  ],
+  "schemes": [
+    "https"
+  ],
+  "paths": {
+    "/": {
+      "get": {
+        "tags": [
+          "Test"
+        ],
+        "description": "",
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/user/smart-profile/": {
+      "put": {
+        "tags": [
+          "Users"
+        ],
+        "description": "",
+        "parameters": [
+          {
+            "name": "x-profile-type-stream-id",
+            "in": "header",
+            "type": "string"
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "data": {
+                  "example": "any"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Users"
+        ],
+        "description": "",
+        "parameters": [
+          {
+            "name": "x-profile-type-stream-id",
+            "in": "header",
+            "type": "string"
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/user/capacity/": {
+      "post": {
+        "tags": [
+          "Users"
+        ],
+        "description": "",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/user/auth/otp/login": {
+      "post": {
+        "tags": [
+          "Users"
+        ],
+        "description": "",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "email": {
+                  "example": "any"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          }
+        }
+      }
+    },
+    "/user/auth/otp/authenticate": {
+      "post": {
+        "tags": [
+          "Users"
+        ],
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/user/auth/siwe/login": {
+      "post": {
+        "tags": [
+          "Users"
+        ],
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/user/auth/siwe/authenticate": {
+      "post": {
+        "tags": [
+          "Users"
+        ],
+        "description": "",
+        "parameters": [
+          {
+            "name": "x-siwe",
+            "in": "header",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/oauth-twitter/": {
+      "get": {
+        "tags": [
+          "OAuth-Twitter"
+        ],
+        "description": "",
+        "parameters": [
+          {
+            "name": "sse_id",
+            "in": "query",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "Bad Request"
+          }
+        }
+      }
+    },
+    "/oauth-twitter/callback": {
+      "get": {
+        "tags": [
+          "OAuth-Twitter"
+        ],
+        "description": "",
+        "responses": {
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/oauth-twitter/event": {
+      "post": {
+        "tags": [
+          "OAuth-Twitter"
+        ],
+        "description": "",
+        "parameters": [
+          {
+            "name": "x-sse-id",
+            "in": "header",
+            "type": "string"
+          },
+          {
+            "name": "x-token-id",
+            "in": "header",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/oauth-twitter/info": {
+      "get": {
+        "tags": [
+          "OAuth-Twitter"
+        ],
+        "description": "",
+        "parameters": [
+          {
+            "name": "x-token-id",
+            "in": "header",
+            "type": "string"
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "408": {
+            "description": "Request Timeout"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/oauth-snapchat/": {
+      "get": {
+        "tags": [
+          "OAuth-Snapchat"
+        ],
+        "description": "",
+        "parameters": [
+          {
+            "name": "sse_id",
+            "in": "query",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "Bad Request"
+          }
+        }
+      }
+    },
+    "/oauth-snapchat/callback": {
+      "get": {
+        "tags": [
+          "OAuth-Snapchat"
+        ],
+        "description": "",
+        "responses": {
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/oauth-snapchat/event": {
+      "post": {
+        "tags": [
+          "OAuth-Snapchat"
+        ],
+        "description": "",
+        "parameters": [
+          {
+            "name": "x-sse-id",
+            "in": "header",
+            "type": "string"
+          },
+          {
+            "name": "x-token-id",
+            "in": "header",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/oauth-snapchat/info": {
+      "get": {
+        "tags": [
+          "OAuth-Snapchat"
+        ],
+        "description": "",
+        "parameters": [
+          {
+            "name": "x-token-id",
+            "in": "header",
+            "type": "string"
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "408": {
+            "description": "Request Timeout"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/oauth-roblox/": {
+      "get": {
+        "tags": [
+          "OAuth-Roblox"
+        ],
+        "description": "",
+        "parameters": [
+          {
+            "name": "sse_id",
+            "in": "query",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "Bad Request"
+          }
+        }
+      }
+    },
+    "/oauth-roblox/callback": {
+      "get": {
+        "tags": [
+          "OAuth-Roblox"
+        ],
+        "description": "",
+        "responses": {
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/oauth-roblox/event": {
+      "post": {
+        "tags": [
+          "OAuth-Roblox"
+        ],
+        "description": "",
+        "parameters": [
+          {
+            "name": "x-sse-id",
+            "in": "header",
+            "type": "string"
+          },
+          {
+            "name": "x-token-id",
+            "in": "header",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/oauth-roblox/info": {
+      "get": {
+        "tags": [
+          "OAuth-Roblox"
+        ],
+        "description": "",
+        "parameters": [
+          {
+            "name": "x-token-id",
+            "in": "header",
+            "type": "string"
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "408": {
+            "description": "Request Timeout"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/oauth-facebook/": {
+      "get": {
+        "tags": [
+          "OAuth-Facebook"
+        ],
+        "description": "",
+        "parameters": [
+          {
+            "name": "sse_id",
+            "in": "query",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "Bad Request"
+          }
+        }
+      }
+    },
+    "/oauth-facebook/callback": {
+      "get": {
+        "tags": [
+          "OAuth-Facebook"
+        ],
+        "description": "",
+        "responses": {
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/oauth-facebook/event": {
+      "post": {
+        "tags": [
+          "OAuth-Facebook"
+        ],
+        "description": "",
+        "parameters": [
+          {
+            "name": "x-sse-id",
+            "in": "header",
+            "type": "string"
+          },
+          {
+            "name": "x-token-id",
+            "in": "header",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/oauth-facebook/info": {
+      "get": {
+        "tags": [
+          "OAuth-Facebook"
+        ],
+        "description": "",
+        "parameters": [
+          {
+            "name": "x-token-id",
+            "in": "header",
+            "type": "string"
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "408": {
+            "description": "Request Timeout"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/oauth-instagram/": {
+      "get": {
+        "tags": [
+          "OAuth-Instagram"
+        ],
+        "description": "",
+        "parameters": [
+          {
+            "name": "sse_id",
+            "in": "query",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "Bad Request"
+          }
+        }
+      }
+    },
+    "/oauth-instagram/callback": {
+      "get": {
+        "tags": [
+          "OAuth-Instagram"
+        ],
+        "description": "",
+        "responses": {
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/oauth-instagram/event": {
+      "post": {
+        "tags": [
+          "OAuth-Instagram"
+        ],
+        "description": "",
+        "parameters": [
+          {
+            "name": "x-sse-id",
+            "in": "header",
+            "type": "string"
+          },
+          {
+            "name": "x-token-id",
+            "in": "header",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/oauth-instagram/info": {
+      "get": {
+        "tags": [
+          "OAuth-Instagram"
+        ],
+        "description": "",
+        "parameters": [
+          {
+            "name": "x-token-id",
+            "in": "header",
+            "type": "string"
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "408": {
+            "description": "Request Timeout"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/oauth-fortnite/": {
+      "get": {
+        "tags": [
+          "OAuth-Fortnite"
+        ],
+        "description": "",
+        "parameters": [
+          {
+            "name": "sse_id",
+            "in": "query",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "Bad Request"
+          }
+        }
+      }
+    },
+    "/oauth-fortnite/callback": {
+      "get": {
+        "tags": [
+          "OAuth-Fortnite"
+        ],
+        "description": "",
+        "responses": {
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/oauth-fortnite/event": {
+      "post": {
+        "tags": [
+          "OAuth-Fortnite"
+        ],
+        "description": "",
+        "parameters": [
+          {
+            "name": "x-sse-id",
+            "in": "header",
+            "type": "string"
+          },
+          {
+            "name": "x-token-id",
+            "in": "header",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/oauth-fortnite/info": {
+      "get": {
+        "tags": [
+          "OAuth-Fortnite"
+        ],
+        "description": "",
+        "parameters": [
+          {
+            "name": "x-token-id",
+            "in": "header",
+            "type": "string"
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "408": {
+            "description": "Request Timeout"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/oauth-tiktok/": {
+      "get": {
+        "tags": [
+          "OAuth-TikTok"
+        ],
+        "description": "",
+        "parameters": [
+          {
+            "name": "sse_id",
+            "in": "query",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "Bad Request"
+          }
+        }
+      }
+    },
+    "/oauth-tiktok/callback": {
+      "get": {
+        "tags": [
+          "OAuth-TikTok"
+        ],
+        "description": "",
+        "responses": {
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/oauth-tiktok/event": {
+      "post": {
+        "tags": [
+          "OAuth-TikTok"
+        ],
+        "description": "",
+        "parameters": [
+          {
+            "name": "x-sse-id",
+            "in": "header",
+            "type": "string"
+          },
+          {
+            "name": "x-token-id",
+            "in": "header",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/oauth-tiktok/info": {
+      "get": {
+        "tags": [
+          "OAuth-TikTok"
+        ],
+        "description": "",
+        "parameters": [
+          {
+            "name": "x-token-id",
+            "in": "header",
+            "type": "string"
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/register-event/": {
+      "get": {
+        "description": "",
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/crm/client/": {
+      "post": {
+        "tags": [
+          "Client App"
+        ],
+        "description": "",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "img": {
+                  "example": "any"
+                },
+                "streamId": {
+                  "example": "any"
+                },
+                "links": {
+                  "example": "any"
+                },
+                "domains": {
+                  "example": "any"
+                },
+                "incentiveType": {
+                  "example": "any"
+                },
+                "appType": {
+                  "example": "any"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Client App"
+        ],
+        "description": "",
+        "parameters": [
+          {
+            "name": "x-domain",
+            "in": "header",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/crm/client/{id}": {
+      "put": {
+        "tags": [
+          "Client App"
+        ],
+        "description": "",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "img": {
+                  "example": "any"
+                },
+                "streamId": {
+                  "example": "any"
+                },
+                "links": {
+                  "example": "any"
+                },
+                "domains": {
+                  "example": "any"
+                },
+                "incentiveType": {
+                  "example": "any"
+                },
+                "appType": {
+                  "example": "any"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    }
+  }
+}

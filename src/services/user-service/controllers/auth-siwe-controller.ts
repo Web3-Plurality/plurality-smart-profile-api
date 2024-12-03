@@ -52,6 +52,7 @@ const userRegisterViaWallet = async (email: string, address: string, clientId: s
 
 //generate random string to take user signature
 authSiweRouter.post('/login', (req, res) => {
+  // #swagger.tags = ['Users']
   try {
     const walletAddress = req?.body?.address;
     if (!ethers.isAddress(walletAddress)) {
@@ -70,6 +71,7 @@ authSiweRouter.post('/login', (req, res) => {
 });
 // address, clientId, email, subscribe
 authSiweRouter.post('/authenticate', async function (req, res) {
+  // #swagger.tags = ['Users']
   try {
     const siweObj = req.headers['x-siwe'] ? JSON.parse(req.headers['x-siwe']) : '';
     const siweToken = siweObj?.siwe;

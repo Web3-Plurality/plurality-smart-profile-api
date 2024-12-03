@@ -6,7 +6,7 @@ import * as dotenv from 'dotenv';
 import session from 'express-session';
 import passport from 'passport';
 import swaggerUi from 'swagger-ui-express';
-import * as swaggerDocument from './swagger.json';
+import * as swaggerDocument from '../swagger_output.json';
 import https from 'https';
 import { AppDataSource } from './data-source';
 import fs from 'fs';
@@ -65,6 +65,7 @@ app.use('/crm/client', clientRouter);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 app.get('/', async (req: Request, res: Response): Promise<Response> => {
+  // #swagger.tags = ['Test']
   return res.status(200).send({
     message: 'Hello World!',
   });

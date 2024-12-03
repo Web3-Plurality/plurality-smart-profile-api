@@ -63,12 +63,14 @@ passport.use(
 
 // Start authentication flow
 facebookRouter.get('/', hasValidEventParam, isProfileMapEmpty, async (req: Request, res: Response, next) => {
+  // #swagger.tags = ['OAuth-Facebook']
   Logger.info(`${FACEBOOK_APP}: Request for Oauth has been received successfully on sse Id ${req.sseID}`);
   passport.authenticate('facebook')(req, res, next);
 });
 
 // Callback handler
 facebookRouter.get('/callback', passport.authenticate('facebook', { session: false }), async (req, res) => {
+    // #swagger.tags = ['OAuth-Facebook']
   try {
     const accessTokenId = uuidv4();
     memoryStoreToken.set(accessTokenId, req.user.accessToken);
@@ -88,6 +90,7 @@ facebookRouter.post(
   hasValidAccessTokenHeader,
   isProfileMapEmpty,
   async (req: Request, res: Response) => {
+      // #swagger.tags = ['OAuth-Facebook']
     try {
       Logger.info(`${FACEBOOK_APP}: Request body tokenUUID ${req?.accessTokenID}`);
       Logger.info(`${FACEBOOK_APP}: Request body sseUUID ${req?.sseID}`);
@@ -107,6 +110,7 @@ facebookRouter.post(
 
 // Return User Object
 facebookRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfileMapEmpty, async (req, res) => {
+    // #swagger.tags = ['OAuth-Facebook']
   try {
     Logger.info(`${FACEBOOK_APP}: Request for information has been received successfully with id ${req.accessTokenID}`);
     const accessToken = memoryStoreToken.get(req.accessTokenID);

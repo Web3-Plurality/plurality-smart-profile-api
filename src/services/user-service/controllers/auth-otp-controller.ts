@@ -21,6 +21,8 @@ const stytchClient = new stytch.Client({
 
 // Start the authentication flow
 authOTPRouter.post('/login', async function (req, res) {
+  // #swagger.tags = ['Users']
+  
   try {
     const templateId = 'sign_in_to_plurality_network';
     /* eslint-disable */
@@ -61,6 +63,7 @@ authOTPRouter.post('/login', async function (req, res) {
 // Complete the authentication flow which mints the session
 // parameters : code, email_id, address, subscribe, clientId
 authOTPRouter.post('/authenticate', async function (req, res) {
+  // #swagger.tags = ['Users']
   try {
     let token = '';
     let addedUser = {};

@@ -57,12 +57,14 @@ passport.use(
 
 // Start authentication flow
 instagramRouter.get('/', hasValidEventParam, isProfileMapEmpty, async (req: Request, res: Response, next) => {
+  // #swagger.tags = ['OAuth-Instagram']
   Logger.info(`${INSTAGRAM_APP}: Request for Oauth has been received successfully on sse Id ${req.sseID}`);
   passport.authenticate('instagram')(req, res, next);
 });
 
 // Callback handler
 instagramRouter.get('/callback', passport.authenticate('instagram', { session: false }), async (req, res) => {
+  // #swagger.tags = ['OAuth-Instagram']
   try {
     const accessTokenId = uuidv4();
     memoryStoreToken.set(accessTokenId, req.user.accessToken);
@@ -82,6 +84,7 @@ instagramRouter.post(
   hasValidAccessTokenHeader,
   isProfileMapEmpty,
   async (req: Request, res: Response) => {
+    // #swagger.tags = ['OAuth-Instagram']
     try {
       Logger.info(`${INSTAGRAM_APP}: Request body tokenUUID ${req?.accessTokenID}`);
       Logger.info(`${INSTAGRAM_APP}: Request body sseUUID ${req?.sseID}`);
@@ -101,6 +104,7 @@ instagramRouter.post(
 
 // Return User Object
 instagramRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfileMapEmpty, async (req, res) => {
+  // #swagger.tags = ['OAuth-Instagram']
   try {
     Logger.info(
       `${INSTAGRAM_APP}: Request for information has been received successfully with id ${req.accessTokenID}`,
