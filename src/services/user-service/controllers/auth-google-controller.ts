@@ -66,6 +66,7 @@ authGoogleRouter.get('/callback', passport.authenticate('google', { session: fal
 
     if (existingUser) {
       Logger.info(`This user already exists!`);
+      token = jwt.sign({ id: existingUser?.id, uniqueSessionId }, process.env.JWT_SECRET, { expiresIn: '1d' });
       if (!existingUser.loginType) {
         Logger.info(`user ${existingUser.id} does not have login type, updating login type to google`);
         await userRepository.update(existingUser.id, { loginType: LoginType.google });
@@ -80,10 +81,13 @@ authGoogleRouter.get('/callback', passport.authenticate('google', { session: fal
         };
         /* eslint-enable */
         const resp = await stytchClient.otps.email.loginOrCreate(options);
+        memoryStoreToken.set(accessTokenId, resp?.email_id );
         Logger.info('OTP sent successfully');
-        return res.status(200).json({ success: true, message: 'OTP sent successfully', emailId: resp?.email_id });
+        const url = `${process.env.WIDGET_UI_URL}?token_id=${accessTokenId}&redirect=${true}`;
+        Logger.info(`Redirecting to ${url}`);
+        return res.redirect(url);
       }
-      token = jwt.sign({ id: existingUser?.id, uniqueSessionId }, process.env.JWT_SECRET, { expiresIn: '1d' });
+      
     } else {
       // If the user doesn't exist, insert a new row
       Logger.info(`The user with this email was not found`);
@@ -95,10 +99,10 @@ authGoogleRouter.get('/callback', passport.authenticate('google', { session: fal
       Logger.info(`new user created successfully with id ${addedUser?.id}`);
       token = jwt.sign({ id: addedUser?.id, uniqueSessionId }, process.env.JWT_SECRET, { expiresIn: '1d' });
     }
+    
     Logger.info(`jwt token generated for user id ${existingUser?.id ? existingUser?.id : addedUser?.id}`);
-
     memoryStoreToken.set(accessTokenId, { googleJwtToken: req?.user?.googleJwtToken, pluralityToken: token });
-    const url = `${process.env.WIDGET_UI_URL}?token_id=${accessTokenId}`;
+    const url = `${process.env.WIDGET_UI_URL}?token_id=${accessTokenId}&redirect=${false}`;
 
     Logger.info(`Redirecting to ${url}`);
     res.redirect(url);
@@ -108,12 +112,23 @@ authGoogleRouter.get('/callback', passport.authenticate('google', { session: fal
   }
 });
 
+
 authGoogleRouter.post('/event', hasValidEventHeader, hasValidAccessTokenHeader, async (req, res) => {
   try {
     Logger.info(`Request body tokenUUID ${req?.accessTokenID}`);
     Logger.info(`Request body sseUUID ${req?.sseID}`);
-    const tokenObj = memoryStoreToken.get(req?.accessTokenID);
     const serverSentEventResponse = memoryStoreSSE.get(req?.sseID);
+    if(req?.body?.redirect){
+      const emailId = memoryStoreToken.get(req?.accessTokenID);
+      serverSentEventResponse.write(
+        `data: {"message":"received", "app":"google", "emailId":"${emailId}"}\n\n`,
+      );
+      Logger.info(` Server Side Event has been sent successfully`);
+      memoryStoreSSE.delete(req?.sseID);
+      memoryStoreSSE.delete(req?.accessTokenID);  
+      return res.status(200).json({ message: 'success'});
+    }
+    const tokenObj = memoryStoreToken.get(req?.accessTokenID);
     serverSentEventResponse.write(
       `data: {"message":"received", "app":"google", "googleJwtToken":"${tokenObj?.googleJwtToken}", "pluralityToken": "${tokenObj?.pluralityToken}"}\n\n`,
     );
@@ -133,41 +148,4 @@ authGoogleRouter.post('/event', hasValidEventHeader, hasValidAccessTokenHeader, 
     Logger.info(`Error in sending SSE ${error.message}`);
     return res.status(500).json({ message: 'Internal Server error' });
   }
-});
-
-authGoogleRouter.get('/mint-pkp', async (req, res) => {
-  const EOA_PRIVATE_KEY = process.env.PUBLIC_DAPP_OWNER_WALLET_PRIVATE_KEY || '';
-  const signer = new ethers.Wallet(
-    EOA_PRIVATE_KEY,
-    new ethers.providers.JsonRpcProvider(LIT_RPC.CHRONICLE_YELLOWSTONE),
-  );
-
-  console.log('Step 1 outputData:', await signer.getAddress());
-  const litContracts = new LitContracts({
-    signer: signer,
-    debug: false,
-    network: LIT_NETWORK.DatilDev,
-  });
-
-  await litContracts.connect();
-
-  console.log('Step 2 outputData:', litContracts);
-
-  const eoaWalletOwnedPkp = (await litContracts.pkpNftContractUtils.write.mint()).pkp;
-
-  console.log('Step 3 outputData:', eoaWalletOwnedPkp);
-  const authMethodType = ethers.utils.keccak256(ethers.utils.toUtf8Bytes('Plurality Login'));
-  const authMethodId = ethers.utils.keccak256(ethers.utils.toUtf8Bytes(`plurality:${req.body.id}`));
-  const customAuthMethod = {
-    authMethodType: 1001,
-    authMethodId: 'app-id-xxx:user-id-yyy',
-  };
-  const receipt = await litContracts.addPermittedAuthMethod({
-    pkpTokenId: eoaWalletOwnedPkp.tokenId,
-    authMethodType: customAuthMethod.authMethodType,
-    authMethodId: customAuthMethod.authMethodId,
-    authMethodScopes: [AUTH_METHOD_SCOPE.SignAnything],
-  });
-
-  res.status(200).json({ message: 'success', pkp: eoaWalletOwnedPkp });
 });
