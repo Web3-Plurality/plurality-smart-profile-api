@@ -30,6 +30,26 @@ authOTPRouter.post('/login', async function (req, res) {
       expiration_minutes: 2,
     };
     /* eslint-enable */
+
+    const existingUser = await userRepository.findOne({
+      where: {
+        email: req.body.email,
+      },
+    });
+    if (existingUser) {
+      if (!existingUser?.loginType) {
+        Logger.info(`user ${existingUser.id} does not have login type, updating login type to stytch`);
+        await userRepository.update(existingUser.id, { loginType: LoginType.stytch });
+      } else if (existingUser.loginType !== LoginType.stytch && existingUser.loginType === LoginType.google) {
+        Logger.error(`user ${existingUser.id} is not authorized to login with stytch`);
+        return res.status(200).json({
+          redirectToGoogle: true,
+          message: `you are not authorized to login with OTP, please use ${existingUser.loginType} method to login`,
+        });
+      }
+    }
+
+
     const resp = await stytchClient.otps.email.loginOrCreate(options);
     Logger.info('OTP sent successfully');
     res.status(200).json({ success: true, message: 'OTP sent successfully', emailId: resp?.email_id });
@@ -69,18 +89,7 @@ authOTPRouter.post('/authenticate', async function (req, res) {
     if (existingUser) {
       Logger.info(`This user already exists!`);
       token = jwt.sign({ id: existingUser?.id, uniqueSessionId }, process.env.JWT_SECRET, { expiresIn: '1d' });
-      if (!existingUser.loginType) {
-        Logger.info(`user ${existingUser.id} does not have login type, updating login type to stytch`);
-        await userRepository.update(existingUser.id, { loginType: LoginType.stytch });
-      } else if (existingUser.loginType !== LoginType.stytch && existingUser.loginType === LoginType.google) {
-        Logger.error(`user ${existingUser.id} is not authorized to login with stytch`);
-        return res
-          .status(200)
-          .json({
-            redirectToGoogle: true,
-            message: `you are not authorized to login with OTP, please use ${existingUser.loginType} method to login`,
-          });
-      }
+
     } else {
       // If the user doesn't exist, insert a new row
       Logger.info(`The user with this email was not found`);

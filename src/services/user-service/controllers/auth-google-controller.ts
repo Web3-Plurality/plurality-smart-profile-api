@@ -81,13 +81,12 @@ authGoogleRouter.get('/callback', passport.authenticate('google', { session: fal
         };
         /* eslint-enable */
         const resp = await stytchClient.otps.email.loginOrCreate(options);
-        memoryStoreToken.set(accessTokenId, resp?.email_id );
+        memoryStoreToken.set(accessTokenId, resp?.email_id);
         Logger.info('OTP sent successfully');
         const url = `${process.env.WIDGET_UI_URL}?token_id=${accessTokenId}&redirect=${true}`;
         Logger.info(`Redirecting to ${url}`);
         return res.redirect(url);
       }
-      
     } else {
       // If the user doesn't exist, insert a new row
       Logger.info(`The user with this email was not found`);
@@ -99,7 +98,7 @@ authGoogleRouter.get('/callback', passport.authenticate('google', { session: fal
       Logger.info(`new user created successfully with id ${addedUser?.id}`);
       token = jwt.sign({ id: addedUser?.id, uniqueSessionId }, process.env.JWT_SECRET, { expiresIn: '1d' });
     }
-    
+
     Logger.info(`jwt token generated for user id ${existingUser?.id ? existingUser?.id : addedUser?.id}`);
     memoryStoreToken.set(accessTokenId, { googleJwtToken: req?.user?.googleJwtToken, pluralityToken: token });
     const url = `${process.env.WIDGET_UI_URL}?token_id=${accessTokenId}&redirect=${false}`;
@@ -112,21 +111,18 @@ authGoogleRouter.get('/callback', passport.authenticate('google', { session: fal
   }
 });
 
-
 authGoogleRouter.post('/event', hasValidEventHeader, hasValidAccessTokenHeader, async (req, res) => {
   try {
     Logger.info(`Request body tokenUUID ${req?.accessTokenID}`);
     Logger.info(`Request body sseUUID ${req?.sseID}`);
     const serverSentEventResponse = memoryStoreSSE.get(req?.sseID);
-    if(req?.body?.redirect){
+    if (req?.body?.redirect) {
       const emailId = memoryStoreToken.get(req?.accessTokenID);
-      serverSentEventResponse.write(
-        `data: {"message":"received", "app":"google", "emailId":"${emailId}"}\n\n`,
-      );
+      serverSentEventResponse.write(`data: {"message":"received", "app":"google", "emailId":"${emailId}"}\n\n`);
       Logger.info(` Server Side Event has been sent successfully`);
       memoryStoreSSE.delete(req?.sseID);
-      memoryStoreSSE.delete(req?.accessTokenID);  
-      return res.status(200).json({ message: 'success'});
+      memoryStoreSSE.delete(req?.accessTokenID);
+      return res.status(200).json({ message: 'success' });
     }
     const tokenObj = memoryStoreToken.get(req?.accessTokenID);
     serverSentEventResponse.write(
