@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import LitTest from './LitTest';
 
 
 
@@ -15,23 +16,40 @@ function App() {
   const [sseID, setSSEID] = useState("");
   const [tokenID, setTokenID] = useState("null");
 
+  // const handle = ()=>{
+  //   axios.get('http://localhost:5000/register').then((res)=>{
+  // console.log("register")
+  // })
+  // }
 
+  // For Google Login
+  // useEffect(() => {
+  //   const handleMessage = (event: MessageEvent) => {
+  //     // if (event.origin !== "https://app.plurality.local") return
 
+  //     if (event.data.type === 'AUTH_SUCCESS') {
+  //       localStorage.setItem('token', event.data.pluralityToken);
+  //       localStorage.setItem('googleToken', event.data.googleAccessToken);
 
+  //       // getUser();
+  //     }
 
+  //     if (event.data.type === "AUTH_ERROR") {
+  //       console.error("Authentication failed", event.data)
+  //       // setAuthError(event.data.message)
+  //     }
+  //   }
 
+  //   window.addEventListener("message", handleMessage)
 
+  //   return () => {
+  //     window.removeEventListener("message", handleMessage)
+  //   }
+  // }, [])
 
-
-// const handle = ()=>{
-//   axios.get('http://localhost:5000/register').then((res)=>{
-// console.log("register")
-// })
-// }
-
-const handleAPI = ()=>{
-  setupSSE()
-}
+  const handleAPI = () => {
+    setupSSE()
+  }
 
   const setupSSE = () => {
     const evtSource = new EventSource('https://app.plurality.local/register-event', { withCredentials: true });
@@ -41,8 +59,9 @@ const handleAPI = ()=>{
       //set sse id
       setSSEID(JSON.parse(event?.data)?.id);
       // Enable the button if the message is "received"
-      if (JSON.parse(event?.data)?.message ==="received") {
-        console.log(JSON.parse(event?.data)?.auth)
+      if (JSON.parse(event?.data)?.message === "received") {
+
+        console.log(JSON.parse(event?.data))
         //localStorage.setItem('tokenID', JSON.parse(event?.data)?.auth);
 
         /*if (popup) {
@@ -53,17 +72,17 @@ const handleAPI = ()=>{
           console.log('No window to close or window already closed.');
         }*/
 
-          axios.get(`${process.env.REACT_APP_OAuth_Endpoint}/info`,{
-            headers: {
-              'x-token-id': JSON.parse(event?.data)?.auth
-            }
-          })
-            .then(response => {
-              console.log('Info:', response.data);
-            })
-            .catch(error => {
-              console.error('Error getting info:', error);
-            });
+        // axios.get(`${process.env.REACT_APP_OAuth_Endpoint}/info`,{
+        //   headers: {
+        //     'x-token-id': JSON.parse(event?.data)?.auth
+        //   }
+        // })
+        //   .then(response => {
+        //     console.log('Info:', response.data);
+        //   })
+        //   .catch(error => {
+        //     console.error('Error getting info:', error);
+        //   });
 
         //setIsInfoButtonEnabled(true);
       }
@@ -77,27 +96,44 @@ const handleAPI = ()=>{
 
   const handleOAuth = () => {
     localStorage.setItem('sseUUID', sseID);
-    const oauthWindow = window.open(`${process.env.REACT_APP_OAuth_Endpoint}?sse_id=${sseID}`, 'oauth', 'width=500,height=600');
+    const oauthWindow = window.open(`${process.env.REACT_APP_OAuth_Endpoint}/login?sse_id=${sseID}`, 'oauth', 'width=500,height=600');
     if (oauthWindow) {
       setPopup(oauthWindow);
       console.log('Window opened:', oauthWindow);
     } else {
       console.error('Failed to open window. It might be blocked by a popup blocker.');
     }
-   
-   
+
+
   };
 
 
-  const handleEvent = () => {
-    axios.post(`${process.env.REACT_APP_OAuth_Endpoint}/event`,{
+  const handleEvent = async () => {
+    const data = await axios.post(`${process.env.REACT_APP_OAuth_Endpoint}/event`, {
       headers: {
         'x-sse-id': sseID,
         "x-token-id": tokenID
       }
     })
-  
+
   };
+  const googleLogin = () => {
+    console.log("google login")
+    const oauthWindow = window.open(`${'https://app.plurality.local/user/auth/google/login'}`, 'oauth', 'width=500,height=600');
+    if (oauthWindow) {
+      setPopup(oauthWindow);
+      console.log('Window opened:', oauthWindow);
+    } else {
+      console.error('Failed to open window. It might be blocked by a popup blocker.');
+    }
+  }
+
+  const mintPkp = async () => {
+    console.log("mint pkp")
+    const data = await axios.get(`${process.env.REACT_APP_OAuth_Endpoint}/mint-pkp`)
+    console.log(data)
+  }
+
 
   return (
     <div className="App">
@@ -109,6 +145,13 @@ const handleAPI = ()=>{
       <div>
         <h2>SSE Message:</h2>
         <p>{sseMessage}</p>
+      </div>
+      <div>
+        <button onClick={googleLogin}>Login With Google</button>
+      </div>
+      <div >
+
+        <button onClick={()=>mintPkp()}>mint pkp</button>
       </div>
     </div>
   );

@@ -2,7 +2,7 @@ import stytch, { OTPsAuthenticateRequest, OTPsEmailLoginOrCreateRequest } from '
 import express from 'express';
 import Logger from '../../../lib/logger';
 import { AppDataSource } from '../../../data-source';
-import { User } from '../entity/user';
+import { LoginType, User } from '../entity/user';
 import { v4 as uuidv4 } from 'uuid';
 import jwt from 'jsonwebtoken';
 import { AddUserClientMap } from '../utils/user';
@@ -30,6 +30,25 @@ authOTPRouter.post('/login', async function (req, res) {
       expiration_minutes: 2,
     };
     /* eslint-enable */
+
+    const existingUser = await userRepository.findOne({
+      where: {
+        email: req.body.email,
+      },
+    });
+    if (existingUser) {
+      if (!existingUser?.loginType) {
+        Logger.info(`user ${existingUser.id} does not have login type, updating login type to stytch`);
+        await userRepository.update(existingUser.id, { loginType: LoginType.stytch });
+      } else if (existingUser.loginType !== LoginType.stytch && existingUser.loginType === LoginType.google) {
+        Logger.error(`user ${existingUser.id} is not authorized to login with stytch`);
+        return res.status(200).json({
+          redirectToGoogle: true,
+          message: `Redirecting you to Login with Google`,
+        });
+      }
+    }
+
     const resp = await stytchClient.otps.email.loginOrCreate(options);
     Logger.info('OTP sent successfully');
     res.status(200).json({ success: true, message: 'OTP sent successfully', emailId: resp?.email_id });
@@ -75,6 +94,7 @@ authOTPRouter.post('/authenticate', async function (req, res) {
       const newUser = await userRepository.create({
         email: email,
         subscribe: req?.body?.subscribe,
+        loginType: LoginType.stytch,
       });
       addedUser = await userRepository.save(newUser);
       Logger.info(`new user created successfully with id ${addedUser?.id}`);
@@ -90,15 +110,13 @@ authOTPRouter.post('/authenticate', async function (req, res) {
     }
 
     Logger.info(`jwt token generated for user id ${existingUser?.id ? existingUser?.id : addedUser?.id}`);
-    return res
-      .status(200)
-      .json({
-        success: true,
-        pluralityToken: token,
-        stytchToken: resp?.session_jwt,
-        user: existingUser?.id ? existingUser : addedUser,
-        userId: resp?.user_id,
-      });
+    return res.status(200).json({
+      success: true,
+      pluralityToken: token,
+      stytchToken: resp?.session_jwt,
+      user: existingUser?.id ? existingUser : addedUser,
+      userId: resp?.user_id,
+    });
   } catch (err) {
     console.error(err);
     res.status(401).send('Authentication failed');
