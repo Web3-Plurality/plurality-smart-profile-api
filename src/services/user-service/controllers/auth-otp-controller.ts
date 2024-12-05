@@ -49,7 +49,6 @@ authOTPRouter.post('/login', async function (req, res) {
       }
     }
 
-
     const resp = await stytchClient.otps.email.loginOrCreate(options);
     Logger.info('OTP sent successfully');
     res.status(200).json({ success: true, message: 'OTP sent successfully', emailId: resp?.email_id });
@@ -89,7 +88,6 @@ authOTPRouter.post('/authenticate', async function (req, res) {
     if (existingUser) {
       Logger.info(`This user already exists!`);
       token = jwt.sign({ id: existingUser?.id, uniqueSessionId }, process.env.JWT_SECRET, { expiresIn: '1d' });
-
     } else {
       // If the user doesn't exist, insert a new row
       Logger.info(`The user with this email was not found`);

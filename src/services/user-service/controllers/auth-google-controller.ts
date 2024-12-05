@@ -16,10 +16,7 @@ import {
 } from '../../oauth-service/middlewares/oauth-middleware';
 import { GOOGLE_APP } from '../../oauth-service/utils/constants';
 import { AddUserClientMap } from '../utils/user';
-import { ethers } from 'ethers';
-import { AUTH_METHOD_SCOPE, LIT_NETWORK, LIT_RPC } from '@lit-protocol/constants';
-import { LitContracts } from '@lit-protocol/contracts-sdk';
-import stytch, { OTPsAuthenticateRequest, OTPsEmailLoginOrCreateRequest } from 'stytch';
+import stytch, { OTPsEmailLoginOrCreateRequest } from 'stytch';
 
 dotenv.config();
 export const authGoogleRouter = express.Router();
