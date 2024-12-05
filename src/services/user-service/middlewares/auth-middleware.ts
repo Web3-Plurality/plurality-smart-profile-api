@@ -99,7 +99,7 @@ export const isAuthenticated = (req, res, next) => {
 // };
 
 export const isValidAddress = async (req, res, next) => {
-  ethers.utils.isAddress(req?.body?.data?.address) ? next() : res.status(400).send('Invalid address');
+  ethers.isAddress(req?.body?.data?.address) ? next() : res.status(400).send('Invalid address');
 };
 
 export const isValidAttestation = async (req, res, next) => {

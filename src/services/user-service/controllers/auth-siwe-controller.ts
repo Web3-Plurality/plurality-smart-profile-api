@@ -54,7 +54,7 @@ const userRegisterViaWallet = async (email: string, address: string, clientId: s
 authSiweRouter.post('/login', (req, res) => {
   try {
     const walletAddress = req?.body?.address;
-    if (!ethers.utils.isAddress(walletAddress)) {
+    if (!ethers.isAddress(walletAddress)) {
       Logger.error(`Fatal error due to invalid wallet address: ${walletAddress}`);
       return res.status(400).json({ error: 'Invalid wallet address' });
     } else {
