@@ -44,7 +44,7 @@ authOTPRouter.post('/login', async function (req, res) {
         Logger.error(`user ${existingUser.id} is not authorized to login with stytch`);
         return res.status(200).json({
           redirectToGoogle: true,
-          message: `you are not authorized to login with OTP, please use ${existingUser.loginType} method to login`,
+          message: `Redirecting you to Login with Google`,
         });
       }
     }
