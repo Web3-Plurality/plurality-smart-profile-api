@@ -50,7 +50,7 @@ clientRouter.post('/', async (req: Request, res: Response) => {
 });
 
 clientRouter.put('/:id', async (req: Request, res: Response) => {
-    // #swagger.tags = ['Client App']
+  // #swagger.tags = ['Client App']
   try {
     const { img, streamId, links, domains, incentiveType, appType } = req.body;
     const id = req.params.id;
@@ -98,7 +98,7 @@ clientRouter.put('/:id', async (req: Request, res: Response) => {
 });
 
 clientRouter.get('/', async (req: Request, res: Response) => {
-    // #swagger.tags = ['Client App']
+  // #swagger.tags = ['Client App']
   try {
     const origin = req.headers['x-domain'];
     const id: any = req?.query?.uuid;

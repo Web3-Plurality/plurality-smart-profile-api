@@ -53,7 +53,7 @@ const userRegisterViaWallet = async (address: string, clientId: string) => {
 authSiweRouter.post('/login', (req, res) => {
   // #swagger.tags = ['Users']
   try {
-    const walletAddress : string = req.body.address;
+    const walletAddress: string = req.body.address;
     if (!ethers.isAddress(walletAddress)) {
       Logger.error(`Fatal error due to invalid wallet address: ${walletAddress}`);
       return res.status(400).json({ error: 'Invalid wallet address' });
@@ -72,7 +72,7 @@ authSiweRouter.post('/login', (req, res) => {
 authSiweRouter.post('/authenticate', async function (req, res) {
   // #swagger.tags = ['Users']
   try {
-    const {address, clientId} : {address: string, clientId: string} = req.body;
+    const { address, clientId }: { address: string; clientId: string } = req.body;
     const siweObj = req.headers['x-siwe'] ? JSON.parse(req.headers['x-siwe']) : '';
     const siweToken = siweObj?.siwe;
     const message = decodeURIComponent(siweObj?.message);

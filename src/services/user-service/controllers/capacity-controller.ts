@@ -32,10 +32,13 @@ export const capacityDelegation = async (walletAddress) => {
   );
   let maxNft = { id: 0 };
   for (let index = 0; index < litResponse?.data?.items.length; index++) {
-    if (Number(litResponse?.data?.items[index].id) > Number(maxNft?.id) && litResponse?.data?.items[index].token.address==='0x01205d94Fee4d9F59A4aB24bf80D11d4DdAf6Eed') {
+    if (
+      Number(litResponse?.data?.items[index].id) > Number(maxNft?.id) &&
+      litResponse?.data?.items[index].token.address === '0x01205d94Fee4d9F59A4aB24bf80D11d4DdAf6Eed'
+    ) {
       maxNft = litResponse?.data?.items[index];
       if (currentTimestamp < Number(maxNft?.metadata?.attributes[0]?.value)) {
-       break;
+        break;
       }
     }
   }
@@ -59,7 +62,7 @@ export const capacityDelegation = async (walletAddress) => {
 capacityRouter.post('/', isAuthenticated, isValidAddress, async (req, res) => {
   // #swagger.tags = ['Users']
   try {
-    const {address} = req.body;
+    const { address } = req.body;
     const id = req?.user?.id;
     const existingUser = await userRepository.findOne({
       where: {

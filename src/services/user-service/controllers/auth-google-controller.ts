@@ -115,8 +115,9 @@ authGoogleRouter.post('/event', hasValidEventHeader, hasValidAccessTokenHeader, 
   try {
     Logger.info(`Request body tokenUUID ${req?.accessTokenID}`);
     Logger.info(`Request body sseUUID ${req?.sseID}`);
+    const {redirect, clientId} = req.body;
     const serverSentEventResponse = memoryStoreSSE.get(req?.sseID);
-    if (req?.body?.redirect) {
+    if (redirect) {
       const emailId = memoryStoreToken.get(req?.accessTokenID);
       serverSentEventResponse.write(`data: {"message":"received", "app":"google", "emailId":"${emailId}"}\n\n`);
       Logger.info(` Server Side Event has been sent successfully`);
@@ -132,9 +133,9 @@ authGoogleRouter.post('/event', hasValidEventHeader, hasValidAccessTokenHeader, 
     memoryStoreSSE.delete(req?.sseID);
     memoryStoreSSE.delete(req?.accessTokenID);
     //if client id exist then add in user client map
-    if (req?.body?.clientId) {
-      console.log('clientId', req?.body?.clientId);
-      await AddUserClientMap(jwt.decode(tokenObj?.pluralityToken)?.id, req?.body?.clientId);
+    if (clientId) {
+      console.log('clientId', clientId);
+      await AddUserClientMap(jwt.decode(tokenObj?.pluralityToken)?.id, clientId);
     } else {
       Logger.error(`Client id not found`);
       throw new Error('Client id not found');

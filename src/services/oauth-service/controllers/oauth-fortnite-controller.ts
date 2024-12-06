@@ -56,7 +56,7 @@ passport.use(
 
 // Start authentication flow
 fortniteRouter.get('/', hasValidEventParam, isProfileMapEmpty, async (req: Request, res: Response, next) => {
-    // #swagger.tags = ['OAuth-Fortnite']
+  // #swagger.tags = ['OAuth-Fortnite']
   Logger.info(`${FORTNITE_APP}: Request for Oauth has been received successfully on sse Id ${req.sseID}`);
   passport.authenticate('fortnite')(req, res, next);
 });

@@ -57,7 +57,7 @@ passport.use(
 
 // Start authentication flow
 twitterRouter.get('/', hasValidEventParam, isProfileMapEmpty, async (req: Request, res: Response, next) => {
-    // #swagger.tags = ['OAuth-Twitter']
+  // #swagger.tags = ['OAuth-Twitter']
   Logger.info(`${TWITTER_APP}: Request for Twitter Oauth has been received successfully on sse Id ${req.sseID}`);
   passport.authenticate('twitter')(req, res, next);
 });

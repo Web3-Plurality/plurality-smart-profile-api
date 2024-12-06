@@ -57,7 +57,7 @@ passport.use(
 
 // Start authentication flow
 snapchatRouter.get('/', hasValidEventParam, isProfileMapEmpty, async (req: Request, res: Response, next) => {
-    // #swagger.tags = ['OAuth-Snapchat']
+  // #swagger.tags = ['OAuth-Snapchat']
   Logger.info(`${SNAPCHAT_APP}: Request for Oauth has been received successfully on sse Id ${req.sseID}`);
   passport.authenticate('snapchat')(req, res, next);
 });
