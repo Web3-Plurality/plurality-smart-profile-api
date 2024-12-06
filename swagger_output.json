@@ -18,7 +18,7 @@
     },
     {
       "name": "OAuth-Facebook",
-      "description": "OAuth service"
+      "description": "OAuth service:\n In order to OAuth with facebook you have to do following steps:\n\n             1. register the event by open this https://app.plurality.local/register-event/ end point in browser, copy the sseId \n\n             2. open the the new tab and paste sseID in the endpoint https://app.plurality.local/oauth-facebook?sse_id=<your sse id>, you will get the access tokenID\n\n             3. open the new tab and paste the access token in the endpoint https://app.plurality.local/oauth-facebook/event?access_token=<your access token>, you will get the user profile\n"
     },
     {
       "name": "OAuth-Fortnite",
@@ -47,6 +47,10 @@
     {
       "name": "Test",
       "description": "for api testing"
+    },
+    {
+      "name": "SSE",
+      "description": "Server sent events"
     }
   ],
   "schemes": [
@@ -90,6 +94,9 @@
               "type": "object",
               "properties": {
                 "data": {
+                  "example": "any"
+                },
+                "smartProfile": {
                   "example": "any"
                 }
               }
@@ -334,9 +341,6 @@
                 },
                 "clientId": {
                   "example": "any"
-                },
-                "email": {
-                  "example": "any"
                 }
               }
             }
@@ -351,6 +355,70 @@
           },
           "401": {
             "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/user/auth/google/login": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "description": "",
+        "parameters": [
+          {
+            "name": "sse_id",
+            "in": "query",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "Bad Request"
+          }
+        }
+      }
+    },
+    "/user/auth/google/callback": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "description": "",
+        "responses": {
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/user/auth/google/event": {
+      "post": {
+        "tags": [
+          "Users"
+        ],
+        "description": "",
+        "parameters": [
+          {
+            "name": "x-sse-id",
+            "in": "header",
+            "type": "string"
+          },
+          {
+            "name": "x-token-id",
+            "in": "header",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "500": {
+            "description": "Internal Server Error"
           }
         }
       }
@@ -1082,6 +1150,9 @@
     },
     "/register-event/": {
       "get": {
+        "tags": [
+          "SSE"
+        ],
         "description": "",
         "responses": {
           "default": {

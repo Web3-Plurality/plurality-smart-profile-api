@@ -15,7 +15,7 @@ dotenv.config();
 export const authSiweRouter = express.Router();
 const userRepository = AppDataSource.getRepository(User);
 
-const userRegisterViaWallet = async (email: string, address: string, clientId: string) => {
+const userRegisterViaWallet = async (address: string, clientId: string) => {
   const uniqueSessionId = uuidv4();
   let token = '';
   let addedUser = {};
@@ -31,7 +31,6 @@ const userRegisterViaWallet = async (email: string, address: string, clientId: s
   } else {
     // If the user doesn't exist, insert a new row
     const newUser = await userRepository.create({
-      email: email || null,
       address: address,
       subscribe: false,
     });
@@ -69,11 +68,11 @@ authSiweRouter.post('/login', (req, res) => {
     return res.status(500).json({ error: 'An error occurred while processing your request' });
   }
 });
-// address, clientId, email, subscribe
+// address, clientId, subscribe
 authSiweRouter.post('/authenticate', async function (req, res) {
   // #swagger.tags = ['Users']
   try {
-    const {address, clientId, email} : {address: string, clientId: string, email: string } = req.body;
+    const {address, clientId} : {address: string, clientId: string} = req.body;
     const siweObj = req.headers['x-siwe'] ? JSON.parse(req.headers['x-siwe']) : '';
     const siweToken = siweObj?.siwe;
     const message = decodeURIComponent(siweObj?.message);
@@ -98,7 +97,7 @@ authSiweRouter.post('/authenticate', async function (req, res) {
     }
     // create jwt token
     Logger.info(`user authenticated successfully by address ${address}`);
-    const { token, user } = await userRegisterViaWallet(email, address, clientId);
+    const { token, user } = await userRegisterViaWallet(address, clientId);
     return res.status(200).json({ success: true, token, user });
   } catch (err) {
     Logger.error(`Error occurred: ${err}`);

@@ -64,13 +64,12 @@ authOTPRouter.post('/login', async function (req, res) {
 // parameters : code, email_id, address, subscribe, clientId
 authOTPRouter.post('/authenticate', async function (req, res) {
   // #swagger.tags = ['Users']
-  
   try {
     let token = '';
     let addedUser = {};
-    const { code, email_id, subscribe, clientId } = req.body;
     const uniqueSessionId = uuidv4();
     /* eslint-disable */
+    const { code, email_id, subscribe, clientId } = req.body;
     const params: OTPsAuthenticateRequest = {
       code: code,
       session_duration_minutes: 60,

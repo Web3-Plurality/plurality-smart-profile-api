@@ -44,11 +44,13 @@ passport.use(
 
 // Start the authentication flow
 authGoogleRouter.get('/login', hasValidEventParam, async (req: Request, res: Response, next) => {
+  // #swagger.tags = ['Users']
   Logger.info(`${GOOGLE_APP}: Request for Oauth has been received successfully on sse Id ${req.sseID}`);
   passport.authenticate('google', { scope: ['email'] })(req, res, next);
 });
 
 authGoogleRouter.get('/callback', passport.authenticate('google', { session: false }), async (req, res) => {
+  // #swagger.tags = ['Users']
   try {
     let token = '';
     let addedUser = {};
@@ -109,6 +111,7 @@ authGoogleRouter.get('/callback', passport.authenticate('google', { session: fal
 });
 
 authGoogleRouter.post('/event', hasValidEventHeader, hasValidAccessTokenHeader, async (req, res) => {
+  // #swagger.tags = ['Users']
   try {
     Logger.info(`Request body tokenUUID ${req?.accessTokenID}`);
     Logger.info(`Request body sseUUID ${req?.sseID}`);

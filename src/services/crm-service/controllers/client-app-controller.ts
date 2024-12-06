@@ -101,7 +101,6 @@ clientRouter.get('/', async (req: Request, res: Response) => {
     // #swagger.tags = ['Client App']
   try {
     const origin = req.headers['x-domain'];
-    console.log(origin);
     const id: any = req?.query?.uuid;
     const data = await clientAppRepository.findOne({
       where: {
