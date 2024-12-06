@@ -55,10 +55,28 @@ const doc = {
         },
         {
             name: 'OAuth-Facebook',
-            description: `OAuth service:\n In order to OAuth with facebook you have to do following steps:\n
-             1. register the event by open this https://app.plurality.local/register-event/ end point in browser, copy the sseId \n
-             2. open the the new tab and paste sseID in the endpoint https://app.plurality.local/oauth-facebook?sse_id=<your sse id>, you will get the access tokenID\n
-             3. open the new tab and paste the access token in the endpoint https://app.plurality.local/oauth-facebook/event?access_token=<your access token>, you will get the user profile\n` 
+            description: `OAuth Service:
+
+To use OAuth with Facebook, follow these steps:
+
+1. Register the Event:
+   Open the following URL in your browser to register the event:
+   https://app.plurality.local/register-event/
+   Copy the sseId from the response.
+
+2. Obtain the Access Token ID:
+   Open a new browser tab and use the sseId in the following endpoint:
+   https://app.plurality.local/oauth-facebook?sse_id=<your sseId>
+   This will provide you with the accessTokenId.
+
+3. Set Headers and Fetch the Access Token:
+   In Swagger UI:
+     - Add the following headers:
+       - x-sse-id: Your sseId
+       - x-token-id: Your accessTokenId
+     - Include the clientId in the request body.
+
+   You will receive the final access token in the browser tab where you registered the event.` 
              
         },
         {

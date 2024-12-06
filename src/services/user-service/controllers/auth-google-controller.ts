@@ -115,7 +115,7 @@ authGoogleRouter.post('/event', hasValidEventHeader, hasValidAccessTokenHeader, 
   try {
     Logger.info(`Request body tokenUUID ${req?.accessTokenID}`);
     Logger.info(`Request body sseUUID ${req?.sseID}`);
-    const {redirect, clientId} = req.body;
+    const { redirect, clientId } = req.body;
     const serverSentEventResponse = memoryStoreSSE.get(req?.sseID);
     if (redirect) {
       const emailId = memoryStoreToken.get(req?.accessTokenID);

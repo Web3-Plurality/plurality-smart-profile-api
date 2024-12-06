@@ -18,7 +18,7 @@
     },
     {
       "name": "OAuth-Facebook",
-      "description": "OAuth service:\n In order to OAuth with facebook you have to do following steps:\n\n             1. register the event by open this https://app.plurality.local/register-event/ end point in browser, copy the sseId \n\n             2. open the the new tab and paste sseID in the endpoint https://app.plurality.local/oauth-facebook?sse_id=<your sse id>, you will get the access tokenID\n\n             3. open the new tab and paste the access token in the endpoint https://app.plurality.local/oauth-facebook/event?access_token=<your access token>, you will get the user profile\n"
+      "description": "OAuth Service:\n\nTo use OAuth with Facebook, follow these steps:\n\n1. Register the Event:\n   Open the following URL in your browser to register the event:\n   https://app.plurality.local/register-event/\n   Copy the sseId from the response.\n\n2. Obtain the Access Token ID:\n   Open a new browser tab and use the sseId in the following endpoint:\n   https://app.plurality.local/oauth-facebook?sse_id=<your sseId>\n   This will provide you with the accessTokenId.\n\n3. Set Headers and Fetch the Access Token:\n   In Swagger UI:\n     - Add the following headers:\n       - x-sse-id: Your sseId\n       - x-token-id: Your accessTokenId\n     - Include the clientId in the request body.\n\n   You will receive the final access token in the browser tab where you registered the event."
     },
     {
       "name": "OAuth-Fortnite",
@@ -408,6 +408,21 @@
             "name": "x-token-id",
             "in": "header",
             "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "redirect": {
+                  "example": "any"
+                },
+                "clientId": {
+                  "example": "any"
+                }
+              }
+            }
           }
         ],
         "responses": {
