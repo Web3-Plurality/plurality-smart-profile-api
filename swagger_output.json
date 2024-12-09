@@ -13,36 +13,40 @@
       "description": "user service"
     },
     {
+      "name": "Users-OAuth-Google",
+      "description": "\n    1. Register the Event\n     - Navigate to the following URL in your browser to register the event:  \n       https://app.plurality.local/register-event/\n     - Copy the sseId from the response. This will be used in subsequent steps.\n  \n    2. Obtain the Access Token ID\n     - Open a new browser tab and use the sseId obtained in step 1 with the following endpoint:  \n       https://app.plurality.local/user/auth/google/login?sse_id=<your_sseId>\n     - This will return the accessTokenId, which is required for the next step.\n  \n    3. Set Headers and and call the event endpoint to tell server that you got the accessTokenId successfully.\n     - In Swagger UI, make a request with the following:  \n       - Headers:  \n         - x-sse-id: Your sseId  \n         - x-token-id: Your accessTokenId  \n       - Body:  \n         - redirect: false  \n         - clientId: Client ID get from plurality\n    This will give the accessToken in register event tab\n    "
+    },
+    {
       "name": "Client App",
       "description": "client app service"
     },
     {
       "name": "OAuth-Facebook",
-      "description": "OAuth Service:\n\nTo use OAuth with Facebook, follow these steps:\n\n1. Register the Event:\n   Open the following URL in your browser to register the event:\n   https://app.plurality.local/register-event/\n   Copy the sseId from the response.\n\n2. Obtain the Access Token ID:\n   Open a new browser tab and use the sseId in the following endpoint:\n   https://app.plurality.local/oauth-facebook?sse_id=<your sseId>\n   This will provide you with the accessTokenId.\n\n3. Set Headers and Fetch the Access Token:\n   In Swagger UI:\n     - Add the following headers:\n       - x-sse-id: Your sseId\n       - x-token-id: Your accessTokenId\n     - Include the clientId in the request body.\n\n   You will receive the final access token in the browser tab where you registered the event."
+      "description": "\n  Using OAuth with Facebook\n  1. You have to Login in plurality by any method and get plurality token.\n  \n  2. Register the Event\n     - Navigate to the following URL in your browser to register the event:  \n       https://app.plurality.local/register-event/\n     - Copy the sseId from the response. This will be used in subsequent steps.\n  \n  3. Obtain the Access Token ID\n     - Open a new browser tab and use the sseId obtained in step 1 with the following endpoint:  \n       https://app.plurality.local/oauth-facebook?sse_id=<your_sseId>\n     - This will return the accessTokenId, which is required for the next step.\n  \n  3. Set Headers and and call the event endpoint to tell server that you got the accessTokenId successfully.\n     - In Swagger UI, make a request with the following:  \n       - Headers:  \n         - x-sse-id: Your sseId  \n         - x-token-id: Your accessTokenId  \n  \n  4. Fetch User Information\n     - To retrieve user information, call the info endpoint in Swagger UI:  \n       - Headers:  \n         - Authorization: Bearer <PluralityAccessToken>  \n         - x-token-id: <accessTokenId>\n       - The user information will be returned in the response.\n    "
     },
     {
       "name": "OAuth-Fortnite",
-      "description": "OAuth service"
+      "description": "\n  Using OAuth with Fortnite\n  1. You have to Login in plurality by any method and get plurality token.\n  \n  2. Register the Event\n     - Navigate to the following URL in your browser to register the event:  \n       https://app.plurality.local/register-event/\n     - Copy the sseId from the response. This will be used in subsequent steps.\n  \n  3. Obtain the Access Token ID\n     - Open a new browser tab and use the sseId obtained in step 1 with the following endpoint:  \n       https://app.plurality.local/oauth-fortnite?sse_id=<your_sseId>\n     - This will return the accessTokenId, which is required for the next step.\n  \n  3. Set Headers and and call the event endpoint to tell server that you got the accessTokenId successfully.\n     - In Swagger UI, make a request with the following:  \n       - Headers:  \n         - x-sse-id: Your sseId  \n         - x-token-id: Your accessTokenId  \n  \n  4. Fetch User Information\n     - To retrieve user information, call the info endpoint in Swagger UI:  \n       - Headers:  \n         - Authorization: Bearer <PluralityAccessToken>  \n         - x-token-id: <accessTokenId>\n       - The user information will be returned in the response.\n    "
     },
     {
       "name": "OAuth-Instagram",
-      "description": "OAuth service"
+      "description": "\n  Using OAuth with Instagram\n  1. You have to Login in plurality by any method and get plurality token.\n  \n  2. Register the Event\n     - Navigate to the following URL in your browser to register the event:  \n       https://app.plurality.local/register-event/\n     - Copy the sseId from the response. This will be used in subsequent steps.\n  \n  3. Obtain the Access Token ID\n     - Open a new browser tab and use the sseId obtained in step 1 with the following endpoint:  \n       https://app.plurality.local/oauth-instagram?sse_id=<your_sseId>\n     - This will return the accessTokenId, which is required for the next step.\n  \n  3. Set Headers and and call the event endpoint to tell server that you got the accessTokenId successfully.\n     - In Swagger UI, make a request with the following:  \n       - Headers:  \n         - x-sse-id: Your sseId  \n         - x-token-id: Your accessTokenId  \n  \n  4. Fetch User Information\n     - To retrieve user information, call the info endpoint in Swagger UI:  \n       - Headers:  \n         - Authorization: Bearer <PluralityAccessToken>  \n         - x-token-id: <accessTokenId>\n       - The user information will be returned in the response.\n    "
     },
     {
       "name": "OAuth-Roblox",
-      "description": "OAuth service"
+      "description": "\n  Using OAuth with Roblox\n  1. You have to Login in plurality by any method and get plurality token.\n  \n  2. Register the Event\n     - Navigate to the following URL in your browser to register the event:  \n       https://app.plurality.local/register-event/\n     - Copy the sseId from the response. This will be used in subsequent steps.\n  \n  3. Obtain the Access Token ID\n     - Open a new browser tab and use the sseId obtained in step 1 with the following endpoint:  \n       https://app.plurality.local/oauth-roblox?sse_id=<your_sseId>\n     - This will return the accessTokenId, which is required for the next step.\n  \n  3. Set Headers and and call the event endpoint to tell server that you got the accessTokenId successfully.\n     - In Swagger UI, make a request with the following:  \n       - Headers:  \n         - x-sse-id: Your sseId  \n         - x-token-id: Your accessTokenId  \n  \n  4. Fetch User Information\n     - To retrieve user information, call the info endpoint in Swagger UI:  \n       - Headers:  \n         - Authorization: Bearer <PluralityAccessToken>  \n         - x-token-id: <accessTokenId>\n       - The user information will be returned in the response.\n    "
     },
     {
       "name": "OAuth-Snapchat",
-      "description": "OAuth service"
+      "description": "\n  Using OAuth with Snapchat\n  1. You have to Login in plurality by any method and get plurality token.\n  \n  2. Register the Event\n     - Navigate to the following URL in your browser to register the event:  \n       https://app.plurality.local/register-event/\n     - Copy the sseId from the response. This will be used in subsequent steps.\n  \n  3. Obtain the Access Token ID\n     - Open a new browser tab and use the sseId obtained in step 1 with the following endpoint:  \n       https://app.plurality.local/oauth-snapchat?sse_id=<your_sseId>\n     - This will return the accessTokenId, which is required for the next step.\n  \n  3. Set Headers and and call the event endpoint to tell server that you got the accessTokenId successfully.\n     - In Swagger UI, make a request with the following:  \n       - Headers:  \n         - x-sse-id: Your sseId  \n         - x-token-id: Your accessTokenId  \n  \n  4. Fetch User Information\n     - To retrieve user information, call the info endpoint in Swagger UI:  \n       - Headers:  \n         - Authorization: Bearer <PluralityAccessToken>  \n         - x-token-id: <accessTokenId>\n       - The user information will be returned in the response.\n    "
     },
     {
       "name": "OAuth-TikTok",
-      "description": "OAuth service"
+      "description": "\n  Using OAuth with TikTok\n  1. You have to Login in plurality by any method and get plurality token.\n  \n  2. Register the Event\n     - Navigate to the following URL in your browser to register the event:  \n       https://app.plurality.local/register-event/\n     - Copy the sseId from the response. This will be used in subsequent steps.\n  \n  3. Obtain the Access Token ID\n     - Open a new browser tab and use the sseId obtained in step 1 with the following endpoint:  \n       https://app.plurality.local/oauth-tiktok?sse_id=<your_sseId>\n     - This will return the accessTokenId, which is required for the next step.\n  \n  3. Set Headers and and call the event endpoint to tell server that you got the accessTokenId successfully.\n     - In Swagger UI, make a request with the following:  \n       - Headers:  \n         - x-sse-id: Your sseId  \n         - x-token-id: Your accessTokenId  \n  \n  4. Fetch User Information\n     - To retrieve user information, call the info endpoint in Swagger UI:  \n       - Headers:  \n         - Authorization: Bearer <PluralityAccessToken>  \n         - x-token-id: <accessTokenId>\n       - The user information will be returned in the response.\n    "
     },
     {
       "name": "OAuth-Twitter",
-      "description": "OAuth service"
+      "description": "\n  Using OAuth with Twitter\n  1. You have to Login in plurality by any method and get plurality token.\n  \n  2. Register the Event\n     - Navigate to the following URL in your browser to register the event:  \n       https://app.plurality.local/register-event/\n     - Copy the sseId from the response. This will be used in subsequent steps.\n  \n  3. Obtain the Access Token ID\n     - Open a new browser tab and use the sseId obtained in step 1 with the following endpoint:  \n       https://app.plurality.local/oauth-twitter?sse_id=<your_sseId>\n     - This will return the accessTokenId, which is required for the next step.\n  \n  3. Set Headers and and call the event endpoint to tell server that you got the accessTokenId successfully.\n     - In Swagger UI, make a request with the following:  \n       - Headers:  \n         - x-sse-id: Your sseId  \n         - x-token-id: Your accessTokenId  \n  \n  4. Fetch User Information\n     - To retrieve user information, call the info endpoint in Swagger UI:  \n       - Headers:  \n         - Authorization: Bearer <PluralityAccessToken>  \n         - x-token-id: <accessTokenId>\n       - The user information will be returned in the response.\n    "
     },
     {
       "name": "Test",
@@ -359,43 +363,10 @@
         }
       }
     },
-    "/user/auth/google/login": {
-      "get": {
-        "tags": [
-          "Users"
-        ],
-        "description": "",
-        "parameters": [
-          {
-            "name": "sse_id",
-            "in": "query",
-            "type": "string"
-          }
-        ],
-        "responses": {
-          "400": {
-            "description": "Bad Request"
-          }
-        }
-      }
-    },
-    "/user/auth/google/callback": {
-      "get": {
-        "tags": [
-          "Users"
-        ],
-        "description": "",
-        "responses": {
-          "500": {
-            "description": "Internal Server Error"
-          }
-        }
-      }
-    },
     "/user/auth/google/event": {
       "post": {
         "tags": [
-          "Users"
+          "Users-OAuth-Google"
         ],
         "description": "",
         "parameters": [
@@ -432,39 +403,6 @@
           "400": {
             "description": "Bad Request"
           },
-          "500": {
-            "description": "Internal Server Error"
-          }
-        }
-      }
-    },
-    "/oauth-twitter/": {
-      "get": {
-        "tags": [
-          "OAuth-Twitter"
-        ],
-        "description": "",
-        "parameters": [
-          {
-            "name": "sse_id",
-            "in": "query",
-            "type": "string"
-          }
-        ],
-        "responses": {
-          "400": {
-            "description": "Bad Request"
-          }
-        }
-      }
-    },
-    "/oauth-twitter/callback": {
-      "get": {
-        "tags": [
-          "OAuth-Twitter"
-        ],
-        "description": "",
-        "responses": {
           "500": {
             "description": "Internal Server Error"
           }
@@ -542,39 +480,6 @@
         }
       }
     },
-    "/oauth-snapchat/": {
-      "get": {
-        "tags": [
-          "OAuth-Snapchat"
-        ],
-        "description": "",
-        "parameters": [
-          {
-            "name": "sse_id",
-            "in": "query",
-            "type": "string"
-          }
-        ],
-        "responses": {
-          "400": {
-            "description": "Bad Request"
-          }
-        }
-      }
-    },
-    "/oauth-snapchat/callback": {
-      "get": {
-        "tags": [
-          "OAuth-Snapchat"
-        ],
-        "description": "",
-        "responses": {
-          "500": {
-            "description": "Internal Server Error"
-          }
-        }
-      }
-    },
     "/oauth-snapchat/event": {
       "post": {
         "tags": [
@@ -640,39 +545,6 @@
           "408": {
             "description": "Request Timeout"
           },
-          "500": {
-            "description": "Internal Server Error"
-          }
-        }
-      }
-    },
-    "/oauth-roblox/": {
-      "get": {
-        "tags": [
-          "OAuth-Roblox"
-        ],
-        "description": "",
-        "parameters": [
-          {
-            "name": "sse_id",
-            "in": "query",
-            "type": "string"
-          }
-        ],
-        "responses": {
-          "400": {
-            "description": "Bad Request"
-          }
-        }
-      }
-    },
-    "/oauth-roblox/callback": {
-      "get": {
-        "tags": [
-          "OAuth-Roblox"
-        ],
-        "description": "",
-        "responses": {
           "500": {
             "description": "Internal Server Error"
           }
@@ -750,39 +622,6 @@
         }
       }
     },
-    "/oauth-facebook/": {
-      "get": {
-        "tags": [
-          "OAuth-Facebook"
-        ],
-        "description": "",
-        "parameters": [
-          {
-            "name": "sse_id",
-            "in": "query",
-            "type": "string"
-          }
-        ],
-        "responses": {
-          "400": {
-            "description": "Bad Request"
-          }
-        }
-      }
-    },
-    "/oauth-facebook/callback": {
-      "get": {
-        "tags": [
-          "OAuth-Facebook"
-        ],
-        "description": "",
-        "responses": {
-          "500": {
-            "description": "Internal Server Error"
-          }
-        }
-      }
-    },
     "/oauth-facebook/event": {
       "post": {
         "tags": [
@@ -848,39 +687,6 @@
           "408": {
             "description": "Request Timeout"
           },
-          "500": {
-            "description": "Internal Server Error"
-          }
-        }
-      }
-    },
-    "/oauth-instagram/": {
-      "get": {
-        "tags": [
-          "OAuth-Instagram"
-        ],
-        "description": "",
-        "parameters": [
-          {
-            "name": "sse_id",
-            "in": "query",
-            "type": "string"
-          }
-        ],
-        "responses": {
-          "400": {
-            "description": "Bad Request"
-          }
-        }
-      }
-    },
-    "/oauth-instagram/callback": {
-      "get": {
-        "tags": [
-          "OAuth-Instagram"
-        ],
-        "description": "",
-        "responses": {
           "500": {
             "description": "Internal Server Error"
           }
@@ -958,39 +764,6 @@
         }
       }
     },
-    "/oauth-fortnite/": {
-      "get": {
-        "tags": [
-          "OAuth-Fortnite"
-        ],
-        "description": "",
-        "parameters": [
-          {
-            "name": "sse_id",
-            "in": "query",
-            "type": "string"
-          }
-        ],
-        "responses": {
-          "400": {
-            "description": "Bad Request"
-          }
-        }
-      }
-    },
-    "/oauth-fortnite/callback": {
-      "get": {
-        "tags": [
-          "OAuth-Fortnite"
-        ],
-        "description": "",
-        "responses": {
-          "500": {
-            "description": "Internal Server Error"
-          }
-        }
-      }
-    },
     "/oauth-fortnite/event": {
       "post": {
         "tags": [
@@ -1056,39 +829,6 @@
           "408": {
             "description": "Request Timeout"
           },
-          "500": {
-            "description": "Internal Server Error"
-          }
-        }
-      }
-    },
-    "/oauth-tiktok/": {
-      "get": {
-        "tags": [
-          "OAuth-TikTok"
-        ],
-        "description": "",
-        "parameters": [
-          {
-            "name": "sse_id",
-            "in": "query",
-            "type": "string"
-          }
-        ],
-        "responses": {
-          "400": {
-            "description": "Bad Request"
-          }
-        }
-      }
-    },
-    "/oauth-tiktok/callback": {
-      "get": {
-        "tags": [
-          "OAuth-TikTok"
-        ],
-        "description": "",
-        "responses": {
           "500": {
             "description": "Internal Server Error"
           }

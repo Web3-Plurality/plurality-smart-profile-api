@@ -57,6 +57,7 @@ passport.use(
 // Start authentication flow
 fortniteRouter.get('/', hasValidEventParam, isProfileMapEmpty, async (req: Request, res: Response, next) => {
   // #swagger.tags = ['OAuth-Fortnite']
+   // #swagger.ignore = true
   Logger.info(`${FORTNITE_APP}: Request for Oauth has been received successfully on sse Id ${req.sseID}`);
   passport.authenticate('fortnite')(req, res, next);
 });
@@ -64,6 +65,7 @@ fortniteRouter.get('/', hasValidEventParam, isProfileMapEmpty, async (req: Reque
 // Callback handler
 fortniteRouter.get('/callback', passport.authenticate('fortnite', { session: false }), async (req, res) => {
   // #swagger.tags = ['OAuth-Fortnite']
+   // #swagger.ignore = true
   try {
     const accessTokenId = uuidv4();
     memoryStoreToken.set(accessTokenId, {

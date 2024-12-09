@@ -58,6 +58,7 @@ passport.use(
 // Start authentication flow
 instagramRouter.get('/', hasValidEventParam, isProfileMapEmpty, async (req: Request, res: Response, next) => {
   // #swagger.tags = ['OAuth-Instagram']
+   // #swagger.ignore = true
   Logger.info(`${INSTAGRAM_APP}: Request for Oauth has been received successfully on sse Id ${req.sseID}`);
   passport.authenticate('instagram')(req, res, next);
 });
@@ -65,6 +66,7 @@ instagramRouter.get('/', hasValidEventParam, isProfileMapEmpty, async (req: Requ
 // Callback handler
 instagramRouter.get('/callback', passport.authenticate('instagram', { session: false }), async (req, res) => {
   // #swagger.tags = ['OAuth-Instagram']
+   // #swagger.ignore = true
   try {
     const accessTokenId = uuidv4();
     memoryStoreToken.set(accessTokenId, req.user.accessToken);

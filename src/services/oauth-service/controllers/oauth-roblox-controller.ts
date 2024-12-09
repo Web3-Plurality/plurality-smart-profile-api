@@ -57,6 +57,7 @@ passport.use(
 // Start authentication flow
 robloxRouter.get('/', hasValidEventParam, isProfileMapEmpty, async (req: Request, res: Response, next) => {
   // #swagger.tags = ['OAuth-Roblox']
+   // #swagger.ignore = true
   Logger.info(`${ROBLOX_APP}: Request for Oauth has been received successfully on sse Id ${req.sseID}`);
   passport.authenticate('roblox')(req, res, next);
 });
@@ -64,6 +65,7 @@ robloxRouter.get('/', hasValidEventParam, isProfileMapEmpty, async (req: Request
 // Callback handler
 robloxRouter.get('/callback', passport.authenticate('roblox', { session: false }), async (req, res) => {
   // #swagger.tags = ['OAuth-Roblox']
+   // #swagger.ignore = true
   try {
     const accessTokenId = uuidv4();
     memoryStoreToken.set(accessTokenId, req.user.accessToken);

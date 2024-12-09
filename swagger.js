@@ -4,6 +4,61 @@ const outputFile = './swagger_output.json'; // File to write Swagger JSON
 const endpointsFiles = ['./src/index.ts']; // File(s) containing API routes
 
 
+function generateDescription(platformName) {
+    return `
+  Using OAuth with ${platformName}
+  1. You have to Login in plurality by any method and get plurality token.
+  
+  2. Register the Event
+     - Navigate to the following URL in your browser to register the event:  
+       https://app.plurality.local/register-event/
+     - Copy the sseId from the response. This will be used in subsequent steps.
+  
+  3. Obtain the Access Token ID
+     - Open a new browser tab and use the sseId obtained in step 1 with the following endpoint:  
+       https://app.plurality.local/oauth-${platformName.toLowerCase()}?sse_id=<your_sseId>
+     - This will return the accessTokenId, which is required for the next step.
+  
+  3. Set Headers and and call the event endpoint to tell server that you got the accessTokenId successfully.
+     - In Swagger UI, make a request with the following:  
+       - Headers:  
+         - x-sse-id: Your sseId  
+         - x-token-id: Your accessTokenId  
+  
+  4. Fetch User Information
+     - To retrieve user information, call the info endpoint in Swagger UI:  
+       - Headers:  
+         - Authorization: Bearer <PluralityAccessToken>  
+         - x-token-id: <accessTokenId>
+       - The user information will be returned in the response.
+    `;
+  }
+  
+
+  const googleOauthDescription=`
+    1. Register the Event
+     - Navigate to the following URL in your browser to register the event:  
+       https://app.plurality.local/register-event/
+     - Copy the sseId from the response. This will be used in subsequent steps.
+  
+    2. Obtain the Access Token ID
+     - Open a new browser tab and use the sseId obtained in step 1 with the following endpoint:  
+       https://app.plurality.local/user/auth/google/login?sse_id=<your_sseId>
+     - This will return the accessTokenId, which is required for the next step.
+  
+    3. Set Headers and and call the event endpoint to tell server that you got the accessTokenId successfully.
+     - In Swagger UI, make a request with the following:  
+       - Headers:  
+         - x-sse-id: Your sseId  
+         - x-token-id: Your accessTokenId  
+       - Body:  
+         - redirect: false  
+         - clientId: Client ID get from plurality
+    This will give the accessToken in register event tab
+    `;
+
+
+
 const doc = {
     info: {
         title: 'Plurality API',
@@ -19,8 +74,8 @@ const doc = {
                 scores: [{
                     scoreType: "",
                     scoreValue: 0,
-                  }
-                  ],
+                }
+                ],
                 reputationTags: [],
                 badges: [],
                 collections: [],
@@ -45,8 +100,12 @@ const doc = {
     },
     tags: [
         {
-            name: 'Users',  // Tag name
-            description: 'user service'  // Tag description
+            name: 'Users',
+            description: 'user service' 
+        },
+        {
+            name: 'Users-OAuth-Google',
+            description: googleOauthDescription
         },
 
         {
@@ -55,53 +114,32 @@ const doc = {
         },
         {
             name: 'OAuth-Facebook',
-            description: `OAuth Service:
+            description: generateDescription('Facebook')
 
-To use OAuth with Facebook, follow these steps:
-
-1. Register the Event:
-   Open the following URL in your browser to register the event:
-   https://app.plurality.local/register-event/
-   Copy the sseId from the response.
-
-2. Obtain the Access Token ID:
-   Open a new browser tab and use the sseId in the following endpoint:
-   https://app.plurality.local/oauth-facebook?sse_id=<your sseId>
-   This will provide you with the accessTokenId.
-
-3. Set Headers and Fetch the Access Token:
-   In Swagger UI:
-     - Add the following headers:
-       - x-sse-id: Your sseId
-       - x-token-id: Your accessTokenId
-     - Include the clientId in the request body.
-
-   You will receive the final access token in the browser tab where you registered the event.` 
-             
         },
         {
             name: 'OAuth-Fortnite',
-            description: 'OAuth service'
+            description: generateDescription('Fortnite')
         },
         {
             name: 'OAuth-Instagram',
-            description: 'OAuth service'
+            description: generateDescription('Instagram')
         },
         {
             name: 'OAuth-Roblox',
-            description: 'OAuth service'
+            description: generateDescription('Roblox')
         },
         {
             name: 'OAuth-Snapchat',
-            description: 'OAuth service'
+            description: generateDescription('Snapchat')
         },
         {
             name: 'OAuth-TikTok',
-            description: 'OAuth service'
+            description: generateDescription('TikTok')
         },
         {
             name: 'OAuth-Twitter',
-            description: 'OAuth service'
+            description: generateDescription('Twitter')
         },
         {
             name: 'Test',
@@ -111,7 +149,7 @@ To use OAuth with Facebook, follow these steps:
             name: 'SSE',
             description: 'Server sent events'
         },
-        
+
     ],
     host: 'app.plurality.local:443',
     schemes: ['https'],

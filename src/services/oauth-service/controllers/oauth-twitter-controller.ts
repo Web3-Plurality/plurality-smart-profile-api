@@ -58,6 +58,7 @@ passport.use(
 // Start authentication flow
 twitterRouter.get('/', hasValidEventParam, isProfileMapEmpty, async (req: Request, res: Response, next) => {
   // #swagger.tags = ['OAuth-Twitter']
+   // #swagger.ignore = true
   Logger.info(`${TWITTER_APP}: Request for Twitter Oauth has been received successfully on sse Id ${req.sseID}`);
   passport.authenticate('twitter')(req, res, next);
 });
@@ -65,6 +66,7 @@ twitterRouter.get('/', hasValidEventParam, isProfileMapEmpty, async (req: Reques
 // Callback handler
 twitterRouter.get('/callback', passport.authenticate('twitter', { session: false }), async (req, res) => {
   // #swagger.tags = ['OAuth-Twitter']
+   // #swagger.ignore = true
   try {
     const accessTokenId = uuidv4();
     memoryStoreToken.set(accessTokenId, req.user.accessToken);

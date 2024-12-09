@@ -64,6 +64,7 @@ passport.use(
 // Start authentication flow
 facebookRouter.get('/', hasValidEventParam, isProfileMapEmpty, async (req: Request, res: Response, next) => {
   // #swagger.tags = ['OAuth-Facebook']
+   // #swagger.ignore = true
   Logger.info(`${FACEBOOK_APP}: Request for Oauth has been received successfully on sse Id ${req.sseID}`);
   passport.authenticate('facebook')(req, res, next);
 });
@@ -71,6 +72,7 @@ facebookRouter.get('/', hasValidEventParam, isProfileMapEmpty, async (req: Reque
 // Callback handler
 facebookRouter.get('/callback', passport.authenticate('facebook', { session: false }), async (req, res) => {
   // #swagger.tags = ['OAuth-Facebook']
+   // #swagger.ignore = true
   try {
     const accessTokenId = uuidv4();
     memoryStoreToken.set(accessTokenId, req.user.accessToken);

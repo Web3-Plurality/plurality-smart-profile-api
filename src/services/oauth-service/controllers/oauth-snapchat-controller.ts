@@ -58,6 +58,7 @@ passport.use(
 // Start authentication flow
 snapchatRouter.get('/', hasValidEventParam, isProfileMapEmpty, async (req: Request, res: Response, next) => {
   // #swagger.tags = ['OAuth-Snapchat']
+   // #swagger.ignore = true
   Logger.info(`${SNAPCHAT_APP}: Request for Oauth has been received successfully on sse Id ${req.sseID}`);
   passport.authenticate('snapchat')(req, res, next);
 });
@@ -65,6 +66,7 @@ snapchatRouter.get('/', hasValidEventParam, isProfileMapEmpty, async (req: Reque
 // Callback handler
 snapchatRouter.get('/callback', passport.authenticate('snapchat', { session: false }), async (req, res) => {
   // #swagger.tags = ['OAuth-Snapchat']
+   // #swagger.ignore = true
   try {
     const accessTokenId = uuidv4();
     memoryStoreToken.set(accessTokenId, req.user.accessToken);
