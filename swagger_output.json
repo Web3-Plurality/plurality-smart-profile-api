@@ -970,6 +970,11 @@
             "name": "x-domain",
             "in": "header",
             "type": "string"
+          },
+          {
+            "name": "uuid",
+            "in": "query",
+            "type": "string"
           }
         ],
         "responses": {
