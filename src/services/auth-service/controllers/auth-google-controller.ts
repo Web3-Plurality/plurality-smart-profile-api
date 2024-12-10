@@ -5,7 +5,7 @@ import passport from 'passport';
 import { Request, Response } from 'groq-sdk/_shims/auto/types';
 import Logger from '../../../lib/logger';
 import { AppDataSource } from '../../../data-source';
-import { LoginType, User } from '../entity/user';
+import { LoginType, User } from '../../user-service/entity/user';
 import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
 import { memoryStoreSSE, memoryStoreToken } from '../../../utils/global';
@@ -15,7 +15,7 @@ import {
   hasValidEventParam,
 } from '../../oauth-service/middlewares/oauth-middleware';
 import { GOOGLE_APP } from '../../oauth-service/utils/constants';
-import { AddUserClientMap } from '../utils/user';
+import { AddUserClientMap } from '../../user-service/utils/user';
 import stytch, { OTPsEmailLoginOrCreateRequest } from 'stytch';
 
 dotenv.config();
@@ -101,7 +101,7 @@ authGoogleRouter.get('/callback', passport.authenticate('google', { session: fal
     }
 
     Logger.info(`jwt token generated for user id ${existingUser?.id ? existingUser?.id : addedUser?.id}`);
-    memoryStoreToken.set(accessTokenId, { googleJwtToken: req?.user?.googleJwtToken, pluralityToken: token });
+    memoryStoreToken.set(accessTokenId, { googleJwtToken: req?.user?.googleJwtToken, token: token });
     const url = `${process.env.WIDGET_UI_URL}?token_id=${accessTokenId}&redirect=${false}`;
 
     Logger.info(`Redirecting to ${url}`);
@@ -129,7 +129,7 @@ authGoogleRouter.post('/event', hasValidEventHeader, hasValidAccessTokenHeader, 
     }
     const tokenObj = memoryStoreToken.get(req?.accessTokenID);
     serverSentEventResponse.write(
-      `data: {"message":"received", "app":"google", "googleJwtToken":"${tokenObj?.googleJwtToken}", "pluralityToken": "${tokenObj?.pluralityToken}"}\n\n`,
+      `data: {"message":"received", "app":"google", "googleJwtToken":"${tokenObj?.googleJwtToken}", "token": "${tokenObj?.token}"}\n\n`,
     );
     Logger.info(` Server Side Event has been sent successfully`);
     memoryStoreSSE.delete(req?.sseID);
@@ -137,7 +137,7 @@ authGoogleRouter.post('/event', hasValidEventHeader, hasValidAccessTokenHeader, 
     //if client id exist then add in user client map
     if (clientId) {
       console.log('clientId', clientId);
-      await AddUserClientMap(jwt.decode(tokenObj?.pluralityToken)?.id, clientId);
+      await AddUserClientMap(jwt.decode(tokenObj?.token)?.id, clientId);
     } else {
       Logger.error(`Client id not found`);
       throw new Error('Client id not found');

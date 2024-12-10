@@ -5,9 +5,9 @@ import { generateNonce, SiweMessage } from 'siwe';
 import { ethers } from 'ethers';
 import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
-import { User } from '../entity/user';
+import { User } from '../../user-service/entity/user';
 import { AppDataSource } from '../../../data-source';
-import { AddUserClientMap } from '../utils/user';
+import { AddUserClientMap } from '../../user-service/utils/user';
 import * as dotenv from 'dotenv';
 
 dotenv.config();
@@ -51,7 +51,7 @@ const userRegisterViaWallet = async (address: string, clientId: string) => {
 
 //generate random string to take user signature
 authSiweRouter.post('/login', (req, res) => {
-  // #swagger.tags = ['Users']
+  // #swagger.tags = ['Auth']
   try {
     const walletAddress: string = req.body.address;
     if (!ethers.isAddress(walletAddress)) {
@@ -70,7 +70,7 @@ authSiweRouter.post('/login', (req, res) => {
 });
 // address, clientId, subscribe
 authSiweRouter.post('/authenticate', async function (req, res) {
-  // #swagger.tags = ['Users']
+  // #swagger.tags = ['Auth']
   try {
     const { address, clientId }: { address: string; clientId: string } = req.body;
     const siweObj = req.headers['x-siwe'] ? JSON.parse(req.headers['x-siwe']) : '';

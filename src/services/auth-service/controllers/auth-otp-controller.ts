@@ -2,10 +2,10 @@ import stytch, { OTPsAuthenticateRequest, OTPsEmailLoginOrCreateRequest } from '
 import express from 'express';
 import Logger from '../../../lib/logger';
 import { AppDataSource } from '../../../data-source';
-import { LoginType, User } from '../entity/user';
+import { LoginType, User } from '../../user-service/entity/user';
 import { v4 as uuidv4 } from 'uuid';
 import jwt from 'jsonwebtoken';
-import { AddUserClientMap } from '../utils/user';
+import { AddUserClientMap } from '../../user-service/utils/user';
 import * as dotenv from 'dotenv';
 
 dotenv.config();
@@ -21,7 +21,7 @@ const stytchClient = new stytch.Client({
 
 // Start the authentication flow
 authOTPRouter.post('/login', async function (req, res) {
-  // #swagger.tags = ['Users']
+  // #swagger.tags = ['Auth']
   try {
     const email: string = req.body.email;
     const templateId = 'sign_in_to_plurality_network';
@@ -63,7 +63,7 @@ authOTPRouter.post('/login', async function (req, res) {
 // Complete the authentication flow which mints the session
 // parameters : code, email_id, address, subscribe, clientId
 authOTPRouter.post('/authenticate', async function (req, res) {
-  // #swagger.tags = ['Users']
+  // #swagger.tags = ['Auth']
   try {
     let token = '';
     let addedUser = {};
@@ -116,7 +116,7 @@ authOTPRouter.post('/authenticate', async function (req, res) {
     Logger.info(`jwt token generated for user id ${existingUser?.id ? existingUser?.id : addedUser?.id}`);
     return res.status(200).json({
       success: true,
-      pluralityToken: token,
+      token: token,
       stytchToken: resp?.session_jwt,
       user: existingUser?.id ? existingUser : addedUser,
       userId: resp?.user_id,

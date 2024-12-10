@@ -17,5 +17,6 @@ export function initSSE(req: Request, res: Response) {
 
 sseRouter.get('/', async (req: Request, res: Response) => {
   // #swagger.tags = ['SSE']
+  // #swagger.ignore = true
   initSSE(req, res);
 });

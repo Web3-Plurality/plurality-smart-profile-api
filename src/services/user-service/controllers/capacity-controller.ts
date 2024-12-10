@@ -23,7 +23,6 @@ cloudinary.config({
 
 // capacity delegation
 export const capacityDelegation = async (walletAddress) => {
-  // #swagger.tags = ['Users']
   // owner wallet which has the capacity NFT
   const DAPP_OWNER_WALLET = new ethers.Wallet(process.env.PUBLIC_DAPP_OWNER_WALLET_PRIVATE_KEY);
   const currentTimestamp = Math.floor(Date.now() / 1000);
@@ -58,9 +57,12 @@ export const capacityDelegation = async (walletAddress) => {
   return capacityDelegationAuthSig;
 };
 
-//body => address
+
 capacityRouter.post('/', isAuthenticated, isValidAddress, async (req, res) => {
   // #swagger.tags = ['Users']
+   /* #swagger.security = [{
+            "bearerAuth": []
+    }] */
   try {
     const { address } = req.body;
     const id = req?.user?.id;

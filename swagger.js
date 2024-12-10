@@ -1,4 +1,6 @@
-const swaggerAutogen = require('swagger-autogen')();
+const swaggerAutogen = require('swagger-autogen')({openapi: '3.0.0'});
+const dotenv = require('dotenv');
+dotenv.config();
 
 const outputFile = './swagger_output.json'; // File to write Swagger JSON
 const endpointsFiles = ['./src/index.ts']; // File(s) containing API routes
@@ -11,12 +13,12 @@ function generateDescription(platformName) {
   
   2. Register the Event
      - Navigate to the following URL in your browser to register the event:  
-       https://app.plurality.local/register-event/
+       https://${process.env.PLURALITY_DOMAIN}/register-event/
      - Copy the sseId from the response. This will be used in subsequent steps.
   
   3. Obtain the Access Token ID
      - Open a new browser tab and use the sseId obtained in step 1 with the following endpoint:  
-       https://app.plurality.local/oauth-${platformName.toLowerCase()}?sse_id=<your_sseId>
+       https://${process.env.PLURALITY_DOMAIN}/oauth-${platformName.toLowerCase()}?sse_id=<your_sseId>
      - This will return the accessTokenId, which is required for the next step.
   
   3. Set Headers and and call the event endpoint to tell server that you got the accessTokenId successfully.
@@ -38,12 +40,12 @@ function generateDescription(platformName) {
   const googleOauthDescription=`
     1. Register the Event
      - Navigate to the following URL in your browser to register the event:  
-       https://app.plurality.local/register-event/
+       https://${process.env.PLURALITY_DOMAIN}/register-event/
      - Copy the sseId from the response. This will be used in subsequent steps.
   
     2. Obtain the Access Token ID
      - Open a new browser tab and use the sseId obtained in step 1 with the following endpoint:  
-       https://app.plurality.local/user/auth/google/login?sse_id=<your_sseId>
+       https://${process.env.PLURALITY_DOMAIN}/user/auth/google/login?sse_id=<your_sseId>
      - This will return the accessTokenId, which is required for the next step.
   
     3. Set Headers and and call the event endpoint to tell server that you got the accessTokenId successfully.
@@ -63,51 +65,21 @@ const doc = {
     info: {
         title: 'Plurality API',
         description: 'Description of Plurality API',
-    },
-    components: {
-        schemas: {
-            smartProfile: {
-                username: "",
-                avatar: "",
-                bio: "",
-                interests: [],
-                scores: [{
-                    scoreType: "",
-                    scoreValue: 0,
-                }
-                ],
-                reputationTags: [],
-                badges: [],
-                collections: [],
-                extra: [{
-                    field: "",
-                    value: 0,
-                }],
-                linkedAddress: [{
-                    chainName: "",
-                    chainId: "",
-                    address: ""
-                }],
-                connectedProfiles: [{
-                    platformName: "",
-                    userPlatformId: "",
-                    username: "",
-                }],
-                connectedPlatforms: [],
-                attestation: {}
-            }
-        }
+        version: "1.0.0",
     },
     tags: [
         {
-            name: 'Users',
-            description: 'user service' 
+            name: 'Auth',
+            description: 'Auth service'
         },
         {
             name: 'Users-OAuth-Google',
             description: googleOauthDescription
         },
-
+        {
+            name: 'Users',
+            description: 'user service' 
+        },
         {
             name: 'Client App',
             description: 'client app service'
@@ -141,18 +113,33 @@ const doc = {
             name: 'OAuth-Twitter',
             description: generateDescription('Twitter')
         },
-        {
-            name: 'Test',
-            description: 'for api testing'
-        },
-        {
-            name: 'SSE',
-            description: 'Server sent events'
-        },
+
+        // {
+        //     name: 'Test',
+        //     description: 'for api testing'
+        // },
+        // {
+        //     name: 'SSE',
+        //     description: 'Server sent events'
+        // },
 
     ],
-    host: 'app.plurality.local:443',
-    schemes: ['https'],
+    servers: [
+        {
+          url: 'https://app.plurality.local',
+          description: ''
+        },
+       
+      ],
+      components: {
+        securitySchemes:{
+        bearerAuth: {
+            type: 'http',
+            scheme: 'bearer',
+            bearerFormat: 'JWT'
+        }
+    }
+}
 };
 
 swaggerAutogen(outputFile, endpointsFiles, doc)

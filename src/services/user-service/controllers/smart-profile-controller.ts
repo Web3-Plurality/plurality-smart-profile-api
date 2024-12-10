@@ -63,6 +63,9 @@ smartProfileRouter.put(
   ],
   async (req: Request, res: Response) => {
     // #swagger.tags = ['Users']
+     /* #swagger.security = [{
+            "bearerAuth": []
+    }] */
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
@@ -149,6 +152,9 @@ smartProfileRouter.post(
   ],
   async (req: Request, res: Response) => {
     // #swagger.tags = ['Users']
+     /* #swagger.security = [{
+            "bearerAuth": []
+    }] */
     try {
       // load dynamically from header
       // add a check if this profileTypeStreamId exists in client app table

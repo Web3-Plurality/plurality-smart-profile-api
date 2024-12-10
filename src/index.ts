@@ -11,8 +11,8 @@ import https from 'https';
 import { AppDataSource } from './data-source';
 import fs from 'fs';
 // user service routers
-import { authOTPRouter } from './services/user-service/controllers/auth-otp-controller';
-import { authSiweRouter } from './services/user-service/controllers/auth-siwe-controller';
+import { authOTPRouter } from './services/auth-service/controllers/auth-otp-controller';
+import { authSiweRouter } from './services/auth-service/controllers/auth-siwe-controller';
 import { smartProfileRouter } from './services/user-service/controllers/smart-profile-controller';
 import { capacityRouter } from './services/user-service/controllers/capacity-controller';
 // oauth service routers
@@ -29,7 +29,7 @@ import { clientRouter } from './services/crm-service/controllers/client-app-cont
 // Lit SDK
 import * as LitJsSdk from '@lit-protocol/lit-node-client';
 import { LitNetwork } from '@lit-protocol/constants';
-import { authGoogleRouter } from './services/user-service/controllers/auth-google-controller';
+import { authGoogleRouter } from './services/auth-service/controllers/auth-google-controller';
 
 dotenv.config();
 
@@ -63,13 +63,6 @@ app.use('/register-event', sseRouter);
 app.use('/crm/client', clientRouter);
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
-
-app.get('/', async (req: Request, res: Response): Promise<Response> => {
-  // #swagger.tags = ['Test']
-  return res.status(200).send({
-    message: 'Hello World!',
-  });
-});
 
 try {
   app.locals.litNodeClient = new LitJsSdk.LitNodeClientNodeJs({

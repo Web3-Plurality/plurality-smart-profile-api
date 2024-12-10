@@ -1,20 +1,28 @@
 {
-  "swagger": "2.0",
+  "openapi": "3.0.0",
   "info": {
     "title": "Plurality API",
     "description": "Description of Plurality API",
     "version": "1.0.0"
   },
-  "host": "app.plurality.local:443",
-  "basePath": "/",
+  "servers": [
+    {
+      "url": "https://app.plurality.local",
+      "description": ""
+    }
+  ],
   "tags": [
     {
-      "name": "Users",
-      "description": "user service"
+      "name": "Auth",
+      "description": "Auth service"
     },
     {
       "name": "Users-OAuth-Google",
       "description": "\n    1. Register the Event\n     - Navigate to the following URL in your browser to register the event:  \n       https://app.plurality.local/register-event/\n     - Copy the sseId from the response. This will be used in subsequent steps.\n  \n    2. Obtain the Access Token ID\n     - Open a new browser tab and use the sseId obtained in step 1 with the following endpoint:  \n       https://app.plurality.local/user/auth/google/login?sse_id=<your_sseId>\n     - This will return the accessTokenId, which is required for the next step.\n  \n    3. Set Headers and and call the event endpoint to tell server that you got the accessTokenId successfully.\n     - In Swagger UI, make a request with the following:  \n       - Headers:  \n         - x-sse-id: Your sseId  \n         - x-token-id: Your accessTokenId  \n       - Body:  \n         - redirect: false  \n         - clientId: Client ID get from plurality\n    This will give the accessToken in register event tab\n    "
+    },
+    {
+      "name": "Users",
+      "description": "user service"
     },
     {
       "name": "Client App",
@@ -47,33 +55,9 @@
     {
       "name": "OAuth-Twitter",
       "description": "\n  Using OAuth with Twitter\n  1. You have to Login in plurality by any method and get plurality token.\n  \n  2. Register the Event\n     - Navigate to the following URL in your browser to register the event:  \n       https://app.plurality.local/register-event/\n     - Copy the sseId from the response. This will be used in subsequent steps.\n  \n  3. Obtain the Access Token ID\n     - Open a new browser tab and use the sseId obtained in step 1 with the following endpoint:  \n       https://app.plurality.local/oauth-twitter?sse_id=<your_sseId>\n     - This will return the accessTokenId, which is required for the next step.\n  \n  3. Set Headers and and call the event endpoint to tell server that you got the accessTokenId successfully.\n     - In Swagger UI, make a request with the following:  \n       - Headers:  \n         - x-sse-id: Your sseId  \n         - x-token-id: Your accessTokenId  \n  \n  4. Fetch User Information\n     - To retrieve user information, call the info endpoint in Swagger UI:  \n       - Headers:  \n         - Authorization: Bearer <PluralityAccessToken>  \n         - x-token-id: <accessTokenId>\n       - The user information will be returned in the response.\n    "
-    },
-    {
-      "name": "Test",
-      "description": "for api testing"
-    },
-    {
-      "name": "SSE",
-      "description": "Server sent events"
     }
   ],
-  "schemes": [
-    "https"
-  ],
   "paths": {
-    "/": {
-      "get": {
-        "tags": [
-          "Test"
-        ],
-        "description": "",
-        "responses": {
-          "default": {
-            "description": ""
-          }
-        }
-      }
-    },
     "/user/smart-profile/": {
       "put": {
         "tags": [
@@ -84,26 +68,15 @@
           {
             "name": "x-profile-type-stream-id",
             "in": "header",
-            "type": "string"
+            "schema": {
+              "type": "string"
+            }
           },
           {
             "name": "authorization",
             "in": "header",
-            "type": "string"
-          },
-          {
-            "name": "body",
-            "in": "body",
             "schema": {
-              "type": "object",
-              "properties": {
-                "data": {
-                  "example": "any"
-                },
-                "smartProfile": {
-                  "example": "any"
-                }
-              }
+              "type": "string"
             }
           }
         ],
@@ -126,6 +99,28 @@
           "500": {
             "description": "Internal Server Error"
           }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "data": {
+                    "example": "any"
+                  },
+                  "smartProfile": {
+                    "example": "any"
+                  }
+                }
+              }
+            }
+          }
         }
       },
       "post": {
@@ -137,23 +132,15 @@
           {
             "name": "x-profile-type-stream-id",
             "in": "header",
-            "type": "string"
+            "schema": {
+              "type": "string"
+            }
           },
           {
             "name": "authorization",
             "in": "header",
-            "type": "string"
-          },
-          {
-            "name": "body",
-            "in": "body",
             "schema": {
-              "type": "object",
-              "properties": {
-                "smartProfile": {
-                  "example": "any"
-                }
-              }
+              "type": "string"
             }
           }
         ],
@@ -172,6 +159,25 @@
           },
           "500": {
             "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "smartProfile": {
+                    "example": "any"
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -186,18 +192,8 @@
           {
             "name": "authorization",
             "in": "header",
-            "type": "string"
-          },
-          {
-            "name": "body",
-            "in": "body",
             "schema": {
-              "type": "object",
-              "properties": {
-                "address": {
-                  "example": "any"
-                }
-              }
+              "type": "string"
             }
           }
         ],
@@ -217,29 +213,34 @@
           "500": {
             "description": "Internal Server Error"
           }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "address": {
+                    "example": "any"
+                  }
+                }
+              }
+            }
+          }
         }
       }
     },
     "/user/auth/otp/login": {
       "post": {
         "tags": [
-          "Users"
+          "Auth"
         ],
         "description": "",
-        "parameters": [
-          {
-            "name": "body",
-            "in": "body",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "email": {
-                  "example": "any"
-                }
-              }
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "OK"
@@ -247,38 +248,29 @@
           "400": {
             "description": "Bad Request"
           }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "example": "any"
+                  }
+                }
+              }
+            }
+          }
         }
       }
     },
     "/user/auth/otp/authenticate": {
       "post": {
         "tags": [
-          "Users"
+          "Auth"
         ],
         "description": "",
-        "parameters": [
-          {
-            "name": "body",
-            "in": "body",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "code": {
-                  "example": "any"
-                },
-                "email_id": {
-                  "example": "any"
-                },
-                "subscribe": {
-                  "example": "any"
-                },
-                "clientId": {
-                  "example": "any"
-                }
-              }
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "OK"
@@ -286,29 +278,38 @@
           "401": {
             "description": "Unauthorized"
           }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "example": "any"
+                  },
+                  "email_id": {
+                    "example": "any"
+                  },
+                  "subscribe": {
+                    "example": "any"
+                  },
+                  "clientId": {
+                    "example": "any"
+                  }
+                }
+              }
+            }
+          }
         }
       }
     },
     "/user/auth/siwe/login": {
       "post": {
         "tags": [
-          "Users"
+          "Auth"
         ],
         "description": "",
-        "parameters": [
-          {
-            "name": "body",
-            "in": "body",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "address": {
-                  "example": "any"
-                }
-              }
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "OK"
@@ -319,34 +320,35 @@
           "500": {
             "description": "Internal Server Error"
           }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "address": {
+                    "example": "any"
+                  }
+                }
+              }
+            }
+          }
         }
       }
     },
     "/user/auth/siwe/authenticate": {
       "post": {
         "tags": [
-          "Users"
+          "Auth"
         ],
         "description": "",
         "parameters": [
           {
             "name": "x-siwe",
             "in": "header",
-            "type": "string"
-          },
-          {
-            "name": "body",
-            "in": "body",
             "schema": {
-              "type": "object",
-              "properties": {
-                "address": {
-                  "example": "any"
-                },
-                "clientId": {
-                  "example": "any"
-                }
-              }
+              "type": "string"
             }
           }
         ],
@@ -359,6 +361,23 @@
           },
           "401": {
             "description": "Unauthorized"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "address": {
+                    "example": "any"
+                  },
+                  "clientId": {
+                    "example": "any"
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -373,26 +392,15 @@
           {
             "name": "x-sse-id",
             "in": "header",
-            "type": "string"
+            "schema": {
+              "type": "string"
+            }
           },
           {
             "name": "x-token-id",
             "in": "header",
-            "type": "string"
-          },
-          {
-            "name": "body",
-            "in": "body",
             "schema": {
-              "type": "object",
-              "properties": {
-                "redirect": {
-                  "example": "any"
-                },
-                "clientId": {
-                  "example": "any"
-                }
-              }
+              "type": "string"
             }
           }
         ],
@@ -405,6 +413,23 @@
           },
           "500": {
             "description": "Internal Server Error"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "redirect": {
+                    "example": "any"
+                  },
+                  "clientId": {
+                    "example": "any"
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -419,12 +444,16 @@
           {
             "name": "x-sse-id",
             "in": "header",
-            "type": "string"
+            "schema": {
+              "type": "string"
+            }
           },
           {
             "name": "x-token-id",
             "in": "header",
-            "type": "string"
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -450,12 +479,16 @@
           {
             "name": "x-token-id",
             "in": "header",
-            "type": "string"
+            "schema": {
+              "type": "string"
+            }
           },
           {
             "name": "authorization",
             "in": "header",
-            "type": "string"
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -490,12 +523,16 @@
           {
             "name": "x-sse-id",
             "in": "header",
-            "type": "string"
+            "schema": {
+              "type": "string"
+            }
           },
           {
             "name": "x-token-id",
             "in": "header",
-            "type": "string"
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -521,12 +558,16 @@
           {
             "name": "x-token-id",
             "in": "header",
-            "type": "string"
+            "schema": {
+              "type": "string"
+            }
           },
           {
             "name": "authorization",
             "in": "header",
-            "type": "string"
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -561,12 +602,16 @@
           {
             "name": "x-sse-id",
             "in": "header",
-            "type": "string"
+            "schema": {
+              "type": "string"
+            }
           },
           {
             "name": "x-token-id",
             "in": "header",
-            "type": "string"
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -592,12 +637,16 @@
           {
             "name": "x-token-id",
             "in": "header",
-            "type": "string"
+            "schema": {
+              "type": "string"
+            }
           },
           {
             "name": "authorization",
             "in": "header",
-            "type": "string"
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -632,12 +681,16 @@
           {
             "name": "x-sse-id",
             "in": "header",
-            "type": "string"
+            "schema": {
+              "type": "string"
+            }
           },
           {
             "name": "x-token-id",
             "in": "header",
-            "type": "string"
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -663,12 +716,16 @@
           {
             "name": "x-token-id",
             "in": "header",
-            "type": "string"
+            "schema": {
+              "type": "string"
+            }
           },
           {
             "name": "authorization",
             "in": "header",
-            "type": "string"
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -703,12 +760,16 @@
           {
             "name": "x-sse-id",
             "in": "header",
-            "type": "string"
+            "schema": {
+              "type": "string"
+            }
           },
           {
             "name": "x-token-id",
             "in": "header",
-            "type": "string"
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -734,12 +795,16 @@
           {
             "name": "x-token-id",
             "in": "header",
-            "type": "string"
+            "schema": {
+              "type": "string"
+            }
           },
           {
             "name": "authorization",
             "in": "header",
-            "type": "string"
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -774,12 +839,16 @@
           {
             "name": "x-sse-id",
             "in": "header",
-            "type": "string"
+            "schema": {
+              "type": "string"
+            }
           },
           {
             "name": "x-token-id",
             "in": "header",
-            "type": "string"
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -805,12 +874,16 @@
           {
             "name": "x-token-id",
             "in": "header",
-            "type": "string"
+            "schema": {
+              "type": "string"
+            }
           },
           {
             "name": "authorization",
             "in": "header",
-            "type": "string"
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -845,12 +918,16 @@
           {
             "name": "x-sse-id",
             "in": "header",
-            "type": "string"
+            "schema": {
+              "type": "string"
+            }
           },
           {
             "name": "x-token-id",
             "in": "header",
-            "type": "string"
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -876,12 +953,16 @@
           {
             "name": "x-token-id",
             "in": "header",
-            "type": "string"
+            "schema": {
+              "type": "string"
+            }
           },
           {
             "name": "authorization",
             "in": "header",
-            "type": "string"
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -903,60 +984,47 @@
         }
       }
     },
-    "/register-event/": {
-      "get": {
-        "tags": [
-          "SSE"
-        ],
-        "description": "",
-        "responses": {
-          "default": {
-            "description": ""
-          }
-        }
-      }
-    },
     "/crm/client/": {
       "post": {
         "tags": [
           "Client App"
         ],
         "description": "",
-        "parameters": [
-          {
-            "name": "body",
-            "in": "body",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "img": {
-                  "example": "any"
-                },
-                "streamId": {
-                  "example": "any"
-                },
-                "links": {
-                  "example": "any"
-                },
-                "domains": {
-                  "example": "any"
-                },
-                "incentiveType": {
-                  "example": "any"
-                },
-                "appType": {
-                  "example": "any"
-                }
-              }
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "OK"
           },
           "500": {
             "description": "Internal Server Error"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "img": {
+                    "example": "any"
+                  },
+                  "streamId": {
+                    "example": "any"
+                  },
+                  "links": {
+                    "example": "any"
+                  },
+                  "domains": {
+                    "example": "any"
+                  },
+                  "incentiveType": {
+                    "example": "any"
+                  },
+                  "appType": {
+                    "example": "any"
+                  }
+                }
+              }
+            }
           }
         }
       },
@@ -969,12 +1037,16 @@
           {
             "name": "x-domain",
             "in": "header",
-            "type": "string"
+            "schema": {
+              "type": "string"
+            }
           },
           {
             "name": "uuid",
             "in": "query",
-            "type": "string"
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -1001,33 +1073,8 @@
             "name": "id",
             "in": "path",
             "required": true,
-            "type": "string"
-          },
-          {
-            "name": "body",
-            "in": "body",
             "schema": {
-              "type": "object",
-              "properties": {
-                "img": {
-                  "example": "any"
-                },
-                "streamId": {
-                  "example": "any"
-                },
-                "links": {
-                  "example": "any"
-                },
-                "domains": {
-                  "example": "any"
-                },
-                "incentiveType": {
-                  "example": "any"
-                },
-                "appType": {
-                  "example": "any"
-                }
-              }
+              "type": "string"
             }
           }
         ],
@@ -1038,48 +1085,45 @@
           "500": {
             "description": "Internal Server Error"
           }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "img": {
+                    "example": "any"
+                  },
+                  "streamId": {
+                    "example": "any"
+                  },
+                  "links": {
+                    "example": "any"
+                  },
+                  "domains": {
+                    "example": "any"
+                  },
+                  "incentiveType": {
+                    "example": "any"
+                  },
+                  "appType": {
+                    "example": "any"
+                  }
+                }
+              }
+            }
+          }
         }
       }
     }
   },
   "components": {
-    "schemas": {
-      "smartProfile": {
-        "username": "",
-        "avatar": "",
-        "bio": "",
-        "interests": [],
-        "scores": [
-          {
-            "scoreType": "",
-            "scoreValue": 0
-          }
-        ],
-        "reputationTags": [],
-        "badges": [],
-        "collections": [],
-        "extra": [
-          {
-            "field": "",
-            "value": 0
-          }
-        ],
-        "linkedAddress": [
-          {
-            "chainName": "",
-            "chainId": "",
-            "address": ""
-          }
-        ],
-        "connectedProfiles": [
-          {
-            "platformName": "",
-            "userPlatformId": "",
-            "username": ""
-          }
-        ],
-        "connectedPlatforms": [],
-        "attestation": {}
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
       }
     }
   }
