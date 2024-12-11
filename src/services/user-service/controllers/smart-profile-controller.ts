@@ -63,7 +63,7 @@ smartProfileRouter.put(
   ],
   async (req: Request, res: Response) => {
     // #swagger.tags = ['Users']
-     /* #swagger.security = [{
+    /* #swagger.security = [{
             "bearerAuth": []
     }] */
     try {
@@ -152,7 +152,7 @@ smartProfileRouter.post(
   ],
   async (req: Request, res: Response) => {
     // #swagger.tags = ['Users']
-     /* #swagger.security = [{
+    /* #swagger.security = [{
             "bearerAuth": []
     }] */
     try {

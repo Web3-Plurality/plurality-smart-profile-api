@@ -6,7 +6,7 @@ import * as dotenv from 'dotenv';
 import session from 'express-session';
 import passport from 'passport';
 import swaggerUi from 'swagger-ui-express';
-import * as swaggerDocument from '../swagger_output.json';
+import * as swaggerDocument from '../swagger_modify.json';
 import https from 'https';
 import { AppDataSource } from './data-source';
 import fs from 'fs';
@@ -46,9 +46,9 @@ app.use(passport.session());
 // user service routers
 app.use('/user/smart-profile', smartProfileRouter);
 app.use('/user/capacity', capacityRouter);
-app.use('/user/auth/otp', authOTPRouter);
-app.use('/user/auth/siwe', authSiweRouter);
-app.use('/user/auth/google', authGoogleRouter);
+app.use('/auth/otp', authOTPRouter);
+app.use('/auth/siwe', authSiweRouter);
+app.use('/auth/google', authGoogleRouter);
 
 // oauth service routers
 app.use('/oauth-twitter', twitterRouter);

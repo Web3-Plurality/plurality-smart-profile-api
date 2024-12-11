@@ -1,5 +1,6 @@
 const swaggerAutogen = require('swagger-autogen')({openapi: '3.0.0'});
 const dotenv = require('dotenv');
+const fs = require('fs');
 dotenv.config();
 
 const outputFile = './swagger_output.json'; // File to write Swagger JSON
@@ -8,56 +9,60 @@ const endpointsFiles = ['./src/index.ts']; // File(s) containing API routes
 
 function generateDescription(platformName) {
     return `
-  Using OAuth with ${platformName}
-  1. You have to Login in plurality by any method and get plurality token.
+  ### Using OAuth with ${platformName}<br>
   
-  2. Register the Event
-     - Navigate to the following URL in your browser to register the event:  
-       https://${process.env.PLURALITY_DOMAIN}/register-event/
-     - Copy the sseId from the response. This will be used in subsequent steps.
+  1. **Login to Plurality and obtain the token**<br> <br>
+     Log in to Plurality using any available method to get the Plurality token.<br>
   
-  3. Obtain the Access Token ID
-     - Open a new browser tab and use the sseId obtained in step 1 with the following endpoint:  
-       https://${process.env.PLURALITY_DOMAIN}/oauth-${platformName.toLowerCase()}?sse_id=<your_sseId>
-     - This will return the accessTokenId, which is required for the next step.
+  2. **Register the Event**  <br><br>
+     Navigate to the following URL to register the event:  <br>
+     [Register Event](https://${process.env.PLURALITY_DOMAIN}/register-event/)  <br>
+     Copy the **sseId** from the response. This will be used in subsequent steps.<br>
   
-  3. Set Headers and and call the event endpoint to tell server that you got the accessTokenId successfully.
-     - In Swagger UI, make a request with the following:  
-       - Headers:  
-         - x-sse-id: Your sseId  
-         - x-token-id: Your accessTokenId  
+  3. **Obtain the Access Token ID**  <br><br>
+     Open a new browser tab and use the **sseId** obtained in Step 2 with the following endpoint:  <br>
+     [Obtain Access Token](https://${process.env.PLURALITY_DOMAIN}/oauth-${platformName.toLowerCase()}?sse_id=<your_sseId>)  <br>
+     This will return the **accessTokenId**, which is required for the next step.<br>
   
-  4. Fetch User Information
-     - To retrieve user information, call the info endpoint in Swagger UI:  
-       - Headers:  
-         - Authorization: Bearer <PluralityAccessToken>  
-         - x-token-id: <accessTokenId>
-       - The user information will be returned in the response.
-    `;
+  4. **Set Headers and call the event endpoint**  <br><br>
+     Notify the server that you have successfully obtained the **accessTokenId**:  <br>
+     - **Headers**:  <br>
+       - x-sse-id: Your *sseId*  <br>
+       - x-token-id: Your *accessTokenId*  <br>
+  
+  5. **Fetch User Information**  <br><br>
+     To retrieve user information, call the info endpoint in Swagger UI:<br>
+     - **Headers**:  <br>
+       - Authorization: Bearer *PluralityAccessToken*  <br>
+       - x-token-id: *accessTokenId*  <br>
+  `;
   }
   
 
   const googleOauthDescription=`
-    1. Register the Event
-     - Navigate to the following URL in your browser to register the event:  
-       https://${process.env.PLURALITY_DOMAIN}/register-event/
-     - Copy the sseId from the response. This will be used in subsequent steps.
-  
-    2. Obtain the Access Token ID
-     - Open a new browser tab and use the sseId obtained in step 1 with the following endpoint:  
-       https://${process.env.PLURALITY_DOMAIN}/user/auth/google/login?sse_id=<your_sseId>
-     - This will return the accessTokenId, which is required for the next step.
-  
-    3. Set Headers and and call the event endpoint to tell server that you got the accessTokenId successfully.
+ 
+1. **Register the Event**  
+   - Navigate to the following URL in your browser to register the event:  
+     \`https://${process.env.PLURALITY_DOMAIN}/register-event/\`  
+   - Copy the \`sseId\` from the response. This will be used in subsequent steps.
+
+2. **Obtain the Access Token ID**  
+   - Open a new browser tab and use the \`sseId\` obtained in step 1 with the following endpoint:  
+     \`https://${process.env.PLURALITY_DOMAIN}/user/auth/google/login?sse_id=<your_sseId>\`  
+   - This will return the \`accessTokenId\`, which is required for the next step.
+
+3. **Set Headers and Call the Event Endpoint**  
+   - Notify the server that you have successfully obtained the \`accessTokenId\`:  
      - In Swagger UI, make a request with the following:  
-       - Headers:  
-         - x-sse-id: Your sseId  
-         - x-token-id: Your accessTokenId  
-       - Body:  
-         - redirect: false  
-         - clientId: Client ID get from plurality
-    This will give the accessToken in register event tab
-    `;
+       - **Headers:**  
+         - \`x-sse-id\`: Your \`sseId\`  
+         - \`x-token-id\`: Your \`accessTokenId\`  
+       - **Body:**  
+         - \`redirect\`: \`false\`  
+         - \`clientId\`: Client ID obtained from Plurality  
+
+   - This will provide the \`accessToken\` in the "Register Event" tab.
+`;
 
 
 
@@ -73,10 +78,6 @@ const doc = {
             description: 'Auth service'
         },
         {
-            name: 'Users-OAuth-Google',
-            description: googleOauthDescription
-        },
-        {
             name: 'Users',
             description: 'user service' 
         },
@@ -85,33 +86,8 @@ const doc = {
             description: 'client app service'
         },
         {
-            name: 'OAuth-Facebook',
-            description: generateDescription('Facebook')
-
-        },
-        {
-            name: 'OAuth-Fortnite',
-            description: generateDescription('Fortnite')
-        },
-        {
-            name: 'OAuth-Instagram',
-            description: generateDescription('Instagram')
-        },
-        {
-            name: 'OAuth-Roblox',
-            description: generateDescription('Roblox')
-        },
-        {
-            name: 'OAuth-Snapchat',
-            description: generateDescription('Snapchat')
-        },
-        {
-            name: 'OAuth-TikTok',
-            description: generateDescription('TikTok')
-        },
-        {
-            name: 'OAuth-Twitter',
-            description: generateDescription('Twitter')
+            name: 'OAuth',
+            description: 'OAuth service'
         },
 
         // {
@@ -142,8 +118,44 @@ const doc = {
 }
 };
 
-swaggerAutogen(outputFile, endpointsFiles, doc)
-console.log('Swagger JSON generated')
+async function  generateSwagger(){
+
+  swaggerAutogen(outputFile, endpointsFiles, doc)
+  console.log('Swagger JSON generated')
+}
+ function main() {
+ generateSwagger().then(()=>{
+
+  console.log("Modifying swagger file");
+  const swaggerData = JSON.parse(fs.readFileSync(outputFile, 'utf-8'));
+  // Loop through all paths in the Swagger JSON
+  for (const [path, methods] of Object.entries(swaggerData.paths)) {
+    if (path.includes('/event')) {
+      const match = path.match(/-(.*?)\//);
+      if (match) {
+      // Replace placeholder with actual domain value
+          swaggerData.paths[path]['post']['description'] = generateDescription(match[1]);
+          if (match[1] === 'facebook') {
+            swaggerData.paths[path]['post']['tags'] = ['OAuth'];
+            
+          }
+      }
+      else if(path.includes('/google/event')){
+        swaggerData.paths[path]['post']['description'] = googleOauthDescription;
+      
+    }
+  }
+}
+  
+// Save the updated Swagger JSON file
+  fs.writeFileSync('swagger_modify.json', JSON.stringify(swaggerData, null, 2));
+  console.log('Swagger output updated successfully!');
+  
+})}
+
+main();
+
+
 // .then(() => {
 //   require('./src/app'); // Start your app after Swagger doc is generated
 // });

@@ -57,12 +57,11 @@ export const capacityDelegation = async (walletAddress) => {
   return capacityDelegationAuthSig;
 };
 
-
 capacityRouter.post('/', isAuthenticated, isValidAddress, async (req, res) => {
   // #swagger.tags = ['Users']
-   /* #swagger.security = [{
-            "bearerAuth": []
-    }] */
+  /* #swagger.security = [{
+          "bearerAuth": []
+  }] */
   try {
     const { address } = req.body;
     const id = req?.user?.id;
