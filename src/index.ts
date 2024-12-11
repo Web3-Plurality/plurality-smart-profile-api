@@ -6,7 +6,7 @@ import * as dotenv from 'dotenv';
 import session from 'express-session';
 import passport from 'passport';
 import swaggerUi from 'swagger-ui-express';
-import * as swaggerDocument from '../swagger_modify.json';
+import * as swaggerDocument from '../swagger.json';
 import https from 'https';
 import { AppDataSource } from './data-source';
 import fs from 'fs';

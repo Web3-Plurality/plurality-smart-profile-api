@@ -107,6 +107,9 @@ instagramRouter.post(
 // Return User Object
 instagramRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfileMapEmpty, async (req, res) => {
   // #swagger.tags = ['OAuth']
+    /* #swagger.security = [{
+          "bearerAuth": []
+  }] */
   try {
     Logger.info(
       `${INSTAGRAM_APP}: Request for information has been received successfully with id ${req.accessTokenID}`,

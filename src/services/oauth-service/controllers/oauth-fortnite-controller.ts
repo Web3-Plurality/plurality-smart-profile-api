@@ -109,6 +109,9 @@ fortniteRouter.post(
 // Return User Object
 fortniteRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfileMapEmpty, async (req, res) => {
   // #swagger.tags = ['OAuth']
+    /* #swagger.security = [{
+          "bearerAuth": []
+  }] */
   try {
     Logger.info(`${FORTNITE_APP}: Request for information has been received successfully with id ${req.accessTokenID}`);
     const { accessToken, accountId }: any = memoryStoreToken.get(req.accessTokenID);

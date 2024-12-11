@@ -3,7 +3,7 @@ const dotenv = require('dotenv');
 const fs = require('fs');
 dotenv.config();
 
-const outputFile = './swagger_output.json'; // File to write Swagger JSON
+const outputFile = './swagger.json'; // File to write Swagger JSON
 const endpointsFiles = ['./src/index.ts']; // File(s) containing API routes
 
 
@@ -125,37 +125,35 @@ async function  generateSwagger(){
 }
  function main() {
  generateSwagger().then(()=>{
-
-  console.log("Modifying swagger file");
-  const swaggerData = JSON.parse(fs.readFileSync(outputFile, 'utf-8'));
-  // Loop through all paths in the Swagger JSON
-  for (const [path, methods] of Object.entries(swaggerData.paths)) {
-    if (path.includes('/event')) {
-      const match = path.match(/-(.*?)\//);
-      if (match) {
-      // Replace placeholder with actual domain value
-          swaggerData.paths[path]['post']['description'] = generateDescription(match[1]);
-          if (match[1] === 'facebook') {
-            swaggerData.paths[path]['post']['tags'] = ['OAuth'];
-            
-          }
+  
+  setTimeout(() => {
+    console.log("Modifying swagger file");
+    const swaggerData = JSON.parse(fs.readFileSync(outputFile, 'utf-8'));
+    // Loop through all paths in the Swagger JSON
+    for (const [path, methods] of Object.entries(swaggerData.paths)) {
+      if (path.includes('/event')) {
+        const match = path.match(/-(.*?)\//);
+        if (match) {
+        // Replace placeholder with actual domain value
+            swaggerData.paths[path]['post']['description'] = generateDescription(match[1]);
+            if (match[1] === 'facebook') {
+              swaggerData.paths[path]['post']['tags'] = ['OAuth'];
+              
+            }
+        }
+        else if(path.includes('/google/event')){
+          swaggerData.paths[path]['post']['description'] = googleOauthDescription;
+        
       }
-      else if(path.includes('/google/event')){
-        swaggerData.paths[path]['post']['description'] = googleOauthDescription;
-      
     }
   }
-}
-  
-// Save the updated Swagger JSON file
-  fs.writeFileSync('swagger_modify.json', JSON.stringify(swaggerData, null, 2));
-  console.log('Swagger output updated successfully!');
-  
+    
+  // Save the updated Swagger JSON file
+    fs.writeFileSync(outputFile, JSON.stringify(swaggerData, null, 2));
+    console.log('Swagger output updated successfully!');
+   
+  }, 2000);
+   
 })}
 
 main();
-
-
-// .then(() => {
-//   require('./src/app'); // Start your app after Swagger doc is generated
-// });

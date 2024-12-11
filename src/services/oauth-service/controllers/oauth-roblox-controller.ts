@@ -106,6 +106,9 @@ robloxRouter.post(
 // Return User Object
 robloxRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfileMapEmpty, async (req, res) => {
   // #swagger.tags = ['OAuth']
+    /* #swagger.security = [{
+          "bearerAuth": []
+  }] */
   try {
     Logger.info(`${ROBLOX_APP}: Request for information has been received successfully with id ${req.accessTokenID}`);
     const accessToken = memoryStoreToken.get(req.accessTokenID);

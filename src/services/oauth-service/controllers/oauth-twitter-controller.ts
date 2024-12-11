@@ -107,11 +107,14 @@ twitterRouter.post(
 // Return User Object
 twitterRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfileMapEmpty, async (req, res) => {
   // #swagger.tags = ['OAuth']
+  /* #swagger.security = [{
+          "bearerAuth": []
+  }] */
   try {
     Logger.info(`${TWITTER_APP}: Request for information has been received successfully with id ${req.accessTokenID}`);
     const accessToken = memoryStoreToken.get(req.accessTokenID);
     let userTweet = { data: { data: {} } };
-
+    
     if (accessToken) {
       const tweetFields = [
         'attachments',

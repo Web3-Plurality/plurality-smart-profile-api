@@ -107,6 +107,9 @@ snapchatRouter.post(
 // Return User Object
 snapchatRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfileMapEmpty, async (req, res) => {
   // #swagger.tags = ['OAuth']
+    /* #swagger.security = [{
+          "bearerAuth": []
+  }] */
   try {
     Logger.info(`${SNAPCHAT_APP}: Request for information has been received successfully with id ${req.accessTokenID}`);
     const accessToken = memoryStoreToken.get(req.accessTokenID);
