@@ -116,31 +116,6 @@ authGoogleRouter.get('/callback', passport.authenticate('google', { session: fal
 
 authGoogleRouter.post('/event', hasValidEventHeader, hasValidAccessTokenHeader, async (req, res) => {
   //  #swagger.tags = ['Auth']
-  /*
-#swagger.description = `
-1. **Register the Event**  
-   - Navigate to the following URL in your browser to register the event:  
-     \`https://app.plurality.local/register-event/\`  
-   - Copy the \`sseId\` from the response. This will be used in subsequent steps.
-
-2. **Obtain the Access Token ID**  
-   - Open a new browser tab and use the \`sseId\` obtained in step 1 with the following endpoint:  
-     \`https://app.plurality.local/user/auth/google/login?sse_id=<your_sseId>\`  
-   - This will return the \`accessTokenId\`, which is required for the next step.
-
-3. **Set Headers and Call the Event Endpoint**  
-   - Notify the server that you have successfully obtained the \`accessTokenId\`:  
-     - In Swagger UI, make a request with the following:  
-       - **Headers:**  
-         - \`x-sse-id\`: Your \`sseId\`  
-         - \`x-token-id\`: Your \`accessTokenId\`  
-       - **Body:**  
-         - \`redirect\`: \`false\`  
-         - \`clientId\`: Client ID obtained from Plurality  
-
-   - This will provide the \`accessToken\` in the "Register Event" tab.
-`;
-*/
   try {
     Logger.info(`Request body tokenUUID ${req?.accessTokenID}`);
     Logger.info(`Request body sseUUID ${req?.sseID}`);
