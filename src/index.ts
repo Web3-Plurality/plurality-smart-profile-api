@@ -43,12 +43,15 @@ app.use(cors({ origin: true, credentials: true }));
 app.use(passport.initialize());
 app.use(session({ secret: 'keyboard cat', resave: false, saveUninitialized: false }));
 app.use(passport.session());
-// user service routers
-app.use('/user/smart-profile', smartProfileRouter);
-app.use('/user/capacity', capacityRouter);
+
+// auth service routers
 app.use('/auth/otp', authOTPRouter);
 app.use('/auth/siwe', authSiweRouter);
 app.use('/auth/google', authGoogleRouter);
+
+// user service routers
+app.use('/user/smart-profile', smartProfileRouter);
+app.use('/user/capacity', capacityRouter);
 
 // oauth service routers
 app.use('/oauth-twitter', twitterRouter);
@@ -59,9 +62,11 @@ app.use('/oauth-instagram', instagramRouter);
 app.use('/oauth-fortnite', fortniteRouter);
 app.use('/oauth-tiktok', tiktokRouter);
 app.use('/register-event', sseRouter);
-// crm service routers
+
+// crm service router
 app.use('/crm/client', clientRouter);
 
+// swagger router
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 try {
