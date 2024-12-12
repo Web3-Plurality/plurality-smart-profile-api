@@ -81,7 +81,8 @@ capacityRouter.post('/', isAuthenticated, isValidAddress, async (req, res) => {
       Logger.info(`Putting Lit address on the current user id ${existingUser?.id}`);
     } else {
       Logger.info(`The address against this email is already found`);
-      if (address !== existingUser?.address) {
+      // if type pkp it means its coming from metamask method, if its metamask then give capacity to its pkp
+      if (req?.body?.address !== existingUser?.address && req?.body?.method !== 'metamask') {
         Logger.error(`The address against this email is not correct`);
         return res.status(400).json({ error: 'The address against this email is not correct' });
       }
