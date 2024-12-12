@@ -5,9 +5,9 @@ import { generateNonce, SiweMessage } from 'siwe';
 import { ethers } from 'ethers';
 import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
-import { User } from '../entity/user';
+import { User } from '../../user-service/entity/user';
 import { AppDataSource } from '../../../data-source';
-import { AddUserClientMap } from '../utils/user';
+import { AddUserClientMap } from '../../user-service/utils/user';
 import * as dotenv from 'dotenv';
 
 dotenv.config();
@@ -15,7 +15,7 @@ dotenv.config();
 export const authSiweRouter = express.Router();
 const userRepository = AppDataSource.getRepository(User);
 
-const userRegisterViaWallet = async (email: string, address: string, clientId: string) => {
+const userRegisterViaWallet = async (address: string, clientId: string) => {
   const uniqueSessionId = uuidv4();
   let token = '';
   let addedUser = {};
@@ -31,7 +31,6 @@ const userRegisterViaWallet = async (email: string, address: string, clientId: s
   } else {
     // If the user doesn't exist, insert a new row
     const newUser = await userRepository.create({
-      email: email || null,
       address: address,
       subscribe: false,
     });
@@ -52,8 +51,9 @@ const userRegisterViaWallet = async (email: string, address: string, clientId: s
 
 //generate random string to take user signature
 authSiweRouter.post('/login', (req, res) => {
+  // #swagger.tags = ['Auth']
   try {
-    const walletAddress = req?.body?.address;
+    const walletAddress: string = req.body.address;
     if (!ethers.isAddress(walletAddress)) {
       Logger.error(`Fatal error due to invalid wallet address: ${walletAddress}`);
       return res.status(400).json({ error: 'Invalid wallet address' });
@@ -68,13 +68,15 @@ authSiweRouter.post('/login', (req, res) => {
     return res.status(500).json({ error: 'An error occurred while processing your request' });
   }
 });
-// address, clientId, email, subscribe
+// address, clientId, subscribe
 authSiweRouter.post('/authenticate', async function (req, res) {
+  // #swagger.tags = ['Auth']
   try {
+    const { address, clientId }: { address: string; clientId: string } = req.body;
     const siweObj = req.headers['x-siwe'] ? JSON.parse(req.headers['x-siwe']) : '';
     const siweToken = siweObj?.siwe;
     const message = decodeURIComponent(siweObj?.message);
-    const nonce = memoryStoreNonce.get(req?.body?.address);
+    const nonce = memoryStoreNonce.get(address);
     const siweMessage = new SiweMessage(message);
     const siweResponse = await siweMessage.verify({ signature: siweToken });
     // check nonce
@@ -83,19 +85,19 @@ authSiweRouter.post('/authenticate', async function (req, res) {
       return res.status(400).send('Invalid nonce');
     }
     // delete nonce with the address
-    delete memoryStoreNonce[req?.body?.address];
+    delete memoryStoreNonce[address];
     // check signature
     if (!siweResponse.success) {
       Logger.error(`Invalid siwe token`);
       return res.status(400).send('Invalid siwe token');
     }
-    if (siweMessage?.address?.toLowerCase() !== req?.body?.address?.toLowerCase()) {
+    if (siweMessage?.address?.toLowerCase() !== address?.toLowerCase()) {
       Logger.error(`Invalid siwe token`);
       return res.status(400).send('Invalid siwe token');
     }
     // create jwt token
-    Logger.info(`user authenticated successfully by address ${req?.body?.address}`);
-    const { token, user } = await userRegisterViaWallet(req?.body?.email, req?.body?.address, req?.body?.clientId);
+    Logger.info(`user authenticated successfully by address ${address}`);
+    const { token, user } = await userRegisterViaWallet(address, clientId);
     return res.status(200).json({ success: true, token, user });
   } catch (err) {
     Logger.error(`Error occurred: ${err}`);

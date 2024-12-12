@@ -2,10 +2,10 @@ import stytch, { OTPsAuthenticateRequest, OTPsEmailLoginOrCreateRequest } from '
 import express from 'express';
 import Logger from '../../../lib/logger';
 import { AppDataSource } from '../../../data-source';
-import { LoginType, User } from '../entity/user';
+import { LoginType, User } from '../../user-service/entity/user';
 import { v4 as uuidv4 } from 'uuid';
 import jwt from 'jsonwebtoken';
-import { AddUserClientMap } from '../utils/user';
+import { AddUserClientMap } from '../../user-service/utils/user';
 import * as dotenv from 'dotenv';
 
 dotenv.config();
@@ -21,11 +21,13 @@ const stytchClient = new stytch.Client({
 
 // Start the authentication flow
 authOTPRouter.post('/login', async function (req, res) {
+  // #swagger.tags = ['Auth']
   try {
+    const email: string = req.body.email;
     const templateId = 'sign_in_to_plurality_network';
     /* eslint-disable */
     const options: OTPsEmailLoginOrCreateRequest = {
-      email: req.body.email,
+      email: email,
       login_template_id: templateId,
       expiration_minutes: 2,
     };
@@ -61,15 +63,17 @@ authOTPRouter.post('/login', async function (req, res) {
 // Complete the authentication flow which mints the session
 // parameters : code, email_id, address, subscribe, clientId
 authOTPRouter.post('/authenticate', async function (req, res) {
+  // #swagger.tags = ['Auth']
   try {
     let token = '';
     let addedUser = {};
     const uniqueSessionId = uuidv4();
     /* eslint-disable */
+    const { code, email_id, subscribe, clientId } = req.body;
     const params: OTPsAuthenticateRequest = {
-      code: req?.body?.code,
+      code: code,
       session_duration_minutes: 60,
-      method_id: req?.body?.email_id,
+      method_id: email_id,
     };
     /* eslint-enable */
 
@@ -102,8 +106,8 @@ authOTPRouter.post('/authenticate', async function (req, res) {
     }
 
     //if client id exist then add in user client map
-    if (req?.body?.clientId) {
-      await AddUserClientMap(existingUser?.id ? existingUser?.id : addedUser?.id, req?.body?.clientId);
+    if (clientId) {
+      await AddUserClientMap(existingUser?.id ? existingUser?.id : addedUser?.id, clientId);
     } else {
       Logger.error(`Client id not found`);
       throw new Error('Client id not found');
@@ -112,7 +116,7 @@ authOTPRouter.post('/authenticate', async function (req, res) {
     Logger.info(`jwt token generated for user id ${existingUser?.id ? existingUser?.id : addedUser?.id}`);
     return res.status(200).json({
       success: true,
-      pluralityToken: token,
+      token: token,
       stytchToken: resp?.session_jwt,
       user: existingUser?.id ? existingUser : addedUser,
       userId: resp?.user_id,

@@ -31,10 +31,13 @@ export const capacityDelegation = async (walletAddress) => {
   );
   let maxNft = { id: 0 };
   for (let index = 0; index < litResponse?.data?.items.length; index++) {
-    if (Number(litResponse?.data?.items[index].id) > Number(maxNft?.id) && litResponse?.data?.items[index].token.address==='0x01205d94Fee4d9F59A4aB24bf80D11d4DdAf6Eed') {
+    if (
+      Number(litResponse?.data?.items[index].id) > Number(maxNft?.id) &&
+      litResponse?.data?.items[index].token.address === '0x01205d94Fee4d9F59A4aB24bf80D11d4DdAf6Eed'
+    ) {
       maxNft = litResponse?.data?.items[index];
       if (currentTimestamp < Number(maxNft?.metadata?.attributes[0]?.value)) {
-       break;
+        break;
       }
     }
   }
@@ -54,9 +57,13 @@ export const capacityDelegation = async (walletAddress) => {
   return capacityDelegationAuthSig;
 };
 
-//body => address
 capacityRouter.post('/', isAuthenticated, isValidAddress, async (req, res) => {
+  // #swagger.tags = ['Users']
+  /* #swagger.security = [{
+          "bearerAuth": []
+  }] */
   try {
+    const { address } = req.body;
     const id = req?.user?.id;
     const existingUser = await userRepository.findOne({
       where: {
@@ -67,19 +74,19 @@ capacityRouter.post('/', isAuthenticated, isValidAddress, async (req, res) => {
       Logger.info(`The address against this email was not found`);
 
       const updatedUser = {
-        address: req?.body.address, // pkp address
+        address: address, // pkp address
       };
 
       await userRepository.update({ id: existingUser?.id }, updatedUser);
       Logger.info(`Putting Lit address on the current user id ${existingUser?.id}`);
     } else {
       Logger.info(`The address against this email is already found`);
-      if (req?.body?.address !== existingUser?.address) {
+      if (address !== existingUser?.address) {
         Logger.error(`The address against this email is not correct`);
         return res.status(400).json({ error: 'The address against this email is not correct' });
       }
     }
-    const capacityDelegationAuthSig = await capacityDelegation(req?.body.address);
+    const capacityDelegationAuthSig = await capacityDelegation(address);
     Logger.info(`Capacity delegation auth sig generated for user id: ${id}`);
     return res.status(200).json({ success: true, capacityDelegationAuthSig });
   } catch (error) {

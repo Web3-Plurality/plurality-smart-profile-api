@@ -56,12 +56,16 @@ passport.use(
 
 // Start authentication flow
 fortniteRouter.get('/', hasValidEventParam, isProfileMapEmpty, async (req: Request, res: Response, next) => {
+  // #swagger.tags = ['OAuth']
+  // #swagger.ignore = true
   Logger.info(`${FORTNITE_APP}: Request for Oauth has been received successfully on sse Id ${req.sseID}`);
   passport.authenticate('fortnite')(req, res, next);
 });
 
 // Callback handler
 fortniteRouter.get('/callback', passport.authenticate('fortnite', { session: false }), async (req, res) => {
+  // #swagger.tags = ['OAuth']
+  // #swagger.ignore = true
   try {
     const accessTokenId = uuidv4();
     memoryStoreToken.set(accessTokenId, {
@@ -84,6 +88,7 @@ fortniteRouter.post(
   hasValidAccessTokenHeader,
   isProfileMapEmpty,
   async (req: Request, res: Response) => {
+    // #swagger.tags = ['OAuth']
     try {
       Logger.info(`${FORTNITE_APP}: Request body tokenUUID ${req?.accessTokenID}`);
       Logger.info(`${FORTNITE_APP}: Request body sseUUID ${req?.sseID}`);
@@ -103,6 +108,10 @@ fortniteRouter.post(
 
 // Return User Object
 fortniteRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfileMapEmpty, async (req, res) => {
+  // #swagger.tags = ['OAuth']
+    /* #swagger.security = [{
+          "bearerAuth": []
+  }] */
   try {
     Logger.info(`${FORTNITE_APP}: Request for information has been received successfully with id ${req.accessTokenID}`);
     const { accessToken, accountId }: any = memoryStoreToken.get(req.accessTokenID);

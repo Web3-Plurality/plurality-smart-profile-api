@@ -119,7 +119,7 @@ function App() {
   };
   const googleLogin = () => {
     console.log("google login")
-    const oauthWindow = window.open(`${'https://app.plurality.local/user/auth/google/login'}`, 'oauth', 'width=500,height=600');
+    const oauthWindow = window.open(`${'https://app.plurality.local/auth/google/login'}`, 'oauth', 'width=500,height=600');
     if (oauthWindow) {
       setPopup(oauthWindow);
       console.log('Window opened:', oauthWindow);

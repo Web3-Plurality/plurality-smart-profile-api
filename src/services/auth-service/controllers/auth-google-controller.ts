@@ -5,7 +5,7 @@ import passport from 'passport';
 import { Request, Response } from 'groq-sdk/_shims/auto/types';
 import Logger from '../../../lib/logger';
 import { AppDataSource } from '../../../data-source';
-import { LoginType, User } from '../entity/user';
+import { LoginType, User } from '../../user-service/entity/user';
 import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
 import { memoryStoreSSE, memoryStoreToken } from '../../../utils/global';
@@ -15,7 +15,7 @@ import {
   hasValidEventParam,
 } from '../../oauth-service/middlewares/oauth-middleware';
 import { GOOGLE_APP } from '../../oauth-service/utils/constants';
-import { AddUserClientMap } from '../utils/user';
+import { AddUserClientMap } from '../../user-service/utils/user';
 import stytch, { OTPsEmailLoginOrCreateRequest } from 'stytch';
 
 dotenv.config();
@@ -44,11 +44,17 @@ passport.use(
 
 // Start the authentication flow
 authGoogleRouter.get('/login', hasValidEventParam, async (req: Request, res: Response, next) => {
+  // #swagger.tags = ['Users-OAuth-Google']
+  // #swagger.ignore = true
   Logger.info(`${GOOGLE_APP}: Request for Oauth has been received successfully on sse Id ${req.sseID}`);
   passport.authenticate('google', { scope: ['email'] })(req, res, next);
 });
 
 authGoogleRouter.get('/callback', passport.authenticate('google', { session: false }), async (req, res) => {
+  /* 
+ #swagger.tags = ['Users-OAuth-Google']
+ #swagger.ignore = true
+*/
   try {
     let token = '';
     let addedUser = {};
@@ -97,7 +103,7 @@ authGoogleRouter.get('/callback', passport.authenticate('google', { session: fal
     }
 
     Logger.info(`jwt token generated for user id ${existingUser?.id ? existingUser?.id : addedUser?.id}`);
-    memoryStoreToken.set(accessTokenId, { googleJwtToken: req?.user?.googleJwtToken, pluralityToken: token });
+    memoryStoreToken.set(accessTokenId, { googleJwtToken: req?.user?.googleJwtToken, token: token });
     const url = `${process.env.WIDGET_UI_URL}?token_id=${accessTokenId}&redirect=${false}`;
 
     Logger.info(`Redirecting to ${url}`);
@@ -109,11 +115,13 @@ authGoogleRouter.get('/callback', passport.authenticate('google', { session: fal
 });
 
 authGoogleRouter.post('/event', hasValidEventHeader, hasValidAccessTokenHeader, async (req, res) => {
+  //  #swagger.tags = ['Auth']
   try {
     Logger.info(`Request body tokenUUID ${req?.accessTokenID}`);
     Logger.info(`Request body sseUUID ${req?.sseID}`);
+    const { redirect, clientId } = req.body;
     const serverSentEventResponse = memoryStoreSSE.get(req?.sseID);
-    if (req?.body?.redirect) {
+    if (redirect) {
       const emailId = memoryStoreToken.get(req?.accessTokenID);
       serverSentEventResponse.write(`data: {"message":"received", "app":"google", "emailId":"${emailId}"}\n\n`);
       Logger.info(` Server Side Event has been sent successfully`);
@@ -123,15 +131,15 @@ authGoogleRouter.post('/event', hasValidEventHeader, hasValidAccessTokenHeader, 
     }
     const tokenObj = memoryStoreToken.get(req?.accessTokenID);
     serverSentEventResponse.write(
-      `data: {"message":"received", "app":"google", "googleJwtToken":"${tokenObj?.googleJwtToken}", "pluralityToken": "${tokenObj?.pluralityToken}"}\n\n`,
+      `data: {"message":"received", "app":"google", "googleJwtToken":"${tokenObj?.googleJwtToken}", "token": "${tokenObj?.token}"}\n\n`,
     );
     Logger.info(` Server Side Event has been sent successfully`);
     memoryStoreSSE.delete(req?.sseID);
     memoryStoreSSE.delete(req?.accessTokenID);
     //if client id exist then add in user client map
-    if (req?.body?.clientId) {
-      console.log('clientId', req?.body?.clientId);
-      await AddUserClientMap(jwt.decode(tokenObj?.pluralityToken)?.id, req?.body?.clientId);
+    if (clientId) {
+      console.log('clientId', clientId);
+      await AddUserClientMap(jwt.decode(tokenObj?.token)?.id, clientId);
     } else {
       Logger.error(`Client id not found`);
       throw new Error('Client id not found');
