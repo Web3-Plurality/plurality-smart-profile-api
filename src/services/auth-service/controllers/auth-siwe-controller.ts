@@ -22,7 +22,7 @@ const userRegisterViaWallet = async (address: string, clientId: string) => {
   // Check if the user with the given address already exists
   const existingUser = await userRepository.findOne({
     where: {
-      address: address,
+      signerAddress: address,
     },
   });
   if (existingUser) {
@@ -31,7 +31,7 @@ const userRegisterViaWallet = async (address: string, clientId: string) => {
   } else {
     // If the user doesn't exist, insert a new row
     const newUser = await userRepository.create({
-      address: address,
+      signerAddress: address,
       subscribe: false,
     });
     Logger.info(`new user created with address: ${address}`);

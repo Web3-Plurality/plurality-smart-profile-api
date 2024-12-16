@@ -70,19 +70,28 @@ capacityRouter.post('/', isAuthenticated, isValidAddress, async (req, res) => {
         id: id,
       },
     });
-    if (!existingUser?.address) {
-      Logger.info(`The address against this email was not found`);
-
+    if (!existingUser?.email && existingUser?.signerAddress && !existingUser?.pkpAddress) {
+      Logger.info(`the email against this address not found, means it comes from metamask`);
+      Logger.info(`user request for capacity first time`);
       const updatedUser = {
-        address: address, // pkp address
+        pkpAddress:address
       };
 
       await userRepository.update({ id: existingUser?.id }, updatedUser);
       Logger.info(`Putting Lit address on the current user id ${existingUser?.id}`);
-    } else {
-      Logger.info(`The address against this email is already found`);
-      // if type pkp it means its coming from metamask method, if its metamask then give capacity to its pkp
-      if (req?.body?.address !== existingUser?.address && req?.body?.method !== 'metamask') {
+    } else if (existingUser?.email && !existingUser?.signerAddress && !existingUser?.pkpAddress) {
+      Logger.info(`the address against this email not found, means it comes stytch or google`);
+      Logger.info(`user request for capacity first time`);
+      const updatedUser = {
+        pkpAddress:address,
+        signerAddress:address
+      };
+      await userRepository.update({ id: existingUser?.id }, updatedUser);
+      Logger.info(`Putting Lit address on the current user id ${existingUser?.id}`);
+    } else{
+      Logger.info(`The address against this email or email against this address is already found`);
+      Logger.info(`user request for capacity second time`);
+      if (address !== existingUser?.pkpAddress) {
         Logger.error(`The address against this email is not correct`);
         return res.status(400).json({ error: 'The address against this email is not correct' });
       }
