@@ -77,15 +77,17 @@ export async function verifyOffcahinAttestation(attestation: any) {
   }
 }
 
-export  function verifyAttestedData(profile: SmartProfile | UserProfile): boolean {
-  try {
-    const privateData = new PrivateData(profile.attestationSchema());
-    const fullTree = privateData.getFullTree();
-    const schemaEncoder = new SchemaEncoder('bytes32 privateData');
-    const encodedData = schemaEncoder.encodeData([{ name: 'privateData', value: fullTree.root, type: 'bytes32' }]);
-    return profile?.attestation?.data === encodedData;
-  } catch (error) {
-    Logger.error(`error occur while verifying offchain attestation ${JSON.stringify(error)}`);
-    return false;
-  }
-}
+// export  function verifyAttestedData(profile: SmartProfile | UserProfile): boolean {
+//   try {
+//     const privateData = new PrivateData(profile.attestationSchema());
+//     const fullTree = privateData.getFullTree();
+//     const schemaEncoder = new SchemaEncoder('bytes32 privateData');
+//     const encodedData = schemaEncoder.encodeData([{ name: 'privateData', value: fullTree.root, type: 'bytes32' }]);
+//     console.log("encodedData",encodedData)
+//     console.log("profile?.attestation?.data",profile?.attestation?.message?.data)
+//     return profile?.attestation?.message?.data === encodedData;
+//   } catch (error) {
+//     Logger.error(`error occur while verifying offchain attestation ${JSON.stringify(error)}`);
+//     return false;
+//   }
+// }

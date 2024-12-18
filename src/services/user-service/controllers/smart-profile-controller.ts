@@ -144,6 +144,7 @@ smartProfileRouter.post(
   '/',
   isAuthenticated,
   isValidAttestation,
+  // isValidAttestedData,
   [
     body('smartProfile').custom((value) => {
       // Ensure the object is an instance of SmartProfile
@@ -153,7 +154,6 @@ smartProfileRouter.post(
       return true;
     }),
   ],
-  isValidAttestedData,
   async (req: Request, res: Response) => {
     // #swagger.tags = ['Users']
     /* #swagger.security = [{
