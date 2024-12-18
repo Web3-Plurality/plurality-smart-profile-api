@@ -5,7 +5,7 @@ import { generateNonce, SiweMessage } from 'siwe';
 import { ethers } from 'ethers';
 import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
-import { User } from '../../user-service/entity/user';
+import { LoginType, User } from '../../user-service/entity/user';
 import { AppDataSource } from '../../../data-source';
 import { AddUserClientMap } from '../../user-service/utils/user';
 import * as dotenv from 'dotenv';
@@ -22,7 +22,7 @@ const userRegisterViaWallet = async (address: string, clientId: string) => {
   // Check if the user with the given address already exists
   const existingUser = await userRepository.findOne({
     where: {
-      address: address,
+      authAddress: address,
     },
   });
   if (existingUser) {
@@ -31,8 +31,9 @@ const userRegisterViaWallet = async (address: string, clientId: string) => {
   } else {
     // If the user doesn't exist, insert a new row
     const newUser = await userRepository.create({
-      address: address,
+      authAddress: address,
       subscribe: false,
+      loginType: LoginType.metamask,
     });
     Logger.info(`new user created with address: ${address}`);
     addedUser = await userRepository.save(newUser);

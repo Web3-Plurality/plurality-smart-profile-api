@@ -15,7 +15,10 @@ export class User {
   email: string;
 
   @Column({ nullable: true })
-  address: string;
+  authAddress: string;
+
+  @Column({ nullable: true })
+  pkpAddress: string;
 
   @Column({ nullable: false, default: false })
   subscribe: boolean;
