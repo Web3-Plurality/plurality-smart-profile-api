@@ -15,7 +15,7 @@ export class User {
   email: string;
 
   @Column({ nullable: true })
-  signerAddress: string;
+  authAddress: string;
 
   @Column({ nullable: true })
   pkpAddress: string;

@@ -70,7 +70,7 @@ capacityRouter.post('/', isAuthenticated, isValidAddress, async (req, res) => {
         id: id,
       },
     });
-    if (!existingUser?.email && existingUser?.signerAddress && !existingUser?.pkpAddress) {
+    if (!existingUser?.email && existingUser?.authAddress && !existingUser?.pkpAddress) {
       Logger.info(`the email against this address not found, means it comes from metamask`);
       Logger.info(`user request for capacity first time`);
       const updatedUser = {
@@ -79,21 +79,20 @@ capacityRouter.post('/', isAuthenticated, isValidAddress, async (req, res) => {
 
       await userRepository.update({ id: existingUser?.id }, updatedUser);
       Logger.info(`Putting Lit address on the current user id ${existingUser?.id}`);
-    } else if (existingUser?.email && !existingUser?.signerAddress && !existingUser?.pkpAddress) {
+    } else if (existingUser?.email && !existingUser?.authAddress && !existingUser?.pkpAddress) {
       Logger.info(`the address against this email not found, means it comes stytch or google`);
       Logger.info(`user request for capacity first time`);
       const updatedUser = {
         pkpAddress:address,
-        signerAddress:address
       };
       await userRepository.update({ id: existingUser?.id }, updatedUser);
       Logger.info(`Putting Lit address on the current user id ${existingUser?.id}`);
     } else{
-      Logger.info(`The address against this email or email against this address is already found`);
+      Logger.info(`The user already has a pkp assigned`);
       Logger.info(`user request for capacity second time`);
       if (address !== existingUser?.pkpAddress) {
-        Logger.error(`The address against this email is not correct`);
-        return res.status(400).json({ error: 'The address against this email is not correct' });
+        Logger.error(`The pkp against this user is not correct`);
+        return res.status(400).json({ error: 'The pkp against this user is not correct' });
       }
     }
     const capacityDelegationAuthSig = await capacityDelegation(address);
