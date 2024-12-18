@@ -107,7 +107,7 @@ instagramRouter.post(
 // Return User Object
 instagramRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfileMapEmpty, async (req, res) => {
   // #swagger.tags = ['OAuth']
-    /* #swagger.security = [{
+  /* #swagger.security = [{
           "bearerAuth": []
   }] */
   try {

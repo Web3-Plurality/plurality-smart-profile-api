@@ -74,7 +74,7 @@ capacityRouter.post('/', isAuthenticated, isValidAddress, async (req, res) => {
       Logger.info(`the email against this address not found, means it comes from metamask`);
       Logger.info(`user request for capacity first time`);
       const updatedUser = {
-        pkpAddress:address
+        pkpAddress: address,
       };
 
       await userRepository.update({ id: existingUser?.id }, updatedUser);
@@ -83,11 +83,11 @@ capacityRouter.post('/', isAuthenticated, isValidAddress, async (req, res) => {
       Logger.info(`the address against this email not found, means it comes stytch or google`);
       Logger.info(`user request for capacity first time`);
       const updatedUser = {
-        pkpAddress:address,
+        pkpAddress: address,
       };
       await userRepository.update({ id: existingUser?.id }, updatedUser);
       Logger.info(`Putting Lit address on the current user id ${existingUser?.id}`);
-    } else{
+    } else {
       Logger.info(`The user already has a pkp assigned`);
       Logger.info(`user request for capacity second time`);
       if (address !== existingUser?.pkpAddress) {

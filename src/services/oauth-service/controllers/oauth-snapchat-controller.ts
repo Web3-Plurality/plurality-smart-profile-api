@@ -107,7 +107,7 @@ snapchatRouter.post(
 // Return User Object
 snapchatRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfileMapEmpty, async (req, res) => {
   // #swagger.tags = ['OAuth']
-    /* #swagger.security = [{
+  /* #swagger.security = [{
           "bearerAuth": []
   }] */
   try {

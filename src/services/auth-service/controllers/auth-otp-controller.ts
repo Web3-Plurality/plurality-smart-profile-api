@@ -14,8 +14,8 @@ const userRepository = AppDataSource.getRepository(User);
 
 /* eslint-disable */
 const stytchClient = new stytch.Client({
-  project_id: process.env.STYTCH_PROJECT_ID || "",
-  secret: process.env.STYTCH_SECRET || "",
+  project_id: process.env.STYTCH_PROJECT_ID || '',
+  secret: process.env.STYTCH_SECRET || '',
 });
 /* eslint-enable */
 

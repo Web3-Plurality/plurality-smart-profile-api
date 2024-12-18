@@ -109,7 +109,7 @@ fortniteRouter.post(
 // Return User Object
 fortniteRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfileMapEmpty, async (req, res) => {
   // #swagger.tags = ['OAuth']
-    /* #swagger.security = [{
+  /* #swagger.security = [{
           "bearerAuth": []
   }] */
   try {
