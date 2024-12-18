@@ -124,18 +124,18 @@ export class SmartProfile {
 
   attestationSchema(): MerkleValue[] {
     return [
-      { name: 'username', value: this.username, type: 'string' },
-      { name: 'avatar', value: this.avatar, type: 'string' },
-      { name: 'bio', value: this.bio, type: 'string' },
+      // { name: 'username', value: this.username, type: 'string' },
+      // { name: 'avatar', value: this.avatar, type: 'string' },
+      // { name: 'bio', value: this.bio, type: 'string' },
       { name: 'interests', value: JSON.stringify(this.interests), type: 'string' },
       { name: 'scores', value: JSON.stringify(this.scores), type: 'string' },
       { name: 'reputationTags', value: JSON.stringify(this.reputationTags), type: 'string' },
       { name: 'badges', value: JSON.stringify(this.badges), type: 'string' },
       { name: 'collections', value: JSON.stringify(this.collections), type: 'string' },
-      { name: 'extra', value: JSON.stringify(this.extra), type: 'string' },
-      { name: 'linkedAddress', value: JSON.stringify(this.linkedAddress), type: 'string' },
-      { name: 'connectedProfiles', value: JSON.stringify(this.connectedProfiles), type: 'string' },
-      { name: 'connectedPlatforms', value: JSON.stringify(this.connectedPlatforms), type: 'string' },
+      // { name: 'extra', value: JSON.stringify(this.extra), type: 'string' },
+      // { name: 'linkedAddress', value: JSON.stringify(this.linkedAddress), type: 'string' },
+      // { name: 'connectedProfiles', value: JSON.stringify(this.connectedProfiles), type: 'string' },
+      // { name: 'connectedPlatforms', value: JSON.stringify(this.connectedPlatforms), type: 'string' },
     ];
   }
 }

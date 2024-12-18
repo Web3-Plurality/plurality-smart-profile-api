@@ -3,7 +3,9 @@ import Logger from '../../../lib/logger';
 import jwt from 'jsonwebtoken';
 import * as dotenv from 'dotenv';
 import { ethers } from 'ethers';
-import { verifyOffcahinAttestation } from '../../oauth-service/utils/eas';
+import { verifyAttestedData, verifyOffcahinAttestation } from '../../oauth-service/utils/eas';
+import { SmartProfile } from '../entity/smart-profile';
+import { plainToInstance } from 'class-transformer';
 
 dotenv.config();
 // const client = new stytch.Client({
@@ -115,6 +117,27 @@ export const isValidAttestation = async (req, res, next) => {
       return next();
     } else {
       return res.status(400).send('Attestaion is not valid');
+    }
+  } catch (error) {
+    Logger.error(`error: ${error}`);
+    return res.status(400).send('Invalid request');
+  }
+};
+
+export const isValidAttestedData = async (req, res, next) => {
+  try {
+    const attestation = req?.body?.smartProfile?.attestation;
+    if (!attestation) {
+      Logger.info('Attestaion not exist');
+      return next();
+    }
+    const smartProfile = plainToInstance(SmartProfile, JSON.parse(JSON.stringify(req?.body?.smartProfile)))
+    const isValid: boolean = verifyAttestedData(smartProfile);
+    if (isValid) {
+      Logger.info('Attestaion Data is valid');
+      return next();
+    } else {
+      return res.status(400).send('Attestaion Data is not valid');
     }
   } catch (error) {
     Logger.error(`error: ${error}`);

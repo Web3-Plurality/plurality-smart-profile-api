@@ -18,9 +18,10 @@ import { INTERNAL_SERVER_ERROR, TIMEOUT_ERROR, TWITTER_APP } from '../utils/cons
 import { v4 as uuidv4 } from 'uuid';
 import { UserProfile } from '../entity/user-profile';
 import { SmartProfile } from '../../user-service/entity/smart-profile';
-// import { AppDataSource } from '../../../data-source';
-// import { User } from '../../user-service/entity/user';
-// import { attestProfile } from '../utils/eas';
+import { attestProfile } from '../utils/eas';
+import { AppDataSource } from '../../../data-source';
+import { User } from '../../user-service/entity/user';
+
 
 dotenv.config();
 
@@ -260,13 +261,13 @@ twitterRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfile
       userProfile.extra.push({ field: 'followers count', value: twitterProfile?.followersCount });
       userProfile.extra.push({ field: 'following count', value: twitterProfile?.followingCount });
       // profile attestation
-      // const existingUser = await AppDataSource.getRepository(User).findOne({
-      //   where: {
-      //     id: req?.user?.id
-      //   },
-      // });
-      // const attestation = await attestProfile(req?.user?.id, userProfile, existingUser?.address || "");
-      // userProfile.setAttestation(attestation)
+      const existingUser = await AppDataSource.getRepository(User).findOne({
+        where: {
+          id: req?.user?.id
+        },
+      });
+      const attestation = await attestProfile(req?.user?.id, userProfile, existingUser?.pkpAddress || "");
+      userProfile.setAttestation(attestation)
 
       if (!memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
         const smartProfile = new SmartProfile(userProfile);

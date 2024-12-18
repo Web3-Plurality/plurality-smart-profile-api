@@ -13,14 +13,16 @@ import { SmartProfile } from '../entity/smart-profile';
 import { SmartProfileMap } from '../entity/smart-profile-map';
 import { EarlyUser } from '../entity/early-user';
 import { ClientApp } from '../../crm-service/entity/client-app';
-import { isValidAttestation } from '../middlewares/auth-middleware';
+import { isValidAttestation, isValidAttestedData } from '../middlewares/auth-middleware';
 import { attestProfile } from '../../oauth-service/utils/eas';
+import { User } from '../entity/user';
 
 export const smartProfileRouter = express.Router();
 dotenv.config();
 const smartProfileMapRepository = AppDataSource.getRepository(SmartProfileMap);
 const earlyUserRepository = AppDataSource.getRepository(EarlyUser);
 const clientAppRepository = AppDataSource.getRepository(ClientApp);
+const userRepository = AppDataSource.getRepository(User);
 
 /* eslint-disable */
 cloudinary.config({
@@ -141,6 +143,7 @@ smartProfileRouter.put(
 smartProfileRouter.post(
   '/',
   isAuthenticated,
+  isValidAttestation,
   [
     body('smartProfile').custom((value) => {
       // Ensure the object is an instance of SmartProfile
@@ -150,6 +153,7 @@ smartProfileRouter.post(
       return true;
     }),
   ],
+  isValidAttestedData,
   async (req: Request, res: Response) => {
     // #swagger.tags = ['Users']
     /* #swagger.security = [{
@@ -237,13 +241,13 @@ smartProfileRouter.post(
         Logger.info(`Smart profile updated for user id: ${req?.user?.id}`);
 
         // profile attestation
-        // const existingUser = await userRepository.findOne({
-        //   where: {
-        //     id: req?.user?.id
-        //   },
-        // });
-        // const attestation = await attestProfile(req?.user?.id, smartProfile, existingUser?.address || "");
-        // smartProfile.setAttestation(attestation);
+        const existingUser = await userRepository.findOne({
+          where: {
+            id: req?.user?.id
+          },
+        });
+        const attestation = await attestProfile(req?.user?.id, smartProfile, existingUser?.pkpAddress || "");
+        smartProfile.setAttestation(attestation);
         return res.status(200).json({ success: true, smartProfile: smartProfile });
       }
       // new profile creation
@@ -288,13 +292,13 @@ smartProfileRouter.post(
           await smartProfileMapRepository.save(newSmartProfileMap);
           Logger.info(`New smart profile created for user id: ${id}`);
           // profile attestation
-          // const existingUser = await userRepository.findOne({
-          //   where: {
-          //     id: req?.user?.id
-          //   },
-          // });
-          // const attestation = await attestProfile(req?.user?.id, newProfile, existingUser?.address || "");
-          // newProfile.setAttestation(attestation);
+          const existingUser = await userRepository.findOne({
+            where: {
+              id: req?.user?.id
+            },
+          });
+          const attestation = await attestProfile(req?.user?.id, newProfile, existingUser?.pkpAddress || "");
+          newProfile.setAttestation(attestation);
           return res.status(200).json({ success: true, smartProfile: newProfile });
         } else {
           // if profile map exists in database we return the smart profile based on the map
@@ -314,13 +318,13 @@ smartProfileRouter.post(
           oldProfile.scores = profileMapping?.scores;
           Logger.info(`Old version of smart profile returned from profile map: ${id}, This is not normal workflow`);
           // profile attestation
-          // const existingUser = await userRepository.findOne({
-          //   where: {
-          //     id: req?.user?.id
-          //   },
-          // });
-          // const attestation = await attestProfile(req?.user?.id, oldProfile, existingUser?.address || "");
-          // oldProfile.setAttestation(attestation);
+          const existingUser = await userRepository.findOne({
+            where: {
+              id: req?.user?.id
+            },
+          });
+          const attestation = await attestProfile(req?.user?.id, oldProfile, existingUser?.pkpAddress || "");
+          oldProfile.setAttestation(attestation);
           return res.status(200).json({ success: true, smartProfile: oldProfile });
         }
       } else {
