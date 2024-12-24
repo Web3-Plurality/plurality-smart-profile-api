@@ -1,5 +1,9 @@
-import { MerkleValue } from '@ethereum-attestation-service/eas-sdk';
+import { MerkleValue, MerkleValueWithSalt } from '@ethereum-attestation-service/eas-sdk';
 import { ScoreTypes } from '../../../utils/global';
+import { ethers } from 'ethers';
+import * as dotenv from 'dotenv';
+import { ProfilePrivateData } from './profile-private-data';
+dotenv.config();
 
 interface Score {
   scoreType: string;
@@ -17,58 +21,50 @@ interface Extra {
   value: number;
 }
 
-interface LinkedAddress {
-  chainName: string;
-  chainId: number;
-  address: string;
-}
 
 export class SmartProfile {
   username: string;
   avatar: string;
   bio: string;
-  interests: string[];
-  scores: Score[];
-  reputationTags: string[];
-  badges: string[];
-  collections: string[];
+  scores: Score[];// attest
   extra: Extra[];
-  linkedAddress: LinkedAddress[];
-  connectedProfiles: ConnectedProfiles[];
+  connectedProfiles: ConnectedProfiles[];// attest
   connectedPlatforms: string[];
+  profileTypeStreamId: string; // when should we have to put this
+  version: string; // when should we have to put this
+  extendedPublicData: any;
   attestation: any;
+  privateData: ProfilePrivateData;
+  
+  
 
   constructor(data: any) {
     this.username = data?.username || '';
     this.avatar = data?.avatar || '';
     this.bio = data?.bio || '';
-    this.interests = data?.interests || [];
-    this.reputationTags = data?.reputation_tags || [];
-    this.badges = data?.badges || [];
-    this.collections = data?.collections || [];
     this.extra = data?.extra || [];
-    this.linkedAddress = data?.linked_address || [];
     this.connectedProfiles = data?.connected_profiles || [];
-    this.connectedPlatforms = data?.connected_platforms || [];
+    this.connectedPlatforms = data?.connected_platforms || []; // ask
+    this.profileTypeStreamId  = '';
+    this.version = process.env.SMART_PROFILE_VERSION || '1';
     this.attestation = data?.attestation || {};
     this.scores = Object.values(ScoreTypes).map((scoreType) => ({
       scoreType: scoreType,
       scoreValue: 0,
     }));
+    this.privateData = new ProfilePrivateData(data);
   }
 
   // You can add methods to manipulate or retrieve the data here
   aggregateProfile(user: SmartProfile) {
-    this.collections = this.collections.concat(user.collections);
-    this.interests = this.interests.concat(user.interests);
-    this.reputationTags = this.reputationTags.concat(user.reputationTags);
-    this.badges = this.badges.concat(user.badges);
+    this.privateData.attestedCred.collections = this.privateData.attestedCred.collections.concat(user.privateData.attestedCred.collections);
+    this.privateData.attestedCred.interests = this.privateData.attestedCred.interests.concat(user.privateData.attestedCred.interests);
+    this.privateData.attestedCred.reputationTags = this.privateData.attestedCred.reputationTags.concat(user.privateData.attestedCred.reputationTags);
+    this.privateData.attestedCred.badges = this.privateData.attestedCred.badges.concat(user.privateData.attestedCred.badges);
     this.extra = this.extra.concat(user.extra);
-    this.linkedAddress = this.linkedAddress.concat(user.linkedAddress);
-    if (user instanceof SmartProfile) {
-      const newProfile = user.connectedProfiles.filter((profile) => !this.connectedProfiles.includes(profile));
-      this.connectedProfiles = this.connectedProfiles.concat(newProfile);
-    }
+    this.privateData.linkedAddress = this.privateData.linkedAddress.concat(user.privateData.linkedAddress);
+    const newProfile = user.connectedProfiles.filter((profile) => !this.connectedProfiles.includes(profile));
+    this.connectedProfiles = this.connectedProfiles.concat(newProfile);
     const updatedScores = this.scores.map((score) => {
       const userScore = user.scores.find((us) => us.scoreType === score.scoreType);
       if (userScore) {
@@ -122,20 +118,26 @@ export class SmartProfile {
     };
   }
 
-  attestationSchema(): MerkleValue[] {
-    return [
-      // { name: 'username', value: this.username, type: 'string' },
-      // { name: 'avatar', value: this.avatar, type: 'string' },
-      // { name: 'bio', value: this.bio, type: 'string' },
-      { name: 'interests', value: JSON.stringify(this.interests), type: 'string' },
-      { name: 'scores', value: JSON.stringify(this.scores), type: 'string' },
-      { name: 'reputationTags', value: JSON.stringify(this.reputationTags), type: 'string' },
-      { name: 'badges', value: JSON.stringify(this.badges), type: 'string' },
-      { name: 'collections', value: JSON.stringify(this.collections), type: 'string' },
-      // { name: 'extra', value: JSON.stringify(this.extra), type: 'string' },
-      // { name: 'linkedAddress', value: JSON.stringify(this.linkedAddress), type: 'string' },
-      // { name: 'connectedProfiles', value: JSON.stringify(this.connectedProfiles), type: 'string' },
-      // { name: 'connectedPlatforms', value: JSON.stringify(this.connectedPlatforms), type: 'string' },
-    ];
+
+
+
+  attestationSchemaScore(): MerkleValueWithSalt[] {
+    const merkleScore : MerkleValueWithSalt[] =  this.scores.map((s, i) => {
+      // Generate random bytes
+      const salt = ethers.hexlify(ethers.randomBytes(32));
+      return ({ name: `score${i}`, value: JSON.stringify(s), type: 'string', salt})
+    })
+
+    return merkleScore
   }
+
+  attestationSchemaConnectedProfiles(): MerkleValueWithSalt[] {
+    return this.connectedProfiles.map((p, i) => {
+      // Generate random bytes
+      const salt = ethers.hexlify(ethers.randomBytes(32));
+      return ({ name: p.platformName, value: JSON.stringify({...p,salt}), type: 'string', salt: salt })
+    })
+  }
+
+  
 }

@@ -22,7 +22,6 @@ import { attestProfile } from '../utils/eas';
 import { AppDataSource } from '../../../data-source';
 import { User } from '../../user-service/entity/user';
 
-
 dotenv.config();
 
 export const twitterRouter = express.Router();
@@ -261,13 +260,13 @@ twitterRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfile
       userProfile.extra.push({ field: 'followers count', value: twitterProfile?.followersCount });
       userProfile.extra.push({ field: 'following count', value: twitterProfile?.followingCount });
       // profile attestation
-      const existingUser = await AppDataSource.getRepository(User).findOne({
-        where: {
-          id: req?.user?.id
-        },
-      });
-      const attestation = await attestProfile(req?.user?.id, userProfile, existingUser?.pkpAddress || "");
-      userProfile.setAttestation(attestation)
+      // const existingUser = await AppDataSource.getRepository(User).findOne({
+      //   where: {
+      //     id: req?.user?.id,
+      //   },
+      // });
+      // const attestation = await attestProfile(req?.user?.id, userProfile, existingUser?.pkpAddress || '');
+      // userProfile.setAttestation(attestation);
 
       if (!memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
         const smartProfile = new SmartProfile(userProfile);

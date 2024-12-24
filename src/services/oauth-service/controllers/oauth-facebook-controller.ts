@@ -191,13 +191,13 @@ facebookRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfil
       userProfile.extra.push({ field: 'athleast count', value: facebookProfile?.athletesCount });
       userProfile.extra.push({ field: 'favourite team count', value: facebookProfile?.favTeamCount });
       // profile attestation
-      const existingUser = await AppDataSource.getRepository(User).findOne({
-        where: {
-          id: req?.user?.id
-        },
-      });
-      const attestation = await attestProfile(req?.user?.id, userProfile, existingUser?.pkpAddress || "");
-      userProfile.setAttestation(attestation)
+      // const existingUser = await AppDataSource.getRepository(User).findOne({
+      //   where: {
+      //     id: req?.user?.id,
+      //   },
+      // });
+      // const attestation = await attestProfile(req?.user?.id, userProfile, existingUser?.pkpAddress || '');
+      // userProfile.setAttestation(attestation);
 
       if (!memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
         const smartProfile = new SmartProfile(userProfile);

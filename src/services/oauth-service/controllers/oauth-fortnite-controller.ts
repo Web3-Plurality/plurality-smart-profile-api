@@ -141,13 +141,13 @@ fortniteRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfil
       const userProfile = new UserProfile();
       userProfile.username = fortniteProfile?.displayName;
       // profile attestation
-      const existingUser = await AppDataSource.getRepository(User).findOne({
-        where: {
-          id: req?.user?.id
-        },
-      });
-      const attestation = await attestProfile(req?.user?.id, userProfile, existingUser?.pkpAddress || "");
-      userProfile.setAttestation(attestation)
+      // const existingUser = await AppDataSource.getRepository(User).findOne({
+      //   where: {
+      //     id: req?.user?.id,
+      //   },
+      // });
+      // const attestation = await attestProfile(req?.user?.id, userProfile, existingUser?.pkpAddress || '');
+      // userProfile.setAttestation(attestation);
 
       if (!memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
         const smartProfile = new SmartProfile(userProfile);

@@ -144,7 +144,7 @@ smartProfileRouter.post(
   '/',
   isAuthenticated,
   isValidAttestation,
-  // isValidAttestedData,
+  isValidAttestedData,
   [
     body('smartProfile').custom((value) => {
       // Ensure the object is an instance of SmartProfile
@@ -243,10 +243,10 @@ smartProfileRouter.post(
         // profile attestation
         const existingUser = await userRepository.findOne({
           where: {
-            id: req?.user?.id
+            id: req?.user?.id,
           },
         });
-        const attestation = await attestProfile(req?.user?.id, smartProfile, existingUser?.pkpAddress || "");
+        const attestation = await attestProfile(req?.user?.id, smartProfile, existingUser?.pkpAddress || '');
         smartProfile.setAttestation(attestation);
         return res.status(200).json({ success: true, smartProfile: smartProfile });
       }
@@ -294,10 +294,10 @@ smartProfileRouter.post(
           // profile attestation
           const existingUser = await userRepository.findOne({
             where: {
-              id: req?.user?.id
+              id: req?.user?.id,
             },
           });
-          const attestation = await attestProfile(req?.user?.id, newProfile, existingUser?.pkpAddress || "");
+          const attestation = await attestProfile(req?.user?.id, newProfile, existingUser?.pkpAddress || '');
           newProfile.setAttestation(attestation);
           return res.status(200).json({ success: true, smartProfile: newProfile });
         } else {
@@ -320,10 +320,10 @@ smartProfileRouter.post(
           // profile attestation
           const existingUser = await userRepository.findOne({
             where: {
-              id: req?.user?.id
+              id: req?.user?.id,
             },
           });
-          const attestation = await attestProfile(req?.user?.id, oldProfile, existingUser?.pkpAddress || "");
+          const attestation = await attestProfile(req?.user?.id, oldProfile, existingUser?.pkpAddress || '');
           oldProfile.setAttestation(attestation);
           return res.status(200).json({ success: true, smartProfile: oldProfile });
         }
