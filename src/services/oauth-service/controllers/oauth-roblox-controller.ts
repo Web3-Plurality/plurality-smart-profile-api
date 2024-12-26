@@ -18,11 +18,7 @@ import { analyze } from '../utils/groq';
 import { calculateReputation, scrapRoblox } from '../utils/roblox';
 import { createPrompt, ROBLOX_FETCH_INTEREST_PROMPT } from '../utils/ai-prompts';
 import { v4 as uuidv4 } from 'uuid';
-import { UserProfile } from '../entity/user-profile';
 import { SmartProfile } from '../../user-service/entity/smart-profile';
-import { AppDataSource } from '../../../data-source';
-import { User } from '../../user-service/entity/user';
-import { attestProfile } from '../utils/eas';
 
 dotenv.config();
 
@@ -224,40 +220,30 @@ robloxRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfileM
 
       robloxProfile.reputationScore += calculateReputation(robloxProfile);
       // Create user profile object
-      const userProfile = new UserProfile();
-      userProfile.username = robloxProfile?.name;
-      userProfile.interests = robloxProfile?.interests;
-      userProfile.avatar = robloxProfile?.avatar;
-      userProfile.bio = robloxProfile?.about;
-      userProfile.scores.push({
+      const smartProfile = new SmartProfile();
+      smartProfile.username = robloxProfile?.name;
+      smartProfile.privateData.attestedCred.interests = robloxProfile?.interests;
+      smartProfile.avatar = robloxProfile?.avatar;
+      smartProfile.bio = robloxProfile?.about;
+      smartProfile.scores.push({
         scoreType: ScoreTypes.reputationScore,
         scoreValue: robloxProfile?.reputationScore,
       });
-      userProfile.reputationTags = robloxProfile?.introTags;
-      userProfile.collections = robloxProfile?.assests;
-      userProfile.extra.push({ field: 'places visit', value: robloxProfile?.placesVisit });
-      userProfile.extra.push({ field: 'friends', value: robloxProfile?.friends });
-      userProfile.extra.push({ field: 'followers', value: robloxProfile?.followers });
-      userProfile.extra.push({ field: 'following', value: robloxProfile?.following });
-
-      // profile attestation
-      // const existingUser = await AppDataSource.getRepository(User).findOne({
-      //   where: {
-      //     id: req?.user?.id,
-      //   },
-      // });
-      // const attestation = await attestProfile(req?.user?.id, userProfile, existingUser?.pkpAddress || '');
-      // userProfile.setAttestation(attestation);
+      smartProfile.privateData.attestedCred.reputationTags = robloxProfile?.introTags;
+      smartProfile.privateData.attestedCred.collections = robloxProfile?.assests;
+      smartProfile.extendedPublicData.push({ field: 'places visit', value: robloxProfile?.placesVisit });
+      smartProfile.extendedPublicData.push({ field: 'friends', value: robloxProfile?.friends });
+      smartProfile.extendedPublicData.push({ field: 'followers', value: robloxProfile?.followers });
+      smartProfile.extendedPublicData.push({ field: 'following', value: robloxProfile?.following });
 
       if (!memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
-        const smartProfile = new SmartProfile(userProfile);
-        smartProfile.connectedProfiles = [
-          { platformName: ROBLOX_APP, userPlatformId: '', username: robloxProfile?.name },
+        smartProfile.privateData.attestedPlatformIds.connectedProfiles  = [
+          { platformType: ROBLOX_APP, userPlatformId: '', username: robloxProfile?.name },
         ];
         memoryStoreProfile.set(req?.user?.uniqueSessionId, smartProfile);
         memoryStoreToken.delete(req?.accessTokenID);
         Logger.info(`${ROBLOX_APP}: User information has been delivered successfully`);
-        return res.status(200).json({ app: ROBLOX_APP, message: 'success', individualProfile: userProfile });
+        return res.status(200).json({ app: ROBLOX_APP, message: 'success' });
       } else {
         Logger.error(`${ROBLOX_APP}: A profile already exists`);
         return res.status(500).json({ app: ROBLOX_APP, error: 'Unauthorized', message: INTERNAL_SERVER_ERROR });

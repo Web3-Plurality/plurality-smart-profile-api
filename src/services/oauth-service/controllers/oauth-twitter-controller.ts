@@ -16,11 +16,7 @@ import Logger from '../../../lib/logger';
 import { memoryStoreProfile, memoryStoreSSE, memoryStoreToken, ScoreTypes } from '../../../utils/global';
 import { INTERNAL_SERVER_ERROR, TIMEOUT_ERROR, TWITTER_APP } from '../utils/constants';
 import { v4 as uuidv4 } from 'uuid';
-import { UserProfile } from '../entity/user-profile';
 import { SmartProfile } from '../../user-service/entity/smart-profile';
-import { attestProfile } from '../utils/eas';
-import { AppDataSource } from '../../../data-source';
-import { User } from '../../user-service/entity/user';
 
 dotenv.config();
 
@@ -245,39 +241,30 @@ twitterRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfile
       twitterProfile.reputationScore = reputationScore;
 
       // Create User Profile Objects
-      const userProfile = new UserProfile();
-      userProfile.username = twitterProfile?.username;
-      userProfile.avatar = twitterProfile?.profileImageUrl;
-      userProfile.interests = twitterProfile?.interests;
-      userProfile.reputationTags = twitterProfile?.introTags;
-      userProfile.scores.push({
+      const smartProfile = new SmartProfile();
+      smartProfile.username = twitterProfile?.username;
+      smartProfile.avatar = twitterProfile?.profileImageUrl;
+      smartProfile.privateData.attestedCred.interests = twitterProfile?.interests;
+      smartProfile.privateData.attestedCred.reputationTags = twitterProfile?.introTags;
+      smartProfile.scores.push({
         scoreType: ScoreTypes.reputationScore,
         scoreValue: twitterProfile?.reputationScore,
       });
-      userProfile.extra.push({ field: 'tweet count', value: twitterProfile?.tweetCount });
-      userProfile.extra.push({ field: 'like count', value: twitterProfile?.likeCount });
-      userProfile.extra.push({ field: 'listed count', value: twitterProfile?.listedCount });
-      userProfile.extra.push({ field: 'followers count', value: twitterProfile?.followersCount });
-      userProfile.extra.push({ field: 'following count', value: twitterProfile?.followingCount });
-      // profile attestation
-      // const existingUser = await AppDataSource.getRepository(User).findOne({
-      //   where: {
-      //     id: req?.user?.id,
-      //   },
-      // });
-      // const attestation = await attestProfile(req?.user?.id, userProfile, existingUser?.pkpAddress || '');
-      // userProfile.setAttestation(attestation);
+      smartProfile.extendedPublicData.push({ field: 'tweet count', value: twitterProfile?.tweetCount });
+      smartProfile.extendedPublicData.push({ field: 'like count', value: twitterProfile?.likeCount });
+      smartProfile.extendedPublicData.push({ field: 'listed count', value: twitterProfile?.listedCount });
+      smartProfile.extendedPublicData.push({ field: 'followers count', value: twitterProfile?.followersCount });
+      smartProfile.extendedPublicData.push({ field: 'following count', value: twitterProfile?.followingCount });
 
       if (!memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
-        const smartProfile = new SmartProfile(userProfile);
-        smartProfile.connectedProfiles = [
-          { platformName: TWITTER_APP, userPlatformId: twitterProfile?.id, username: twitterProfile?.username },
+        smartProfile.privateData.attestedPlatformIds.connectedProfiles  = [
+          { platformType: TWITTER_APP, userPlatformId: twitterProfile?.id, username: twitterProfile?.username },
         ];
         memoryStoreProfile.set(req?.user?.uniqueSessionId, smartProfile);
         memoryStoreToken.delete(req?.accessTokenID);
         Logger.info(`${TWITTER_APP}: Session destroyed successfully`);
         Logger.info(`${TWITTER_APP}: User information has been delivered successfully`);
-        return res.status(200).json({ app: TWITTER_APP, message: 'success', individualProfile: userProfile });
+        return res.status(200).json({ app: TWITTER_APP, message: 'success'});
       } else {
         Logger.error(`${TWITTER_APP}: A profile already exists`);
         return res.status(500).json({ app: TWITTER_APP, error: 'Unauthorized', message: INTERNAL_SERVER_ERROR });

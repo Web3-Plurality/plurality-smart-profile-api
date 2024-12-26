@@ -10,61 +10,58 @@ interface Score {
   scoreValue: number;
 }
 
-interface ConnectedProfiles {
-  platformName: string;
-  userPlatformId: string | null;
-  username?: string | null;
-}
 
 interface Extra {
   field: string;
   value: number;
 }
 
-
 export class SmartProfile {
   username: string;
   avatar: string;
   bio: string;
-  scores: Score[];// attest
-  extra: Extra[];
-  connectedProfiles: ConnectedProfiles[];// attest
+  scores: Score[]; // attest
   connectedPlatforms: string[];
   profileTypeStreamId: string; // when should we have to put this
   version: string; // when should we have to put this
-  extendedPublicData: any;
+  extendedPublicData: Extra[];
   attestation: any;
   privateData: ProfilePrivateData;
-  
-  
 
-  constructor(data: any) {
+  constructor(data?: any) {
     this.username = data?.username || '';
     this.avatar = data?.avatar || '';
     this.bio = data?.bio || '';
-    this.extra = data?.extra || [];
-    this.connectedProfiles = data?.connected_profiles || [];
-    this.connectedPlatforms = data?.connected_platforms || []; // ask
-    this.profileTypeStreamId  = '';
-    this.version = process.env.SMART_PROFILE_VERSION || '1';
-    this.attestation = data?.attestation || {};
     this.scores = Object.values(ScoreTypes).map((scoreType) => ({
       scoreType: scoreType,
       scoreValue: 0,
     }));
-    this.privateData = new ProfilePrivateData(data);
+    this.connectedPlatforms = data?.connected_platforms || [];
+    this.profileTypeStreamId = '';
+    this.version = process.env.SMART_PROFILE_VERSION || '1';
+    this.attestation =  {};
+    this.extendedPublicData = []
+    this.privateData = new ProfilePrivateData();
   }
 
   // You can add methods to manipulate or retrieve the data here
   aggregateProfile(user: SmartProfile) {
-    this.privateData.attestedCred.collections = this.privateData.attestedCred.collections.concat(user.privateData.attestedCred.collections);
-    this.privateData.attestedCred.interests = this.privateData.attestedCred.interests.concat(user.privateData.attestedCred.interests);
-    this.privateData.attestedCred.reputationTags = this.privateData.attestedCred.reputationTags.concat(user.privateData.attestedCred.reputationTags);
-    this.privateData.attestedCred.badges = this.privateData.attestedCred.badges.concat(user.privateData.attestedCred.badges);
-    this.extra = this.extra.concat(user.extra);
+    this.privateData.attestedCred.collections = this.privateData.attestedCred.collections.concat(
+      user.privateData.attestedCred.collections,
+    );
+    this.privateData.attestedCred.interests = this.privateData.attestedCred.interests.concat(
+      user.privateData.attestedCred.interests,
+    );
+    this.privateData.attestedCred.reputationTags = this.privateData.attestedCred.reputationTags.concat(
+      user.privateData.attestedCred.reputationTags,
+    );
+    this.privateData.attestedCred.badges = this.privateData.attestedCred.badges.concat(
+      user.privateData.attestedCred.badges,
+    );
+    this.extendedPublicData = this.extendedPublicData.concat(user.extendedPublicData);
     this.privateData.linkedAddress = this.privateData.linkedAddress.concat(user.privateData.linkedAddress);
-    const newProfile = user.connectedProfiles.filter((profile) => !this.connectedProfiles.includes(profile));
-    this.connectedProfiles = this.connectedProfiles.concat(newProfile);
+    const newProfile = user.privateData.attestedPlatformIds.connectedProfiles.filter((profile) => !this.privateData.attestedPlatformIds.connectedProfiles.includes(profile));
+    this.privateData.attestedPlatformIds.connectedProfiles = this.privateData.attestedPlatformIds.connectedProfiles.concat(newProfile);
     const updatedScores = this.scores.map((score) => {
       const userScore = user.scores.find((us) => us.scoreType === score.scoreType);
       if (userScore) {
@@ -118,26 +115,4 @@ export class SmartProfile {
     };
   }
 
-
-
-
-  attestationSchemaScore(): MerkleValueWithSalt[] {
-    const merkleScore : MerkleValueWithSalt[] =  this.scores.map((s, i) => {
-      // Generate random bytes
-      const salt = ethers.hexlify(ethers.randomBytes(32));
-      return ({ name: `score${i}`, value: JSON.stringify(s), type: 'string', salt})
-    })
-
-    return merkleScore
-  }
-
-  attestationSchemaConnectedProfiles(): MerkleValueWithSalt[] {
-    return this.connectedProfiles.map((p, i) => {
-      // Generate random bytes
-      const salt = ethers.hexlify(ethers.randomBytes(32));
-      return ({ name: p.platformName, value: JSON.stringify({...p,salt}), type: 'string', salt: salt })
-    })
-  }
-
-  
 }

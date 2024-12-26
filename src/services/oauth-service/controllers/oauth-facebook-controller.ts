@@ -22,11 +22,7 @@ import {
   FACEBOOK_FETCH_INTEREST_PROMPT,
 } from '../utils/ai-prompts';
 import { v4 as uuidv4 } from 'uuid';
-import { UserProfile } from '../entity/user-profile';
 import { SmartProfile } from '../../user-service/entity/smart-profile';
-import { User } from '../../user-service/entity/user';
-import { AppDataSource } from '../../../data-source';
-import { attestProfile } from '../utils/eas';
 
 dotenv.config();
 
@@ -178,36 +174,28 @@ facebookRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfil
       facebookProfile.reputationScore = calculateReputation(facebookProfile);
 
       // Create User Profile Objects
-      const userProfile = new UserProfile();
-      userProfile.username = facebookProfile?.name;
-      userProfile.interests = facebookProfile?.interests;
-      userProfile.scores.push({
+      const smartProfile = new SmartProfile();
+      smartProfile.username = facebookProfile?.name;
+      smartProfile.privateData.attestedCred.interests = facebookProfile?.interests;
+      smartProfile.scores.push({
         scoreType: ScoreTypes.reputationScore,
         scoreValue: facebookProfile?.reputationScore,
       });
-      userProfile.extra.push({ field: 'friends count', value: facebookProfile?.friendsCount });
-      userProfile.extra.push({ field: 'likes count', value: facebookProfile?.likesCount });
-      userProfile.extra.push({ field: 'music count', value: facebookProfile?.musicCount });
-      userProfile.extra.push({ field: 'athleast count', value: facebookProfile?.athletesCount });
-      userProfile.extra.push({ field: 'favourite team count', value: facebookProfile?.favTeamCount });
-      // profile attestation
-      // const existingUser = await AppDataSource.getRepository(User).findOne({
-      //   where: {
-      //     id: req?.user?.id,
-      //   },
-      // });
-      // const attestation = await attestProfile(req?.user?.id, userProfile, existingUser?.pkpAddress || '');
-      // userProfile.setAttestation(attestation);
+      smartProfile.extendedPublicData.push({ field: 'friends count', value: facebookProfile?.friendsCount });
+      smartProfile.extendedPublicData.push({ field: 'likes count', value: facebookProfile?.likesCount });
+      smartProfile.extendedPublicData.push({ field: 'music count', value: facebookProfile?.musicCount });
+      smartProfile.extendedPublicData.push({ field: 'athleast count', value: facebookProfile?.athletesCount });
+      smartProfile.extendedPublicData.push({ field: 'favourite team count', value: facebookProfile?.favTeamCount });
+
 
       if (!memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
-        const smartProfile = new SmartProfile(userProfile);
-        smartProfile.connected_profiles = [
-          { platformName: FACEBOOK_APP, userPlatformId: '', username: facebookProfile?.name },
+        smartProfile.privateData.attestedPlatformIds.connectedProfiles = [
+          { platformType: FACEBOOK_APP, userPlatformId: "", username: facebookProfile?.name },
         ];
         memoryStoreProfile.set(req?.user?.uniqueSessionId, smartProfile);
         memoryStoreToken.delete(req?.accessTokenID);
         Logger.info(`${FACEBOOK_APP}: User information has been delivered successfully`);
-        return res.status(200).json({ app: FACEBOOK_APP, message: 'success', individualProfile: userProfile });
+        return res.status(200).json({ app: FACEBOOK_APP, message: 'success' });
       } else {
         Logger.error(`${FACEBOOK_APP}: A profile already exists`);
         return res.status(500).json({ app: FACEBOOK_APP, error: 'Unauthorized', message: INTERNAL_SERVER_ERROR });

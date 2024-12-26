@@ -194,7 +194,7 @@ smartProfileRouter.post(
             username: smartProfile?.username,
             avatar: smartProfile?.avatar,
             bio: smartProfile?.bio,
-            connectedProfiles: smartProfile?.connectedProfiles,
+            connectedProfiles: smartProfile?.privateData.attestedPlatformIds.connectedProfiles,
             scores: smartProfile?.scores,
             profileTypeStreamId: profileTypeStreamId,
             userId: req?.user?.id,
@@ -208,28 +208,28 @@ smartProfileRouter.post(
         }
 
         // check if the current platform is already connected
-        if (smartProfile.connectedPlatforms.includes(memorySmartProfile?.connectedProfiles[0]?.platformName)) {
+        if (smartProfile.connectedPlatforms.includes(memorySmartProfile?.privateData.attestedPlatformIds.connectedProfiles[0]?.platformType)) {
           // If this platform is already connected there is no need to add this one to profile
-          Logger.info(`The profile is already connected: ${memorySmartProfile.connectedProfiles[0]?.platformName}`);
+          Logger.info(`The profile is already connected: ${memorySmartProfile?.privateData.attestedPlatformIds.connectedProfiles[0]?.platformType}`);
           memoryStoreProfile.delete(id);
           return res.status(400).json({ error: 'Bad request' });
         }
         // Calculate the social score based on the input profiles data
         const socialScore = calculateSocialScore(
-          memorySmartProfile?.connectedProfiles,
-          smartProfile?.connectedProfiles,
+          memorySmartProfile?.privateData.attestedPlatformIds.connectedProfiles,
+          smartProfile?.privateData.attestedPlatformIds.connectedProfiles,
         );
         memorySmartProfile.updateScoreValue(ScoreTypes.socialScore, socialScore);
 
         // Now we aggregate profiles
         smartProfile.aggregateProfile(memorySmartProfile);
-        smartProfile.connectedPlatforms = smartProfile.connectedProfiles.map((profile) => {
-          return profile.platformName;
+        smartProfile.connectedPlatforms = smartProfile?.privateData.attestedPlatformIds.connectedProfiles.map((profile) => {
+          return profile.platformType;
         });
         memoryStoreProfile.delete(id);
 
         const updatedSmartProfileMap = {
-          connectedProfiles: smartProfile?.connectedProfiles,
+          connectedProfiles: smartProfile?.privateData.attestedPlatformIds.connectedProfiles,
           scores: smartProfile?.scores,
         };
 
@@ -246,9 +246,8 @@ smartProfileRouter.post(
             id: req?.user?.id,
           },
         });
-        const attestation = await attestProfile(req?.user?.id, smartProfile, existingUser?.pkpAddress || '');
-        smartProfile.setAttestation(attestation);
-        return res.status(200).json({ success: true, smartProfile: smartProfile });
+        const updatedSmartProfile = await attestProfile(req?.user?.id, smartProfile, existingUser?.pkpAddress || '');
+        return res.status(200).json({ success: true, smartProfile: updatedSmartProfile });
       }
       // new profile creation
       else if (!memorySmartProfile && Object.keys(reqSmartProfile).length === 0 && profileTypeStreamId) {
@@ -297,8 +296,7 @@ smartProfileRouter.post(
               id: req?.user?.id,
             },
           });
-          const attestation = await attestProfile(req?.user?.id, newProfile, existingUser?.pkpAddress || '');
-          newProfile.setAttestation(attestation);
+          await attestProfile(req?.user?.id, newProfile, existingUser?.pkpAddress);
           return res.status(200).json({ success: true, smartProfile: newProfile });
         } else {
           // if profile map exists in database we return the smart profile based on the map
@@ -323,8 +321,8 @@ smartProfileRouter.post(
               id: req?.user?.id,
             },
           });
-          const attestation = await attestProfile(req?.user?.id, oldProfile, existingUser?.pkpAddress || '');
-          oldProfile.setAttestation(attestation);
+          
+          await attestProfile(req?.user?.id, oldProfile, existingUser?.pkpAddress || '');
           return res.status(200).json({ success: true, smartProfile: oldProfile });
         }
       } else {

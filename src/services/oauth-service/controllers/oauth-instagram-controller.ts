@@ -17,11 +17,7 @@ import { InstaProfile } from '../entity/instagram';
 import { analyze } from '../utils/groq';
 import { createPrompt, INSTA_FETCH_INTEREST_PROMPT } from '../utils/ai-prompts';
 import { v4 as uuidv4 } from 'uuid';
-import { UserProfile } from '../entity/user-profile';
 import { SmartProfile } from '../../user-service/entity/smart-profile';
-import { AppDataSource } from '../../../data-source';
-import { User } from '../../user-service/entity/user';
-import { attestProfile } from '../utils/eas';
 
 dotenv.config();
 
@@ -161,28 +157,19 @@ instagramRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfi
       }
 
       // Create user profile object
-      const userProfile = new UserProfile();
-      userProfile.username = instaProfile?.username;
-      userProfile.interests = instaProfile?.interests;
-      // profile attestation
-      // const existingUser = await AppDataSource.getRepository(User).findOne({
-      //   where: {
-      //     id: req?.user?.id,
-      //   },
-      // });
-      // const attestation = await attestProfile(req?.user?.id, userProfile, existingUser?.pkpAddress || '');
-      // userProfile.setAttestation(attestation);
+      const smartProfile = new SmartProfile();
+      smartProfile.username = instaProfile?.username;
+      smartProfile.privateData.attestedCred.interests = instaProfile?.interests;
 
       if (!memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
-        const smartProfile = new SmartProfile(userProfile);
-        smartProfile.connectedProfiles = [
-          { platformName: INSTAGRAM_APP, userPlatformId: instaProfile?.id, username: instaProfile?.username },
+        smartProfile.privateData.attestedPlatformIds.connectedProfiles  = [
+          { platformType: INSTAGRAM_APP, userPlatformId: instaProfile?.id, username: instaProfile?.username },
         ];
         memoryStoreProfile.set(req?.user?.uniqueSessionId, smartProfile);
         memoryStoreToken.delete(req?.accessTokenID);
         Logger.info(`${INSTAGRAM_APP}: Session destroyed successfully`);
         Logger.info(`${INSTAGRAM_APP}: User information has been delivered successfully`);
-        return res.status(200).json({ app: INSTAGRAM_APP, message: 'success', individualProfile: userProfile });
+        return res.status(200).json({ app: INSTAGRAM_APP, message: 'success' });
       } else {
         Logger.error(`${INSTAGRAM_APP}: A profile already exists`);
         return res.status(500).json({ app: INSTAGRAM_APP, error: 'Unauthorized', message: INTERNAL_SERVER_ERROR });

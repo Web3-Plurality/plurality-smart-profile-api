@@ -15,11 +15,7 @@ import { INTERNAL_SERVER_ERROR, SNAPCHAT_APP, TIMEOUT_ERROR } from '../utils/con
 import OAuthSnapChatStrategy from '../strategies/OAuthSnapChatStrategy';
 import { SnapChatProfile } from '../entity/snapchat';
 import { v4 as uuidv4 } from 'uuid';
-import { UserProfile } from '../entity/user-profile';
 import { SmartProfile } from '../../user-service/entity/smart-profile';
-import { AppDataSource } from '../../../data-source';
-import { User } from '../../user-service/entity/user';
-import { attestProfile } from '../utils/eas';
 
 dotenv.config();
 
@@ -137,23 +133,14 @@ snapchatRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfil
       }
       const snapChatProfile = new SnapChatProfile(snapUser?.data?.data);
       // Create user profile object
-      const userProfile = new UserProfile();
-      userProfile.username = snapChatProfile.displayName;
-      userProfile.avatar = snapChatProfile.bitmoji;
-      // profile attestation
-      // const existingUser = await AppDataSource.getRepository(User).findOne({
-      //   where: {
-      //     id: req?.user?.id,
-      //   },
-      // });
-      // const attestation = await attestProfile(req?.user?.id, userProfile, existingUser?.pkpAddress || '');
-      // userProfile.setAttestation(attestation);
+      const smartProfile = new SmartProfile();
+      smartProfile.username = snapChatProfile.displayName;
+      smartProfile.avatar = snapChatProfile.bitmoji;
 
       if (!memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
-        const smartProfile = new SmartProfile(userProfile);
-        smartProfile.connectedProfiles = [
+        smartProfile.privateData.attestedPlatformIds.connectedProfiles  = [
           {
-            platformName: SNAPCHAT_APP,
+            platformType: SNAPCHAT_APP,
             userPlatformId: snapChatProfile?.externalId,
             username: snapChatProfile?.displayName,
           },
@@ -161,7 +148,7 @@ snapchatRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfil
         memoryStoreProfile.set(req?.user?.uniqueSessionId, smartProfile);
         memoryStoreToken.delete(req?.accessTokenID);
         Logger.info(`${SNAPCHAT_APP}: User information has been delivered successfully`);
-        return res.status(200).json({ app: SNAPCHAT_APP, message: 'success', individualProfile: userProfile });
+        return res.status(200).json({ app: SNAPCHAT_APP, message: 'success' });
       } else {
         Logger.error(`${SNAPCHAT_APP}: A profile already exists`);
         return res.status(500).json({ app: SNAPCHAT_APP, error: 'Unauthorized', message: INTERNAL_SERVER_ERROR });

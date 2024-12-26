@@ -10,23 +10,22 @@ import {
 } from '@ethereum-attestation-service/eas-sdk';
 import { ethers } from 'ethers';
 import Logger from '../../../lib/logger';
-import { UserProfile } from '../entity/user-profile';
 import { SmartProfile } from '../../user-service/entity/smart-profile';
 
 // profile Offchainattestation
 export async function privateOffchainAttestations(schema: MerkleValueWithSalt[], userAddress: string) {
   try {
-    const EASContractAddress = process.env.EAS_CONTRACT_ADDRESS || "0x"; // Sepolia v0.26
+    const EASContractAddress = process.env.EAS_CONTRACT_ADDRESS || '0x'; // Sepolia v0.26
     // Initialize the sdk with the address of the EAS Schema contract address
     const eas = new EAS(EASContractAddress);
     const privateKey: string = process.env.PUBLIC_DAPP_OWNER_WALLET_PRIVATE_KEY || '';
-    const provider = ethers.getDefaultProvider(process.env.PUBLIC_DAPP_OWNER_WALLET_PRIVATE_KEY || '');
+    const provider = ethers.getDefaultProvider(process.env.SEPOLIA_RPC || '');
     const signer: any = new ethers.Wallet(privateKey, provider);
     eas.connect(signer);
     const privateData = new PrivateData(schema);
     const fullTree = privateData.getFullTree();
-    const schemaEncoder = new SchemaEncoder("bytes32 privateData");
-    const encodedData = schemaEncoder.encodeData([{ name: 'privateData', value: fullTree.root, type: 'bytes32' }]);    
+    const schemaEncoder = new SchemaEncoder('bytes32 privateData');
+    const encodedData = schemaEncoder.encodeData([{ name: 'privateData', value: fullTree.root, type: 'bytes32' }]);
     const schemaUID = '0x20351f973fdec1478924c89dfa533d8f872defa108d9c3c6512267d7e7e5dbc2';
     const offchain = await eas.getOffchain();
 
@@ -51,8 +50,7 @@ export async function privateOffchainAttestations(schema: MerkleValueWithSalt[],
 }
 
 export async function publicOffchainAttestation(profile: SmartProfile, userAddress: string) {
-  
-  const EASContractAddress = process.env.EAS_CONTRACT_ADDRESS || "0x"; // Sepolia v0.26
+  const EASContractAddress = process.env.EAS_CONTRACT_ADDRESS || '0x'; // Sepolia v0.26
   // Initialize the sdk with the address of the EAS Schema contract address
   const eas = new EAS(EASContractAddress);
   const privateKey: string = process.env.PUBLIC_DAPP_OWNER_WALLET_PRIVATE_KEY || '';
@@ -61,59 +59,65 @@ export async function publicOffchainAttestation(profile: SmartProfile, userAddre
   eas.connect(signer);
   const offchain = await eas.getOffchain();
   // Initialize SchemaEncoder with the schema string
-  const schemaEncoder = new SchemaEncoder("string username,string bio,string avatar,string scores,string connectedPlatforms,string profileTypeStreamId,uint256 version,string extendedPublicData");
-  const schemaUID = process.env.PUBLIC_SCHEMA_UID || ""
+  const schemaEncoder = new SchemaEncoder(
+    'string username,string bio,string avatar,string scores,string connectedPlatforms,string profileTypeStreamId,string version',
+  );
+  const schemaUID = process.env.PUBLIC_SCHEMA_UID || '';
   const encodedData = schemaEncoder.encodeData([
-    { name: "username", value: profile.username, type: "string" },
-    { name: "bio", value: profile.bio, type: "string" },
-    { name: "avatar", value: profile.avatar, type: "string" },
-    { name: "scores", value: JSON.stringify(profile.scores), type: "string" },
-    { name: "connectedPlatforms", value: JSON.stringify(profile.connectedPlatforms), type: "string" },
-    { name: "profileTypeStreamId", value: profile.profileTypeStreamId, type: "string" },
-    { name: "version", value: profile.version, type: "uint256" },
-    { name: "extendedPublicData", value: JSON.stringify(profile.extendedPublicData), type: "string" },
+    { name: 'username', value: profile.username, type: 'string' },
+    { name: 'bio', value: profile.bio, type: 'string' },
+    { name: 'avatar', value: profile.avatar, type: 'string' },
+    { name: 'scores', value: JSON.stringify(profile.scores), type: 'string' },
+    { name: 'connectedPlatforms', value: JSON.stringify(profile.connectedPlatforms), type: 'string' },
+    { name: 'profileTypeStreamId', value: profile.profileTypeStreamId, type: 'string' },
+    { name: 'version', value: JSON.stringify(profile.version), type: 'string' },
   ]);
 
   const offchainAttestation: any = await offchain.signOffchainAttestation(
     {
-      recipient: userAddress,// this can be empty
+      recipient: userAddress, // this can be empty
       expirationTime: BigInt(0), // Unix timestamp of when attestation expires (0 for no expiration)
       time: BigInt(Math.floor(Date.now() / 1000)), // Unix timestamp of current time
       revocable: false, // Be aware that if your schema is not revocable, this MUST be false
       schema: schemaUID,
       refUID: '0x0000000000000000000000000000000000000000000000000000000000000000',
-      data: encodedData
+      data: encodedData,
     },
-    signer
+    signer,
   );
-
-  console.log(offchainAttestation);
-  profile.setAttestation(offchainAttestation);
-
+  return offchainAttestation;
 }
-
 
 // attest profile
 export async function attestProfile(id: string, profile: SmartProfile, userAddress: string) {
   //Public attestation
   const publicAttestation = await publicOffchainAttestation(profile, userAddress);
-  profile.setAttestation(publicAttestation)
+  profile.setAttestation(publicAttestation);
   Logger.info(`public Data of profile attested successfully for user id: ${id}`);
+  console.log("aaaaaaa",JSON.stringify(profile.privateData))
+  //private data attestation
+  const credSchema = attestationCredSchema(profile);
+  if (credSchema?.length > 0) {
+    const credAttestation = await privateOffchainAttestations(credSchema, userAddress);
+    profile.privateData.attestedCred.attestation = setAttestation(credAttestation);
+    Logger.info(`private Cred Data of profile attested successfully for user id: ${id}`)
+  }
 
-  const credAttestation = await privateOffchainAttestations(profile.privateData.attestationCredSchema(), userAddress);
-  profile.privateData.attestedCred.setAttestation(credAttestation)
-  Logger.info(`private Cred Data of profile attested successfully for user id: ${id}`);
-
-  const platformIdsAttestation = await privateOffchainAttestations(profile.privateData.attestationPlatformIdSchema(), userAddress);
-  profile.privateData.attestedPlatformIds.setAttestation(platformIdsAttestation)
-  Logger.info(`private platformIds Data of profile attested successfully for user id: ${id}`);
-
-  
+  const platformIdSchema = attestationPlatformIdSchema(profile);
+  if (platformIdSchema?.length > 0) {  
+    const platformIdsAttestation = await privateOffchainAttestations(
+      platformIdSchema,
+      userAddress,
+    );
+    profile.privateData.attestedPlatformIds.attestation = setAttestation(platformIdsAttestation);
+    Logger.info(`private platformIds Data of profile attested successfully for user id: ${id}`);
+  }
+return profile
 }
 // verifying attestation
 export async function verifyOffcahinAttestation(attestation: any) {
   try {
-    const EASContractAddress = process.env.EAS_CONTRACT_ADDRESS || "0x"; // Sepolia v0.26
+    const EASContractAddress = process.env.EAS_CONTRACT_ADDRESS || '0x'; // Sepolia v0.26
     // Initialize the sdk with the address of the EAS Schema contract address
     const eas = new EAS(EASContractAddress);
     const privateKey: string = process.env.PUBLIC_DAPP_OWNER_WALLET_PRIVATE_KEY || '';
@@ -133,25 +137,129 @@ export async function verifyOffcahinAttestation(attestation: any) {
   }
 }
 
-// export function verifyAttestedData(profile: SmartProfile | UserProfile): boolean {
-//   try {
-//     const privateData = new PrivateData(profile.attestationSchema());
-//     const proofIndexes = [0, 1, 2]; // interests, scores, tags
-//     const multiProof = privateData.generateMultiProof(proofIndexes);
+export function verifyPublicAttestedData(profile: SmartProfile): boolean {
+  try {
+    const schemaEncoder = new SchemaEncoder(
+      'string username,string bio,string avatar,string scores,string connectedPlatforms,string profileTypeStreamId,string version',
+    );
+    const encodedData = schemaEncoder.encodeData([
+      { name: 'username', value: profile.username, type: 'string' },
+      { name: 'bio', value: profile.bio, type: 'string' },
+      { name: 'avatar', value: profile.avatar, type: 'string' },
+      { name: 'scores', value: JSON.stringify(profile.scores), type: 'string' },
+      { name: 'connectedPlatforms', value: JSON.stringify(profile.connectedPlatforms), type: 'string' },
+      { name: 'profileTypeStreamId', value: profile.profileTypeStreamId, type: 'string' },
+      { name: 'version', value: JSON.stringify(profile.version), type: 'string' },
+    ]);
+    
+    return profile?.attestation?.message?.data === encodedData;
+  } catch (error) {
+    Logger.error(`error occur while verifying offchain attestation ${JSON.stringify(error)}`);
+    return false;
+  }
+}
 
-//     const schemaEncoder = new SchemaEncoder("bytes32 privateData");
-//     const decodedData = schemaEncoder.decodeData(profile?.attestation?.message?.data);
 
-//     console.log("dddddddddddddddd", decodedData[0]?.value?.value)
-//     // console.log("",multiProof)
-//     console.log("aaa", profile.attestationSchema())
-//     // To verify a multi-proof against a known Merkle root:
-//     const isValid = PrivateData.verifyMultiProof(decodedData[0]?.value?.value, multiProof);
-//     console.log('Is Multi-Proof Valid?', isValid);
-//     console.log("profile?.attestation?.data", decodedData[0]?.value?.value)
-//     return isValid;
-//   } catch (error) {
-//     Logger.error(`error occur while verifying offchain attestation ${JSON.stringify(error)}`);
-//     return false;
-//   }
-// }
+export function verifyPrivateAttestedData(profile: SmartProfile): boolean {
+  try {
+
+    const credSchema = attestationCredSchema(profile);
+    const platfomSchema = attestationPlatformIdSchema(profile)
+    let validCredsData = false
+    let validPlatformsData = false
+    //validating crerds data
+    if (credSchema?.length > 0) {
+      const privateData = new PrivateData(credSchema);
+      const fullTree = privateData.getFullTree();
+      const schemaEncoder = new SchemaEncoder('bytes32 privateData');
+      const encodedData = schemaEncoder.encodeData([{ name: 'privateData', value: fullTree.root, type: 'bytes32' }]);
+      validCredsData = profile.privateData.attestedCred.attestation.message.data === encodedData
+    } else{
+      //if no data then dont need to validate it
+      validCredsData =true
+    }
+    //validating platform data
+    if (platfomSchema?.length > 0) {
+      const privateData = new PrivateData(platfomSchema);
+      const fullTree = privateData.getFullTree();
+      const schemaEncoder = new SchemaEncoder('bytes32 privateData');
+      const encodedData = schemaEncoder.encodeData([{ name: 'privateData', value: fullTree.root, type: 'bytes32' }]);
+      validPlatformsData = profile.privateData.attestedPlatformIds.attestation.message.data === encodedData
+    } else{
+      //if no data then dont need to validate it
+      validPlatformsData =true
+    }
+
+    return validPlatformsData && validCredsData;
+  } catch (error) {
+    Logger.error(`error occur while verifying offchain attestation ${JSON.stringify(error)}`);
+    return false;
+  }
+}
+
+// Schema Generation
+function attestationCredSchema(smartProfile: SmartProfile): MerkleValueWithSalt[] {
+  let salt = ""
+  if(smartProfile.privateData.attestedCred.salt){
+    salt = smartProfile.privateData.attestedCred.salt
+  }
+  else{
+     salt = ethers.hexlify(ethers.randomBytes(32));
+     smartProfile.privateData.attestedCred.salt = salt
+  }
+  return [
+    { name: 'interests', value: JSON.stringify(smartProfile.privateData.attestedCred.interests), type: 'string', salt },
+    { name: 'reputationTags', value: JSON.stringify(smartProfile.privateData.attestedCred.reputationTags), type: 'string', salt },
+    { name: 'badges', value: JSON.stringify(smartProfile.privateData.attestedCred.badges), type: 'string', salt },
+    { name: 'collections', value: JSON.stringify(smartProfile.privateData.attestedCred.collections), type: 'string', salt },
+  ];
+}
+
+function attestationPlatformIdSchema  (smartProfile: SmartProfile): MerkleValueWithSalt[]   {
+  let salt = ""
+  if(smartProfile.privateData.attestedPlatformIds.salt){
+    salt = smartProfile.privateData.attestedPlatformIds.salt
+  }
+  else{
+     salt = ethers.hexlify(ethers.randomBytes(32));
+     smartProfile.privateData.attestedPlatformIds.salt = salt
+  }
+  const platformIdSchema =  smartProfile.privateData.attestedPlatformIds.connectedProfiles.map((profile)=>{
+    return {
+        name: profile.platformType,
+        value: JSON.stringify(profile),
+        type: 'string',
+        salt,
+    }
+  })
+
+return platformIdSchema;
+}
+
+
+function setAttestation(attestation: any) {
+  return {
+    version: attestation?.version,
+    uid: attestation?.uid,
+    domain: {
+      name: attestation?.domain?.name,
+      version: attestation?.domain?.version,
+      chainId: attestation?.domain?.chainId?.toString(),
+      verifyingContract: attestation?.domain?.verifyingContract,
+    },
+    primaryType: attestation?.primaryType,
+    message: {
+      version: attestation?.message?.version,
+      recipient: attestation?.message?.recipient,
+      expirationTime: attestation?.message?.expirationTime?.toString(),
+      time: attestation?.message?.time?.toString(),
+      revocable: attestation?.message?.revocable,
+      schema: attestation?.message?.schema,
+      refUID: attestation?.message?.refUID,
+      data: attestation?.message?.data,
+      salt: attestation?.message?.salt,
+    },
+    types: attestation?.types,
+    signature: attestation?.signature,
+  };
+}

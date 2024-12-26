@@ -3,7 +3,7 @@ import Logger from '../../../lib/logger';
 import jwt from 'jsonwebtoken';
 import * as dotenv from 'dotenv';
 import { ethers } from 'ethers';
-import { verifyAttestedData, verifyOffcahinAttestation } from '../../oauth-service/utils/eas';
+import { verifyOffcahinAttestation, verifyPrivateAttestedData, verifyPublicAttestedData } from '../../oauth-service/utils/eas';
 import { SmartProfile } from '../entity/smart-profile';
 import { plainToInstance } from 'class-transformer';
 
@@ -111,8 +111,9 @@ export const isValidAttestation = async (req, res, next) => {
       Logger.info('Attestaion not exist');
       return next();
     }
-    const isValid: bool = verifyOffcahinAttestation(attestation);
-    if (isValid) {
+    const isValidPublicAttestation: bool = verifyOffcahinAttestation(attestation);
+
+    if (isValidPublicAttestation) {
       Logger.info('Attestaion is verified');
       return next();
     } else {
@@ -132,10 +133,11 @@ export const isValidAttestedData = async (req, res, next) => {
       Logger.info('Attestaion not exist');
       return next();
     }
-    const smartProfile = plainToInstance(SmartProfile, JSON.parse(JSON.stringify(req?.body?.smartProfile)))
-    
-    const isValid: boolean = verifyAttestedData(smartProfile);
-    if (isValid) {
+    const smartProfile = plainToInstance(SmartProfile, JSON.parse(JSON.stringify(req?.body?.smartProfile)));
+
+    const isValidPublicData: boolean = verifyPublicAttestedData(smartProfile);
+    const isValidPrivateData = verifyPrivateAttestedData(smartProfile)
+    if (isValidPublicData && isValidPrivateData) {
       Logger.info('Attestaion Data is valid');
       return next();
     } else {

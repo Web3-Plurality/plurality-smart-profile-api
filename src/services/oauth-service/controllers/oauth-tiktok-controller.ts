@@ -18,11 +18,7 @@ import { calculateReputation } from '../utils/tiktok';
 import Logger from '../../../lib/logger';
 import { createPrompt, TIKTOK_FETCH_INTEREST_PROMPT } from '../utils/ai-prompts';
 import { v4 as uuidv4 } from 'uuid';
-import { UserProfile } from '../entity/user-profile';
 import { SmartProfile } from '../../user-service/entity/smart-profile';
-import { AppDataSource } from '../../../data-source';
-import { User } from '../../user-service/entity/user';
-import { attestProfile } from '../utils/eas';
 
 dotenv.config();
 
@@ -207,39 +203,29 @@ tiktokRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfileM
       tiktokProfile.reputationScore = reputationScore;
 
       // Create User Profile Objects
-      const userProfile = new UserProfile();
-      userProfile.username = tiktokProfile?.user.username;
-      userProfile.avatar = tiktokProfile?.user.avatarUrl;
-      userProfile.interests = tiktokProfile?.interests;
-      userProfile.reputationTags = tiktokProfile?.introTags;
-      userProfile.scores.push({
+      const smartProfile = new SmartProfile();
+      smartProfile.username = tiktokProfile?.user.username;
+      smartProfile.avatar = tiktokProfile?.user.avatarUrl;
+      smartProfile.privateData.attestedCred.interests = tiktokProfile?.interests;
+      smartProfile.privateData.attestedCred.reputationTags = tiktokProfile?.introTags;
+      smartProfile.scores.push({
         scoreType: ScoreTypes.reputationScore,
         scoreValue: tiktokProfile?.reputationScore,
       });
-      userProfile.extra.push({ field: 'follower count', value: tiktokProfile?.user.followerCount });
-      userProfile.extra.push({ field: 'following count', value: tiktokProfile?.user.followingCount });
-      userProfile.extra.push({ field: 'video count', value: tiktokProfile?.user.videoCount });
-      userProfile.extra.push({ field: 'likes count', value: tiktokProfile?.user.likesCount });
-
-      // profile attestation
-      // const existingUser = await AppDataSource.getRepository(User).findOne({
-      //   where: {
-      //     id: req?.user?.id,
-      //   },
-      // });
-      // const attestation = await attestProfile(req?.user?.id, userProfile, existingUser?.pkpAddress || '');
-      // userProfile.setAttestation(attestation);
+      smartProfile.extendedPublicData.push({ field: 'follower count', value: tiktokProfile?.user.followerCount });
+      smartProfile.extendedPublicData.push({ field: 'following count', value: tiktokProfile?.user.followingCount });
+      smartProfile.extendedPublicData.push({ field: 'video count', value: tiktokProfile?.user.videoCount });
+      smartProfile.extendedPublicData.push({ field: 'likes count', value: tiktokProfile?.user.likesCount });
 
       if (!memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
-        const smartProfile = new SmartProfile(userProfile);
-        smartProfile.connectedProfiles = [
-          { platformName: TIKTOK_APP, userPlatformId: '', username: tiktokProfile?.user?.username },
+        smartProfile.privateData.attestedPlatformIds.connectedProfiles  = [
+          { platformType: TIKTOK_APP, userPlatformId: '', username: tiktokProfile?.user?.username },
         ];
         memoryStoreProfile.set(req?.user?.uniqueSessionId, smartProfile);
         memoryStoreToken.delete(req?.accessTokenID);
         Logger.info(`${TIKTOK_APP}: Session destroyed successfully`);
         Logger.info(`${TIKTOK_APP}: User information has been delivered successfully`);
-        return res.status(200).json({ app: TIKTOK_APP, message: 'success', individualProfile: userProfile });
+        return res.status(200).json({ app: TIKTOK_APP, message: 'success' });
       } else {
         Logger.error(`${TIKTOK_APP}: A profile already exists`);
         return res.status(500).json({ app: TIKTOK_APP, error: 'Unauthorized', message: INTERNAL_SERVER_ERROR });
