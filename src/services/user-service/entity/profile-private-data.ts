@@ -10,32 +10,49 @@ interface ConnectedProfiles {
   username?: string;
 }
 
+interface ExtendedPrivateData {
+  field: string;
+  value: string;
+}
+
+interface CredSalts {
+  interests: string;
+  reputationTags: string;
+  badges: string;
+  collections: string;
+}
+
 export class AttestCred {
   interests: string[];
   reputationTags: string[];
   badges: string[];
   collections: string[];
   attestation: any;
-  salt: string
+  salt: CredSalts;
 
   constructor() {
-    this.interests =  [];
-    this.reputationTags =  [];
+    this.interests = [];
+    this.reputationTags = [];
     this.badges = [];
-    this.collections =  [];
+    this.collections = [];
     this.attestation = {};
-    this.salt = ""
+    this.salt = {
+      interests: "",
+      reputationTags: "",
+      badges: "",
+      collections: ""
+    };
   }
 }
 
 export class AttestedPlatformIds {
- connectedProfiles : ConnectedProfiles[]
+  connectedProfiles: ConnectedProfiles[];
   attestation: any;
-  salt : string;
+  salt: any;
   constructor() {
     this.connectedProfiles = [];
     this.attestation = {};
-    this.salt = "";
+    this.salt = {};
   }
 }
 
@@ -43,12 +60,12 @@ export class ProfilePrivateData {
   attestedCred: AttestCred;
   attestedPlatformIds: AttestedPlatformIds;
   linkedAddress: LinkedAddress[];
-  extendedPrivateData: string;
+  extendedPrivateData: ExtendedPrivateData[];
 
   constructor() {
     this.attestedCred = new AttestCred();
     this.attestedPlatformIds = new AttestedPlatformIds();
     this.linkedAddress = [];
-    this.extendedPrivateData = '';
+    this.extendedPrivateData = [];
   }
 }

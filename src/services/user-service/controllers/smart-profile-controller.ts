@@ -208,9 +208,15 @@ smartProfileRouter.post(
         }
 
         // check if the current platform is already connected
-        if (smartProfile.connectedPlatforms.includes(memorySmartProfile?.privateData.attestedPlatformIds.connectedProfiles[0]?.platformType)) {
+        if (
+          smartProfile.connectedPlatforms.includes(
+            memorySmartProfile?.privateData.attestedPlatformIds.connectedProfiles[0]?.platformType,
+          )
+        ) {
           // If this platform is already connected there is no need to add this one to profile
-          Logger.info(`The profile is already connected: ${memorySmartProfile?.privateData.attestedPlatformIds.connectedProfiles[0]?.platformType}`);
+          Logger.info(
+            `The profile is already connected: ${memorySmartProfile?.privateData.attestedPlatformIds.connectedProfiles[0]?.platformType}`,
+          );
           memoryStoreProfile.delete(id);
           return res.status(400).json({ error: 'Bad request' });
         }
@@ -223,9 +229,11 @@ smartProfileRouter.post(
 
         // Now we aggregate profiles
         smartProfile.aggregateProfile(memorySmartProfile);
-        smartProfile.connectedPlatforms = smartProfile?.privateData.attestedPlatformIds.connectedProfiles.map((profile) => {
-          return profile.platformType;
-        });
+        smartProfile.connectedPlatforms = smartProfile?.privateData.attestedPlatformIds.connectedProfiles.map(
+          (profile) => {
+            return profile.platformType;
+          },
+        );
         memoryStoreProfile.delete(id);
 
         const updatedSmartProfileMap = {
@@ -321,7 +329,7 @@ smartProfileRouter.post(
               id: req?.user?.id,
             },
           });
-          
+
           await attestProfile(req?.user?.id, oldProfile, existingUser?.pkpAddress || '');
           return res.status(200).json({ success: true, smartProfile: oldProfile });
         }

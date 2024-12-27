@@ -138,7 +138,7 @@ fortniteRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfil
       smartProfile.username = fortniteProfile?.displayName;
 
       if (!memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
-        smartProfile.privateData.attestedPlatformIds.connectedProfiles  = [
+        smartProfile.privateData.attestedPlatformIds.connectedProfiles = [
           {
             platformType: FORTNITE_APP,
             userPlatformId: fortniteProfile?.accountId,

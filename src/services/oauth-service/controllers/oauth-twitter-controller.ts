@@ -250,21 +250,24 @@ twitterRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfile
         scoreType: ScoreTypes.reputationScore,
         scoreValue: twitterProfile?.reputationScore,
       });
-      smartProfile.extendedPublicData.push({ field: 'tweet count', value: twitterProfile?.tweetCount });
-      smartProfile.extendedPublicData.push({ field: 'like count', value: twitterProfile?.likeCount });
-      smartProfile.extendedPublicData.push({ field: 'listed count', value: twitterProfile?.listedCount });
-      smartProfile.extendedPublicData.push({ field: 'followers count', value: twitterProfile?.followersCount });
-      smartProfile.extendedPublicData.push({ field: 'following count', value: twitterProfile?.followingCount });
+      const counts = [{ field: 'tweet count', value: twitterProfile?.tweetCount },
+        { field: 'like count', value: twitterProfile?.likeCount },
+        { field: 'listed count', value: twitterProfile?.listedCount },
+        { field: 'followers count', value: twitterProfile?.followersCount },
+        { field: 'following count', value: twitterProfile?.followingCount }
+      ]
+
+      smartProfile.privateData.extendedPrivateData.push({field:"counts", value: JSON.stringify(counts)});
 
       if (!memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
-        smartProfile.privateData.attestedPlatformIds.connectedProfiles  = [
+        smartProfile.privateData.attestedPlatformIds.connectedProfiles = [
           { platformType: TWITTER_APP, userPlatformId: twitterProfile?.id, username: twitterProfile?.username },
         ];
         memoryStoreProfile.set(req?.user?.uniqueSessionId, smartProfile);
         memoryStoreToken.delete(req?.accessTokenID);
         Logger.info(`${TWITTER_APP}: Session destroyed successfully`);
         Logger.info(`${TWITTER_APP}: User information has been delivered successfully`);
-        return res.status(200).json({ app: TWITTER_APP, message: 'success'});
+        return res.status(200).json({ app: TWITTER_APP, message: 'success' });
       } else {
         Logger.error(`${TWITTER_APP}: A profile already exists`);
         return res.status(500).json({ app: TWITTER_APP, error: 'Unauthorized', message: INTERNAL_SERVER_ERROR });

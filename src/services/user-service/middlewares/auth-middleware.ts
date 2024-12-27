@@ -3,7 +3,11 @@ import Logger from '../../../lib/logger';
 import jwt from 'jsonwebtoken';
 import * as dotenv from 'dotenv';
 import { ethers } from 'ethers';
-import { verifyOffcahinAttestation, verifyPrivateAttestedData, verifyPublicAttestedData } from '../../oauth-service/utils/eas';
+import {
+  verifyOffcahinAttestation,
+  verifyPrivateAttestedData,
+  verifyPublicAttestedData,
+} from '../../oauth-service/utils/eas';
 import { SmartProfile } from '../entity/smart-profile';
 import { plainToInstance } from 'class-transformer';
 
@@ -106,15 +110,37 @@ export const isValidAddress = async (req, res, next) => {
 
 export const isValidAttestation = async (req, res, next) => {
   try {
-    const attestation = req?.body?.smartProfile?.attestation;
-    if (!attestation || Object.keys(attestation)?.length === 0) {
-      Logger.info('Attestaion not exist');
-      return next();
-    }
-    const isValidPublicAttestation: bool = verifyOffcahinAttestation(attestation);
 
-    if (isValidPublicAttestation) {
-      Logger.info('Attestaion is verified');
+    const smartProfile = plainToInstance(SmartProfile, JSON.parse(JSON.stringify(req?.body?.smartProfile)));
+    let isVerifiedPublicAttestaion = false
+    let isVerifiedPrivateCredAttestaion = false
+    let isVerifiedPrivatePlatformsIdAttestaion = false
+    //  verification of public attestation
+    if (Object.keys(smartProfile?.attestation)?.length > 0) {
+        isVerifiedPublicAttestaion = verifyOffcahinAttestation(smartProfile?.attestation)
+    } else {
+        // if no attestation exist then dont need to veify
+        isVerifiedPublicAttestaion = true
+    }
+
+    //  verification of private cred attestation
+    if (Object.keys(smartProfile?.privateData?.attestedCred?.attestation)?.length > 0) {
+        isVerifiedPrivateCredAttestaion = verifyOffcahinAttestation(smartProfile?.privateData?.attestedCred?.attestation)
+    } else {
+        // if no attestation exist then dont need to veify
+        isVerifiedPrivateCredAttestaion = true
+    }
+
+    //  verification of private plaforms Ids attestation
+    if (Object.keys(smartProfile?.privateData?.attestedPlatformIds?.attestation)?.length > 0) {
+        isVerifiedPrivatePlatformsIdAttestaion = verifyOffcahinAttestation(smartProfile?.privateData?.attestedPlatformIds?.attestation)
+    } else {
+        // if no attestation exist then dont need to veify
+        isVerifiedPrivatePlatformsIdAttestaion = true
+    }
+
+    if (isVerifiedPublicAttestaion && isVerifiedPrivateCredAttestaion && isVerifiedPrivatePlatformsIdAttestaion) {
+      Logger.info('Either Attestaion is verified or no attestation exist');
       return next();
     } else {
       Logger.error('Attestaion is not verified');
@@ -130,13 +156,13 @@ export const isValidAttestedData = async (req, res, next) => {
   try {
     const attestation = req?.body?.smartProfile?.attestation;
     if (!attestation || Object.keys(attestation)?.length === 0) {
-      Logger.info('Attestaion not exist');
+      Logger.info('Attestaion Data does not exist');
       return next();
     }
     const smartProfile = plainToInstance(SmartProfile, JSON.parse(JSON.stringify(req?.body?.smartProfile)));
 
     const isValidPublicData: boolean = verifyPublicAttestedData(smartProfile);
-    const isValidPrivateData = verifyPrivateAttestedData(smartProfile)
+    const isValidPrivateData = verifyPrivateAttestedData(smartProfile);
     if (isValidPublicData && isValidPrivateData) {
       Logger.info('Attestaion Data is valid');
       return next();

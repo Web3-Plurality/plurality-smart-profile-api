@@ -1,6 +1,4 @@
-import { MerkleValue, MerkleValueWithSalt } from '@ethereum-attestation-service/eas-sdk';
 import { ScoreTypes } from '../../../utils/global';
-import { ethers } from 'ethers';
 import * as dotenv from 'dotenv';
 import { ProfilePrivateData } from './profile-private-data';
 dotenv.config();
@@ -10,10 +8,9 @@ interface Score {
   scoreValue: number;
 }
 
-
-interface Extra {
+interface ExtendedPublicData {
   field: string;
-  value: number;
+  value: string;
 }
 
 export class SmartProfile {
@@ -24,7 +21,7 @@ export class SmartProfile {
   connectedPlatforms: string[];
   profileTypeStreamId: string; // when should we have to put this
   version: string; // when should we have to put this
-  extendedPublicData: Extra[];
+  extendedPublicData: ExtendedPublicData[];
   attestation: any;
   privateData: ProfilePrivateData;
 
@@ -39,8 +36,8 @@ export class SmartProfile {
     this.connectedPlatforms = data?.connected_platforms || [];
     this.profileTypeStreamId = '';
     this.version = process.env.SMART_PROFILE_VERSION || '1';
-    this.attestation =  {};
-    this.extendedPublicData = []
+    this.attestation = {};
+    this.extendedPublicData = [];
     this.privateData = new ProfilePrivateData();
   }
 
@@ -60,8 +57,11 @@ export class SmartProfile {
     );
     this.extendedPublicData = this.extendedPublicData.concat(user.extendedPublicData);
     this.privateData.linkedAddress = this.privateData.linkedAddress.concat(user.privateData.linkedAddress);
-    const newProfile = user.privateData.attestedPlatformIds.connectedProfiles.filter((profile) => !this.privateData.attestedPlatformIds.connectedProfiles.includes(profile));
-    this.privateData.attestedPlatformIds.connectedProfiles = this.privateData.attestedPlatformIds.connectedProfiles.concat(newProfile);
+    const newProfile = user.privateData.attestedPlatformIds.connectedProfiles.filter(
+      (profile) => !this.privateData.attestedPlatformIds.connectedProfiles.includes(profile),
+    );
+    this.privateData.attestedPlatformIds.connectedProfiles =
+      this.privateData.attestedPlatformIds.connectedProfiles.concat(newProfile);
     const updatedScores = this.scores.map((score) => {
       const userScore = user.scores.find((us) => us.scoreType === score.scoreType);
       if (userScore) {
@@ -86,33 +86,6 @@ export class SmartProfile {
       }
       return score;
     });
-  }
-
-  setAttestation(attestation: any) {
-    this.attestation = {
-      version: attestation?.version,
-      uid: attestation?.uid,
-      domain: {
-        name: attestation?.domain?.name,
-        version: attestation?.domain?.version,
-        chainId: attestation?.domain?.chainId?.toString(),
-        verifyingContract: attestation?.domain?.verifyingContract,
-      },
-      primaryType: attestation?.primaryType,
-      message: {
-        version: attestation?.message?.version,
-        recipient: attestation?.message?.recipient,
-        expirationTime: attestation?.message?.expirationTime?.toString(),
-        time: attestation?.message?.time?.toString(),
-        revocable: attestation?.message?.revocable,
-        schema: attestation?.message?.schema,
-        refUID: attestation?.message?.refUID,
-        data: attestation?.message?.data,
-        salt: attestation?.message?.salt,
-      },
-      types: attestation?.types,
-      signature: attestation?.signature,
-    };
   }
 
 }

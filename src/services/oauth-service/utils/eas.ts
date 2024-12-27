@@ -92,42 +92,36 @@ export async function publicOffchainAttestation(profile: SmartProfile, userAddre
 export async function attestProfile(id: string, profile: SmartProfile, userAddress: string) {
   //Public attestation
   const publicAttestation = await publicOffchainAttestation(profile, userAddress);
-  profile.setAttestation(publicAttestation);
+  profile.attestation = setAttestation(publicAttestation);
   Logger.info(`public Data of profile attested successfully for user id: ${id}`);
-  console.log("aaaaaaa",JSON.stringify(profile.privateData))
   //private data attestation
-  const credSchema = attestationCredSchema(profile);
+  const credSchema = attestationCredSchema(profile, false);
   if (credSchema?.length > 0) {
     const credAttestation = await privateOffchainAttestations(credSchema, userAddress);
     profile.privateData.attestedCred.attestation = setAttestation(credAttestation);
-    Logger.info(`private Cred Data of profile attested successfully for user id: ${id}`)
+    Logger.info(`private Cred Data of profile attested successfully for user id: ${id}`);
   }
 
   const platformIdSchema = attestationPlatformIdSchema(profile);
-  if (platformIdSchema?.length > 0) {  
-    const platformIdsAttestation = await privateOffchainAttestations(
-      platformIdSchema,
-      userAddress,
-    );
+  if (platformIdSchema?.length > 0) {
+    const platformIdsAttestation = await privateOffchainAttestations(platformIdSchema, userAddress);
     profile.privateData.attestedPlatformIds.attestation = setAttestation(platformIdsAttestation);
     Logger.info(`private platformIds Data of profile attested successfully for user id: ${id}`);
   }
-return profile
+  return profile;
 }
 // verifying attestation
-export async function verifyOffcahinAttestation(attestation: any) {
+export function verifyOffcahinAttestation(attestation: any) {
   try {
     const EASContractAddress = process.env.EAS_CONTRACT_ADDRESS || '0x'; // Sepolia v0.26
     // Initialize the sdk with the address of the EAS Schema contract address
     const eas = new EAS(EASContractAddress);
-    const privateKey: string = process.env.PUBLIC_DAPP_OWNER_WALLET_PRIVATE_KEY || '';
-    const signer: any = new ethers.Wallet(privateKey);
     const EAS_CONFIG: OffchainConfig = {
       address: attestation.domain.verifyingContract,
       version: attestation.domain.version,
       chainId: BigInt(attestation.domain.chainId),
     };
-    const signerAddress = await signer.getAddress();
+    const signerAddress = process.env.PUBLIC_DAPP_OWNER_WALLET_ADDRESS || "";
     const offchain = new Offchain(EAS_CONFIG, OffchainAttestationVersion.Version2, eas);
     const isValidAttestation = offchain.verifyOffchainAttestationSignature(signerAddress, attestation);
     return isValidAttestation;
@@ -151,7 +145,7 @@ export function verifyPublicAttestedData(profile: SmartProfile): boolean {
       { name: 'profileTypeStreamId', value: profile.profileTypeStreamId, type: 'string' },
       { name: 'version', value: JSON.stringify(profile.version), type: 'string' },
     ]);
-    
+
     return profile?.attestation?.message?.data === encodedData;
   } catch (error) {
     Logger.error(`error occur while verifying offchain attestation ${JSON.stringify(error)}`);
@@ -159,24 +153,22 @@ export function verifyPublicAttestedData(profile: SmartProfile): boolean {
   }
 }
 
-
 export function verifyPrivateAttestedData(profile: SmartProfile): boolean {
   try {
-
-    const credSchema = attestationCredSchema(profile);
-    const platfomSchema = attestationPlatformIdSchema(profile)
-    let validCredsData = false
-    let validPlatformsData = false
+    const credSchema = attestationCredSchema(profile, true);
+    const platfomSchema = attestationPlatformIdSchema(profile);
+    let validCredsData = false;
+    let validPlatformsData = false;
     //validating crerds data
     if (credSchema?.length > 0) {
       const privateData = new PrivateData(credSchema);
       const fullTree = privateData.getFullTree();
       const schemaEncoder = new SchemaEncoder('bytes32 privateData');
       const encodedData = schemaEncoder.encodeData([{ name: 'privateData', value: fullTree.root, type: 'bytes32' }]);
-      validCredsData = profile.privateData.attestedCred.attestation.message.data === encodedData
-    } else{
+      validCredsData = profile.privateData.attestedCred.attestation.message.data === encodedData;
+    } else {
       //if no data then dont need to validate it
-      validCredsData =true
+      validCredsData = true;
     }
     //validating platform data
     if (platfomSchema?.length > 0) {
@@ -184,10 +176,10 @@ export function verifyPrivateAttestedData(profile: SmartProfile): boolean {
       const fullTree = privateData.getFullTree();
       const schemaEncoder = new SchemaEncoder('bytes32 privateData');
       const encodedData = schemaEncoder.encodeData([{ name: 'privateData', value: fullTree.root, type: 'bytes32' }]);
-      validPlatformsData = profile.privateData.attestedPlatformIds.attestation.message.data === encodedData
-    } else{
+      validPlatformsData = profile.privateData.attestedPlatformIds.attestation.message.data === encodedData;
+    } else {
       //if no data then dont need to validate it
-      validPlatformsData =true
+      validPlatformsData = true;
     }
 
     return validPlatformsData && validCredsData;
@@ -198,44 +190,70 @@ export function verifyPrivateAttestedData(profile: SmartProfile): boolean {
 }
 
 // Schema Generation
-function attestationCredSchema(smartProfile: SmartProfile): MerkleValueWithSalt[] {
-  let salt = ""
-  if(smartProfile.privateData.attestedCred.salt){
-    salt = smartProfile.privateData.attestedCred.salt
-  }
-  else{
-     salt = ethers.hexlify(ethers.randomBytes(32));
-     smartProfile.privateData.attestedCred.salt = salt
+function attestationCredSchema(smartProfile: SmartProfile, verification: boolean = false): MerkleValueWithSalt[] {
+  let salt1 = '';
+  let salt2 = '';
+  let salt3 = '';
+  let salt4 = '';
+
+  if (verification) {
+    salt1 = smartProfile.privateData.attestedCred.salt?.interests;
+    salt2 = smartProfile.privateData.attestedCred.salt?.reputationTags;
+    salt3 = smartProfile.privateData.attestedCred.salt?.badges;
+    salt4 = smartProfile.privateData.attestedCred.salt?.collections;
+
+  } else {
+    // generate new salts for attestation
+    salt1 = ethers.hexlify(ethers.randomBytes(32));
+    salt2 = ethers.hexlify(ethers.randomBytes(32));
+    salt3 = ethers.hexlify(ethers.randomBytes(32));
+    salt4 = ethers.hexlify(ethers.randomBytes(32));
+    // saving salts
+    smartProfile.privateData.attestedCred.salt.interests = salt1;
+    smartProfile.privateData.attestedCred.salt.reputationTags = salt2; 
+    smartProfile.privateData.attestedCred.salt.badges = salt3; 
+    smartProfile.privateData.attestedCred.salt.collections = salt4;
+
   }
   return [
-    { name: 'interests', value: JSON.stringify(smartProfile.privateData.attestedCred.interests), type: 'string', salt },
-    { name: 'reputationTags', value: JSON.stringify(smartProfile.privateData.attestedCred.reputationTags), type: 'string', salt },
-    { name: 'badges', value: JSON.stringify(smartProfile.privateData.attestedCred.badges), type: 'string', salt },
-    { name: 'collections', value: JSON.stringify(smartProfile.privateData.attestedCred.collections), type: 'string', salt },
+    { name: 'interests', value: JSON.stringify(smartProfile.privateData.attestedCred.interests), type: 'string', salt: salt1 },
+    {
+      name: 'reputationTags',
+      value: JSON.stringify(smartProfile.privateData.attestedCred.reputationTags),
+      type: 'string',
+      salt: salt2,
+    },
+    { name: 'badges', value: JSON.stringify(smartProfile.privateData.attestedCred.badges), type: 'string', salt: salt3 },
+    {
+      name: 'collections',
+      value: JSON.stringify(smartProfile.privateData.attestedCred.collections),
+      type: 'string',
+      salt: salt4,
+    },
   ];
 }
 
-function attestationPlatformIdSchema  (smartProfile: SmartProfile): MerkleValueWithSalt[]   {
-  let salt = ""
-  if(smartProfile.privateData.attestedPlatformIds.salt){
-    salt = smartProfile.privateData.attestedPlatformIds.salt
-  }
-  else{
-     salt = ethers.hexlify(ethers.randomBytes(32));
-     smartProfile.privateData.attestedPlatformIds.salt = salt
-  }
-  const platformIdSchema =  smartProfile.privateData.attestedPlatformIds.connectedProfiles.map((profile)=>{
-    return {
-        name: profile.platformType,
-        value: JSON.stringify(profile),
-        type: 'string',
-        salt,
+function attestationPlatformIdSchema(smartProfile: SmartProfile, verification: boolean = false): MerkleValueWithSalt[] {
+  const platformIdSchema = smartProfile.privateData.attestedPlatformIds.connectedProfiles.map((profile : any) => {
+    let salt = ''
+    if (verification) {
+      salt = smartProfile.privateData.attestedPlatformIds.salt[profile.platformType];
+    } else {
+      // generate new salt for attestation
+      salt  = ethers.hexlify(ethers.randomBytes(32));
+      // saving salt
+      smartProfile.privateData.attestedPlatformIds.salt[profile.platformType] = salt;
     }
-  })
+    return {
+      name: profile.platformType,
+      value: JSON.stringify(profile),
+      type: 'string',
+      salt,
+    };
+  });
 
-return platformIdSchema;
+  return platformIdSchema;
 }
-
 
 function setAttestation(attestation: any) {
   return {

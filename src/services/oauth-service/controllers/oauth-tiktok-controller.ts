@@ -212,13 +212,16 @@ tiktokRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfileM
         scoreType: ScoreTypes.reputationScore,
         scoreValue: tiktokProfile?.reputationScore,
       });
-      smartProfile.extendedPublicData.push({ field: 'follower count', value: tiktokProfile?.user.followerCount });
-      smartProfile.extendedPublicData.push({ field: 'following count', value: tiktokProfile?.user.followingCount });
-      smartProfile.extendedPublicData.push({ field: 'video count', value: tiktokProfile?.user.videoCount });
-      smartProfile.extendedPublicData.push({ field: 'likes count', value: tiktokProfile?.user.likesCount });
+      const counts = [{ field: 'follower count', value: tiktokProfile?.user.followerCount },
+        { field: 'following count', value: tiktokProfile?.user.followingCount },
+        { field: 'video count', value: tiktokProfile?.user.videoCount },
+        { field: 'likes count', value: tiktokProfile?.user.likesCount }
+      ]
+
+      smartProfile.extendedPublicData.push({field:"counts", value:JSON.stringify(counts)});
 
       if (!memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
-        smartProfile.privateData.attestedPlatformIds.connectedProfiles  = [
+        smartProfile.privateData.attestedPlatformIds.connectedProfiles = [
           { platformType: TIKTOK_APP, userPlatformId: '', username: tiktokProfile?.user?.username },
         ];
         memoryStoreProfile.set(req?.user?.uniqueSessionId, smartProfile);

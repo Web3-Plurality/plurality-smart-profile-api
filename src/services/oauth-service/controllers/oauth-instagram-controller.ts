@@ -162,7 +162,7 @@ instagramRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfi
       smartProfile.privateData.attestedCred.interests = instaProfile?.interests;
 
       if (!memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
-        smartProfile.privateData.attestedPlatformIds.connectedProfiles  = [
+        smartProfile.privateData.attestedPlatformIds.connectedProfiles = [
           { platformType: INSTAGRAM_APP, userPlatformId: instaProfile?.id, username: instaProfile?.username },
         ];
         memoryStoreProfile.set(req?.user?.uniqueSessionId, smartProfile);

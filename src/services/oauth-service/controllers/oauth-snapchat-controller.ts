@@ -138,7 +138,7 @@ snapchatRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfil
       smartProfile.avatar = snapChatProfile.bitmoji;
 
       if (!memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
-        smartProfile.privateData.attestedPlatformIds.connectedProfiles  = [
+        smartProfile.privateData.attestedPlatformIds.connectedProfiles = [
           {
             platformType: SNAPCHAT_APP,
             userPlatformId: snapChatProfile?.externalId,

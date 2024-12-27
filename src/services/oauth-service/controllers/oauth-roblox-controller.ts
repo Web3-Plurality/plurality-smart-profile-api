@@ -231,13 +231,14 @@ robloxRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfileM
       });
       smartProfile.privateData.attestedCred.reputationTags = robloxProfile?.introTags;
       smartProfile.privateData.attestedCred.collections = robloxProfile?.assests;
-      smartProfile.extendedPublicData.push({ field: 'places visit', value: robloxProfile?.placesVisit });
-      smartProfile.extendedPublicData.push({ field: 'friends', value: robloxProfile?.friends });
-      smartProfile.extendedPublicData.push({ field: 'followers', value: robloxProfile?.followers });
-      smartProfile.extendedPublicData.push({ field: 'following', value: robloxProfile?.following });
-
+      const counts = [{ field: 'places visit', value: robloxProfile?.placesVisit },
+        { field: 'friends', value: robloxProfile?.friends },
+        { field: 'followers', value: robloxProfile?.followers },
+        { field: 'following', value: robloxProfile?.following }
+      ]
+      smartProfile.privateData.extendedPrivateData.push({field:"counts", value:JSON.stringify(counts)});
       if (!memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
-        smartProfile.privateData.attestedPlatformIds.connectedProfiles  = [
+        smartProfile.privateData.attestedPlatformIds.connectedProfiles = [
           { platformType: ROBLOX_APP, userPlatformId: '', username: robloxProfile?.name },
         ];
         memoryStoreProfile.set(req?.user?.uniqueSessionId, smartProfile);

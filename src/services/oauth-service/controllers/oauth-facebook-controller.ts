@@ -181,16 +181,15 @@ facebookRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfil
         scoreType: ScoreTypes.reputationScore,
         scoreValue: facebookProfile?.reputationScore,
       });
-      smartProfile.extendedPublicData.push({ field: 'friends count', value: facebookProfile?.friendsCount });
-      smartProfile.extendedPublicData.push({ field: 'likes count', value: facebookProfile?.likesCount });
-      smartProfile.extendedPublicData.push({ field: 'music count', value: facebookProfile?.musicCount });
-      smartProfile.extendedPublicData.push({ field: 'athleast count', value: facebookProfile?.athletesCount });
-      smartProfile.extendedPublicData.push({ field: 'favourite team count', value: facebookProfile?.favTeamCount });
-
-
+      const counts = [{ field: 'friends count', value: facebookProfile?.friendsCount }, 
+      { field: 'likes count', value: facebookProfile?.likesCount },
+      { field: 'music count', value: facebookProfile?.musicCount },
+      { field: 'athleast count', value: facebookProfile?.athletesCount },
+      { field: 'favourite team count', value: facebookProfile?.favTeamCount }]
+      smartProfile.privateData.extendedPrivateData.push({field: "counts", value : JSON.stringify(counts)});
       if (!memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
         smartProfile.privateData.attestedPlatformIds.connectedProfiles = [
-          { platformType: FACEBOOK_APP, userPlatformId: "", username: facebookProfile?.name },
+          { platformType: FACEBOOK_APP, userPlatformId: '', username: facebookProfile?.name },
         ];
         memoryStoreProfile.set(req?.user?.uniqueSessionId, smartProfile);
         memoryStoreToken.delete(req?.accessTokenID);
