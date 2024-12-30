@@ -254,7 +254,11 @@ smartProfileRouter.post(
             id: req?.user?.id,
           },
         });
-        const updatedSmartProfile = await attestSmartProfile(req?.user?.id, smartProfile, existingUser?.pkpAddress || '');
+        const updatedSmartProfile = await attestSmartProfile(
+          req?.user?.id,
+          smartProfile,
+          existingUser?.pkpAddress || '',
+        );
         return res.status(200).json({ success: true, smartProfile: updatedSmartProfile });
       }
       // new profile creation

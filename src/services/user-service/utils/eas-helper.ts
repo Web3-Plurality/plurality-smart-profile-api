@@ -7,7 +7,7 @@ import { AttestCred, AttestedPlatformIds } from '../entity/profile-private-data'
 // creates offchain attestation of private data using merkle root based on EAS's published private data schema
 export async function privateOffchainAttestations(merkleObj: MerkleValueWithSalt[], userAddress: string) {
   try {
-    const EASContractAddress = process.env.EAS_CONTRACT_ADDRESS || '0x'; 
+    const EASContractAddress = process.env.EAS_CONTRACT_ADDRESS || '0x';
     // Initialize the sdk with the address of the EAS Schema contract address
     const eas = new EAS(EASContractAddress);
     const privateKey: string = process.env.PUBLIC_DAPP_OWNER_WALLET_PRIVATE_KEY || '';
@@ -82,8 +82,11 @@ export async function publicOffchainAttestation(profile: SmartProfile, userAddre
 }
 
 // Typecasts attestedCred or attestedPlatformIds Object to MerkleValueWithSalt to create private data attestation
-export function toMerkleValueWithSalt(attestationObj: AttestCred | AttestedPlatformIds, verification = false): MerkleValueWithSalt[] {
-  if (attestationObj instanceof AttestCred) {    
+export function toMerkleValueWithSalt(
+  attestationObj: AttestCred | AttestedPlatformIds,
+  verification = false,
+): MerkleValueWithSalt[] {
+  if (attestationObj instanceof AttestCred) {
     let salt1 = '';
     let salt2 = '';
     let salt3 = '';
@@ -96,7 +99,7 @@ export function toMerkleValueWithSalt(attestationObj: AttestCred | AttestedPlatf
       salt3 = attestationObj.salt?.badges;
       salt4 = attestationObj.salt?.collections;
     } else {
-      // attestation workflow - generate new salts 
+      // attestation workflow - generate new salts
       salt1 = ethers.hexlify(ethers.randomBytes(32));
       salt2 = ethers.hexlify(ethers.randomBytes(32));
       salt3 = ethers.hexlify(ethers.randomBytes(32));
@@ -140,7 +143,7 @@ export function toMerkleValueWithSalt(attestationObj: AttestCred | AttestedPlatf
         // verification workflow - we use existing salts from the object
         salt = attestationObj.salt[profile.platformType];
       } else {
-        // attestation workflow - generate new salts 
+        // attestation workflow - generate new salts
         salt = ethers.hexlify(ethers.randomBytes(32));
         // saving salts
         attestationObj.salt[profile.platformType] = salt;
@@ -154,7 +157,7 @@ export function toMerkleValueWithSalt(attestationObj: AttestCred | AttestedPlatf
     });
     return platformIdSchema;
   }
-  throw new Error("Invalid attestationObj type");
+  throw new Error('Invalid attestationObj type');
 }
 
 // parse individual attestation values to string due to large bigint non serializable by json

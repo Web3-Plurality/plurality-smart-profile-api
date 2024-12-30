@@ -41,7 +41,7 @@ export async function attestSmartProfile(id: string, profile: SmartProfile, user
 // verifying attestation
 export function verifyOffchainAttestation(attestation: any) {
   try {
-    const EASContractAddress = process.env.EAS_CONTRACT_ADDRESS || '0x'; 
+    const EASContractAddress = process.env.EAS_CONTRACT_ADDRESS || '0x';
     // Initialize the sdk with the address of the EAS Schema contract address
     const eas = new EAS(EASContractAddress);
     const EAS_CONFIG: OffchainConfig = {
