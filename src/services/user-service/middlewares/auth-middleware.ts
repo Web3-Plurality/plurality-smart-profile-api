@@ -1,15 +1,10 @@
-import { memoryStoreNonce } from '../../../utils/global';
 import Logger from '../../../lib/logger';
 import jwt from 'jsonwebtoken';
 import * as dotenv from 'dotenv';
 import { ethers } from 'ethers';
-import {
-  verifyOffcahinAttestation,
-  verifyPrivateAttestedData,
-  verifyPublicAttestedData,
-} from '../../oauth-service/utils/eas';
 import { SmartProfile } from '../entity/smart-profile';
 import { plainToInstance } from 'class-transformer';
+import { verifyOffcahinAttestation, verifyPrivateAttestedData, verifyPublicAttestedData } from '../utils/plurality-attestation';
 
 dotenv.config();
 // const client = new stytch.Client({
@@ -110,7 +105,6 @@ export const isValidAddress = async (req, res, next) => {
 
 export const isValidAttestation = async (req, res, next) => {
   try {
-
     const smartProfile = plainToInstance(SmartProfile, JSON.parse(JSON.stringify(req?.body?.smartProfile)));
     let isVerifiedPublicAttestaion = false
     let isVerifiedPrivateCredAttestaion = false

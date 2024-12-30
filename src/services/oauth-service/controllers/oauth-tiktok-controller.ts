@@ -218,7 +218,7 @@ tiktokRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfileM
         { field: 'likes count', value: tiktokProfile?.user.likesCount }
       ]
 
-      smartProfile.extendedPublicData.push({field:"counts", value:JSON.stringify(counts)});
+      smartProfile.privateData.extendedPrivateData.push({field:"counts", value:JSON.stringify(counts)});
 
       if (!memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
         smartProfile.privateData.attestedPlatformIds.connectedProfiles = [

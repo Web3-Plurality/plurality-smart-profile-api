@@ -14,8 +14,8 @@ import { SmartProfileMap } from '../entity/smart-profile-map';
 import { EarlyUser } from '../entity/early-user';
 import { ClientApp } from '../../crm-service/entity/client-app';
 import { isValidAttestation, isValidAttestedData } from '../middlewares/auth-middleware';
-import { attestProfile } from '../../oauth-service/utils/eas';
 import { User } from '../entity/user';
+import { attestProfile } from '../utils/plurality-attestation';
 
 export const smartProfileRouter = express.Router();
 dotenv.config();
