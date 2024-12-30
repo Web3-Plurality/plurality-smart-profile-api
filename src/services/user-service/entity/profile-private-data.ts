@@ -37,10 +37,10 @@ export class AttestCred {
     this.collections = [];
     this.attestation = {};
     this.salt = {
-      interests: "",
-      reputationTags: "",
-      badges: "",
-      collections: ""
+      interests: '',
+      reputationTags: '',
+      badges: '',
+      collections: '',
     };
   }
 }

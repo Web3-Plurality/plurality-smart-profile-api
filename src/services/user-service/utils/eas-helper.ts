@@ -1,9 +1,4 @@
-import {
-  EAS,
-  MerkleValueWithSalt,
-  PrivateData,
-  SchemaEncoder,
-} from '@ethereum-attestation-service/eas-sdk';
+import { EAS, MerkleValueWithSalt, PrivateData, SchemaEncoder } from '@ethereum-attestation-service/eas-sdk';
 import { ethers } from 'ethers';
 import Logger from '../../../lib/logger';
 import { SmartProfile } from '../entity/smart-profile';
@@ -84,9 +79,8 @@ export async function publicOffchainAttestation(profile: SmartProfile, userAddre
   return offchainAttestation;
 }
 
-
 // Schema Generation
-export function attestationCredSchema(smartProfile: SmartProfile, verification: boolean = false): MerkleValueWithSalt[] {
+export function attestationCredSchema(smartProfile: SmartProfile, verification = false): MerkleValueWithSalt[] {
   let salt1 = '';
   let salt2 = '';
   let salt3 = '';
@@ -97,7 +91,6 @@ export function attestationCredSchema(smartProfile: SmartProfile, verification: 
     salt2 = smartProfile.privateData.attestedCred.salt?.reputationTags;
     salt3 = smartProfile.privateData.attestedCred.salt?.badges;
     salt4 = smartProfile.privateData.attestedCred.salt?.collections;
-
   } else {
     // generate new salts for attestation
     salt1 = ethers.hexlify(ethers.randomBytes(32));
@@ -106,20 +99,29 @@ export function attestationCredSchema(smartProfile: SmartProfile, verification: 
     salt4 = ethers.hexlify(ethers.randomBytes(32));
     // saving salts
     smartProfile.privateData.attestedCred.salt.interests = salt1;
-    smartProfile.privateData.attestedCred.salt.reputationTags = salt2; 
-    smartProfile.privateData.attestedCred.salt.badges = salt3; 
+    smartProfile.privateData.attestedCred.salt.reputationTags = salt2;
+    smartProfile.privateData.attestedCred.salt.badges = salt3;
     smartProfile.privateData.attestedCred.salt.collections = salt4;
-
   }
   return [
-    { name: 'interests', value: JSON.stringify(smartProfile.privateData.attestedCred.interests), type: 'string', salt: salt1 },
+    {
+      name: 'interests',
+      value: JSON.stringify(smartProfile.privateData.attestedCred.interests),
+      type: 'string',
+      salt: salt1,
+    },
     {
       name: 'reputationTags',
       value: JSON.stringify(smartProfile.privateData.attestedCred.reputationTags),
       type: 'string',
       salt: salt2,
     },
-    { name: 'badges', value: JSON.stringify(smartProfile.privateData.attestedCred.badges), type: 'string', salt: salt3 },
+    {
+      name: 'badges',
+      value: JSON.stringify(smartProfile.privateData.attestedCred.badges),
+      type: 'string',
+      salt: salt3,
+    },
     {
       name: 'collections',
       value: JSON.stringify(smartProfile.privateData.attestedCred.collections),
@@ -129,14 +131,14 @@ export function attestationCredSchema(smartProfile: SmartProfile, verification: 
   ];
 }
 
-export function attestationPlatformIdSchema(smartProfile: SmartProfile, verification: boolean = false): MerkleValueWithSalt[] {
-  const platformIdSchema = smartProfile.privateData.attestedPlatformIds.connectedProfiles.map((profile : any) => {
-    let salt = ''
+export function attestationPlatformIdSchema(smartProfile: SmartProfile, verification = false): MerkleValueWithSalt[] {
+  const platformIdSchema = smartProfile.privateData.attestedPlatformIds.connectedProfiles.map((profile: any) => {
+    let salt = '';
     if (verification) {
       salt = smartProfile.privateData.attestedPlatformIds.salt[profile.platformType];
     } else {
       // generate new salt for attestation
-      salt  = ethers.hexlify(ethers.randomBytes(32));
+      salt = ethers.hexlify(ethers.randomBytes(32));
       // saving salt
       smartProfile.privateData.attestedPlatformIds.salt[profile.platformType] = salt;
     }

@@ -4,7 +4,11 @@ import * as dotenv from 'dotenv';
 import { ethers } from 'ethers';
 import { SmartProfile } from '../entity/smart-profile';
 import { plainToInstance } from 'class-transformer';
-import { verifyOffcahinAttestation, verifyPrivateAttestedData, verifyPublicAttestedData } from '../utils/plurality-attestation';
+import {
+  verifyOffcahinAttestation,
+  verifyPrivateAttestedData,
+  verifyPublicAttestedData,
+} from '../utils/plurality-attestation';
 
 dotenv.config();
 // const client = new stytch.Client({
@@ -106,31 +110,33 @@ export const isValidAddress = async (req, res, next) => {
 export const isValidAttestation = async (req, res, next) => {
   try {
     const smartProfile = plainToInstance(SmartProfile, JSON.parse(JSON.stringify(req?.body?.smartProfile)));
-    let isVerifiedPublicAttestaion = false
-    let isVerifiedPrivateCredAttestaion = false
-    let isVerifiedPrivatePlatformsIdAttestaion = false
+    let isVerifiedPublicAttestaion = false;
+    let isVerifiedPrivateCredAttestaion = false;
+    let isVerifiedPrivatePlatformsIdAttestaion = false;
     //  verification of public attestation
     if (Object.keys(smartProfile?.attestation)?.length > 0) {
-        isVerifiedPublicAttestaion = verifyOffcahinAttestation(smartProfile?.attestation)
+      isVerifiedPublicAttestaion = verifyOffcahinAttestation(smartProfile?.attestation);
     } else {
-        // if no attestation exist then dont need to veify
-        isVerifiedPublicAttestaion = true
+      // if no attestation exist then dont need to veify
+      isVerifiedPublicAttestaion = true;
     }
 
     //  verification of private cred attestation
     if (Object.keys(smartProfile?.privateData?.attestedCred?.attestation)?.length > 0) {
-        isVerifiedPrivateCredAttestaion = verifyOffcahinAttestation(smartProfile?.privateData?.attestedCred?.attestation)
+      isVerifiedPrivateCredAttestaion = verifyOffcahinAttestation(smartProfile?.privateData?.attestedCred?.attestation);
     } else {
-        // if no attestation exist then dont need to veify
-        isVerifiedPrivateCredAttestaion = true
+      // if no attestation exist then dont need to veify
+      isVerifiedPrivateCredAttestaion = true;
     }
 
     //  verification of private plaforms Ids attestation
     if (Object.keys(smartProfile?.privateData?.attestedPlatformIds?.attestation)?.length > 0) {
-        isVerifiedPrivatePlatformsIdAttestaion = verifyOffcahinAttestation(smartProfile?.privateData?.attestedPlatformIds?.attestation)
+      isVerifiedPrivatePlatformsIdAttestaion = verifyOffcahinAttestation(
+        smartProfile?.privateData?.attestedPlatformIds?.attestation,
+      );
     } else {
-        // if no attestation exist then dont need to veify
-        isVerifiedPrivatePlatformsIdAttestaion = true
+      // if no attestation exist then dont need to veify
+      isVerifiedPrivatePlatformsIdAttestaion = true;
     }
 
     if (isVerifiedPublicAttestaion && isVerifiedPrivateCredAttestaion && isVerifiedPrivatePlatformsIdAttestaion) {
