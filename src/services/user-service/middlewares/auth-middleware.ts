@@ -5,7 +5,7 @@ import { ethers } from 'ethers';
 import { SmartProfile } from '../entity/smart-profile';
 import { plainToInstance } from 'class-transformer';
 import {
-  verifyOffcahinAttestation,
+  verifyOffchainAttestation,
   verifyPrivateAttestedData,
   verifyPublicAttestedData,
 } from '../utils/plurality-attestation';
@@ -115,15 +115,15 @@ export const isValidAttestation = async (req, res, next) => {
     let isVerifiedPrivatePlatformsIdAttestaion = false;
     //  verification of public attestation
     if (Object.keys(smartProfile?.attestation)?.length > 0) {
-      isVerifiedPublicAttestaion = verifyOffcahinAttestation(smartProfile?.attestation);
+      isVerifiedPublicAttestaion = verifyOffchainAttestation(smartProfile?.attestation);
     } else {
-      // if no attestation exist then dont need to veify
+      // if no attestation exist then dont need to verify
       isVerifiedPublicAttestaion = true;
     }
 
     //  verification of private cred attestation
     if (Object.keys(smartProfile?.privateData?.attestedCred?.attestation)?.length > 0) {
-      isVerifiedPrivateCredAttestaion = verifyOffcahinAttestation(smartProfile?.privateData?.attestedCred?.attestation);
+      isVerifiedPrivateCredAttestaion = verifyOffchainAttestation(smartProfile?.privateData?.attestedCred?.attestation);
     } else {
       // if no attestation exist then dont need to veify
       isVerifiedPrivateCredAttestaion = true;
@@ -131,7 +131,7 @@ export const isValidAttestation = async (req, res, next) => {
 
     //  verification of private plaforms Ids attestation
     if (Object.keys(smartProfile?.privateData?.attestedPlatformIds?.attestation)?.length > 0) {
-      isVerifiedPrivatePlatformsIdAttestaion = verifyOffcahinAttestation(
+      isVerifiedPrivatePlatformsIdAttestaion = verifyOffchainAttestation(
         smartProfile?.privateData?.attestedPlatformIds?.attestation,
       );
     } else {

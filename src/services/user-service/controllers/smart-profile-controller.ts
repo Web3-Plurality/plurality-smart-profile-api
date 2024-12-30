@@ -15,7 +15,7 @@ import { EarlyUser } from '../entity/early-user';
 import { ClientApp } from '../../crm-service/entity/client-app';
 import { isValidAttestation, isValidAttestedData } from '../middlewares/auth-middleware';
 import { User } from '../entity/user';
-import { attestProfile } from '../utils/plurality-attestation';
+import { attestSmartProfile } from '../utils/plurality-attestation';
 
 export const smartProfileRouter = express.Router();
 dotenv.config();
@@ -254,7 +254,7 @@ smartProfileRouter.post(
             id: req?.user?.id,
           },
         });
-        const updatedSmartProfile = await attestProfile(req?.user?.id, smartProfile, existingUser?.pkpAddress || '');
+        const updatedSmartProfile = await attestSmartProfile(req?.user?.id, smartProfile, existingUser?.pkpAddress || '');
         return res.status(200).json({ success: true, smartProfile: updatedSmartProfile });
       }
       // new profile creation
@@ -304,7 +304,7 @@ smartProfileRouter.post(
               id: req?.user?.id,
             },
           });
-          await attestProfile(req?.user?.id, newProfile, existingUser?.pkpAddress);
+          await attestSmartProfile(req?.user?.id, newProfile, existingUser?.pkpAddress);
           return res.status(200).json({ success: true, smartProfile: newProfile });
         } else {
           // if profile map exists in database we return the smart profile based on the map
@@ -330,7 +330,7 @@ smartProfileRouter.post(
             },
           });
 
-          await attestProfile(req?.user?.id, oldProfile, existingUser?.pkpAddress || '');
+          await attestSmartProfile(req?.user?.id, oldProfile, existingUser?.pkpAddress || '');
           return res.status(200).json({ success: true, smartProfile: oldProfile });
         }
       } else {

@@ -9,40 +9,39 @@ import {
 import Logger from '../../../lib/logger';
 import { SmartProfile } from '../entity/smart-profile';
 import {
-  attestationCredSchema,
-  attestationPlatformIdSchema,
+  toMerkleValueWithSalt,
   privateOffchainAttestations,
   publicOffchainAttestation,
-  setAttestation,
+  parseAttestation,
 } from './eas-helper';
 
 // attest profile
-export async function attestProfile(id: string, profile: SmartProfile, userAddress: string) {
+export async function attestSmartProfile(id: string, profile: SmartProfile, userAddress: string) {
   //Public attestation
   const publicAttestation = await publicOffchainAttestation(profile, userAddress);
-  profile.attestation = setAttestation(publicAttestation);
+  profile.attestation = parseAttestation(publicAttestation);
   Logger.info(`public Data of profile attested successfully for user id: ${id}`);
   //private data attestation
-  const credSchema = attestationCredSchema(profile, false);
+  const credSchema = toMerkleValueWithSalt(profile.privateData.attestedCred, false);
   if (credSchema?.length > 0) {
     const credAttestation = await privateOffchainAttestations(credSchema, userAddress);
-    profile.privateData.attestedCred.attestation = setAttestation(credAttestation);
+    profile.privateData.attestedCred.attestation = parseAttestation(credAttestation);
     Logger.info(`private Cred Data of profile attested successfully for user id: ${id}`);
   }
 
-  const platformIdSchema = attestationPlatformIdSchema(profile, false);
+  const platformIdSchema = toMerkleValueWithSalt(profile.privateData.attestedPlatformIds, false);
   if (platformIdSchema?.length > 0) {
     const platformIdsAttestation = await privateOffchainAttestations(platformIdSchema, userAddress);
-    profile.privateData.attestedPlatformIds.attestation = setAttestation(platformIdsAttestation);
+    profile.privateData.attestedPlatformIds.attestation = parseAttestation(platformIdsAttestation);
     Logger.info(`private platformIds Data of profile attested successfully for user id: ${id}`);
   }
   return profile;
 }
 
 // verifying attestation
-export function verifyOffcahinAttestation(attestation: any) {
+export function verifyOffchainAttestation(attestation: any) {
   try {
-    const EASContractAddress = process.env.EAS_CONTRACT_ADDRESS || '0x'; // Sepolia v0.26
+    const EASContractAddress = process.env.EAS_CONTRACT_ADDRESS || '0x'; 
     // Initialize the sdk with the address of the EAS Schema contract address
     const eas = new EAS(EASContractAddress);
     const EAS_CONFIG: OffchainConfig = {
@@ -84,8 +83,8 @@ export function verifyPublicAttestedData(profile: SmartProfile): boolean {
 
 export function verifyPrivateAttestedData(profile: SmartProfile): boolean {
   try {
-    const credSchema = attestationCredSchema(profile, true);
-    const platfomSchema = attestationPlatformIdSchema(profile, true);
+    const credSchema = toMerkleValueWithSalt(profile.privateData.attestedCred, true);
+    const platfomSchema = toMerkleValueWithSalt(profile.privateData.attestedPlatformIds, true);
     let validCredsData = false;
     let validPlatformsData = false;
     //validating crerds data

@@ -2,22 +2,23 @@ import { EAS, MerkleValueWithSalt, PrivateData, SchemaEncoder } from '@ethereum-
 import { ethers } from 'ethers';
 import Logger from '../../../lib/logger';
 import { SmartProfile } from '../entity/smart-profile';
+import { AttestCred, AttestedPlatformIds } from '../entity/profile-private-data';
 
-// profile Offchainattestation
-export async function privateOffchainAttestations(schema: MerkleValueWithSalt[], userAddress: string) {
+// creates offchain attestation of private data using merkle root based on EAS's published private data schema
+export async function privateOffchainAttestations(merkleObj: MerkleValueWithSalt[], userAddress: string) {
   try {
-    const EASContractAddress = process.env.EAS_CONTRACT_ADDRESS || '0x'; // Sepolia v0.26
+    const EASContractAddress = process.env.EAS_CONTRACT_ADDRESS || '0x'; 
     // Initialize the sdk with the address of the EAS Schema contract address
     const eas = new EAS(EASContractAddress);
     const privateKey: string = process.env.PUBLIC_DAPP_OWNER_WALLET_PRIVATE_KEY || '';
-    const provider = ethers.getDefaultProvider(process.env.SEPOLIA_RPC || '');
+    const provider = ethers.getDefaultProvider(process.env.EAS_BLOCKCHAIN_RPC || '');
     const signer: any = new ethers.Wallet(privateKey, provider);
     eas.connect(signer);
-    const privateData = new PrivateData(schema);
+    const privateData = new PrivateData(merkleObj);
     const fullTree = privateData.getFullTree();
     const schemaEncoder = new SchemaEncoder('bytes32 privateData');
     const encodedData = schemaEncoder.encodeData([{ name: 'privateData', value: fullTree.root, type: 'bytes32' }]);
-    const schemaUID = process.env.PRIVATE_SCHEMA_UID;
+    const schemaUID = process.env.PRIVATE_SCHEMA_UID || '';
     const offchain = await eas.getOffchain();
 
     const offchainAttestation: any = await offchain.signOffchainAttestation(
@@ -40,12 +41,13 @@ export async function privateOffchainAttestations(schema: MerkleValueWithSalt[],
   }
 }
 
+// creates offchain attestation of public data using smart profile based on Plurality's published smart profile schema
 export async function publicOffchainAttestation(profile: SmartProfile, userAddress: string) {
   const EASContractAddress = process.env.EAS_CONTRACT_ADDRESS || '0x'; // Sepolia v0.26
   // Initialize the sdk with the address of the EAS Schema contract address
   const eas = new EAS(EASContractAddress);
   const privateKey: string = process.env.PUBLIC_DAPP_OWNER_WALLET_PRIVATE_KEY || '';
-  const provider = ethers.getDefaultProvider(process.env.SEPOLIA_RPC);
+  const provider = ethers.getDefaultProvider(process.env.EAS_BLOCKCHAIN_RPC);
   const signer: any = new ethers.Wallet(privateKey, provider);
   eas.connect(signer);
   const offchain = await eas.getOffchain();
@@ -79,81 +81,84 @@ export async function publicOffchainAttestation(profile: SmartProfile, userAddre
   return offchainAttestation;
 }
 
-// Schema Generation
-export function attestationCredSchema(smartProfile: SmartProfile, verification = false): MerkleValueWithSalt[] {
-  let salt1 = '';
-  let salt2 = '';
-  let salt3 = '';
-  let salt4 = '';
+// Typecasts attestedCred or attestedPlatformIds Object to MerkleValueWithSalt to create private data attestation
+export function toMerkleValueWithSalt(attestationObj: AttestCred | AttestedPlatformIds, verification = false): MerkleValueWithSalt[] {
+  if (attestationObj instanceof AttestCred) {    
+    let salt1 = '';
+    let salt2 = '';
+    let salt3 = '';
+    let salt4 = '';
 
-  if (verification) {
-    salt1 = smartProfile.privateData.attestedCred.salt?.interests;
-    salt2 = smartProfile.privateData.attestedCred.salt?.reputationTags;
-    salt3 = smartProfile.privateData.attestedCred.salt?.badges;
-    salt4 = smartProfile.privateData.attestedCred.salt?.collections;
-  } else {
-    // generate new salts for attestation
-    salt1 = ethers.hexlify(ethers.randomBytes(32));
-    salt2 = ethers.hexlify(ethers.randomBytes(32));
-    salt3 = ethers.hexlify(ethers.randomBytes(32));
-    salt4 = ethers.hexlify(ethers.randomBytes(32));
-    // saving salts
-    smartProfile.privateData.attestedCred.salt.interests = salt1;
-    smartProfile.privateData.attestedCred.salt.reputationTags = salt2;
-    smartProfile.privateData.attestedCred.salt.badges = salt3;
-    smartProfile.privateData.attestedCred.salt.collections = salt4;
-  }
-  return [
-    {
-      name: 'interests',
-      value: JSON.stringify(smartProfile.privateData.attestedCred.interests),
-      type: 'string',
-      salt: salt1,
-    },
-    {
-      name: 'reputationTags',
-      value: JSON.stringify(smartProfile.privateData.attestedCred.reputationTags),
-      type: 'string',
-      salt: salt2,
-    },
-    {
-      name: 'badges',
-      value: JSON.stringify(smartProfile.privateData.attestedCred.badges),
-      type: 'string',
-      salt: salt3,
-    },
-    {
-      name: 'collections',
-      value: JSON.stringify(smartProfile.privateData.attestedCred.collections),
-      type: 'string',
-      salt: salt4,
-    },
-  ];
-}
-
-export function attestationPlatformIdSchema(smartProfile: SmartProfile, verification = false): MerkleValueWithSalt[] {
-  const platformIdSchema = smartProfile.privateData.attestedPlatformIds.connectedProfiles.map((profile: any) => {
-    let salt = '';
     if (verification) {
-      salt = smartProfile.privateData.attestedPlatformIds.salt[profile.platformType];
+      // verification workflow - we use existing salts from the object
+      salt1 = attestationObj.salt?.interests;
+      salt2 = attestationObj.salt?.reputationTags;
+      salt3 = attestationObj.salt?.badges;
+      salt4 = attestationObj.salt?.collections;
     } else {
-      // generate new salt for attestation
-      salt = ethers.hexlify(ethers.randomBytes(32));
-      // saving salt
-      smartProfile.privateData.attestedPlatformIds.salt[profile.platformType] = salt;
+      // attestation workflow - generate new salts 
+      salt1 = ethers.hexlify(ethers.randomBytes(32));
+      salt2 = ethers.hexlify(ethers.randomBytes(32));
+      salt3 = ethers.hexlify(ethers.randomBytes(32));
+      salt4 = ethers.hexlify(ethers.randomBytes(32));
+      // saving salts
+      attestationObj.salt.interests = salt1;
+      attestationObj.salt.reputationTags = salt2;
+      attestationObj.salt.badges = salt3;
+      attestationObj.salt.collections = salt4;
     }
-    return {
-      name: profile.platformType,
-      value: JSON.stringify(profile),
-      type: 'string',
-      salt,
-    };
-  });
-
-  return platformIdSchema;
+    return [
+      {
+        name: 'interests',
+        value: JSON.stringify(attestationObj.interests),
+        type: 'string',
+        salt: salt1,
+      },
+      {
+        name: 'reputationTags',
+        value: JSON.stringify(attestationObj.reputationTags),
+        type: 'string',
+        salt: salt2,
+      },
+      {
+        name: 'badges',
+        value: JSON.stringify(attestationObj.badges),
+        type: 'string',
+        salt: salt3,
+      },
+      {
+        name: 'collections',
+        value: JSON.stringify(attestationObj.collections),
+        type: 'string',
+        salt: salt4,
+      },
+    ];
+  } else if (attestationObj instanceof AttestedPlatformIds) {
+    const platformIdSchema = attestationObj.connectedProfiles.map((profile: any) => {
+      let salt = '';
+      if (verification) {
+        // verification workflow - we use existing salts from the object
+        salt = attestationObj.salt[profile.platformType];
+      } else {
+        // attestation workflow - generate new salts 
+        salt = ethers.hexlify(ethers.randomBytes(32));
+        // saving salts
+        attestationObj.salt[profile.platformType] = salt;
+      }
+      return {
+        name: profile.platformType,
+        value: JSON.stringify(profile),
+        type: 'string',
+        salt,
+      };
+    });
+    return platformIdSchema;
+  }
+  throw new Error("Invalid attestationObj type");
 }
 
-export function setAttestation(attestation: any) {
+// parse individual attestation values to string due to large bigint non serializable by json
+export function parseAttestation(attestation: any) {
   return {
     version: attestation?.version,
     uid: attestation?.uid,
