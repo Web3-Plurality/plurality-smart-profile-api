@@ -85,7 +85,7 @@ smartProfileRouter.put(
         return res.status(400).json({ error: 'Client id not found' });
       }
       const userUpdateReqData = JSON.parse(JSON.stringify(req.body.data));
-      const smartProfile = normalizeSmartProfile(req?.body?.smartProfile)
+      const smartProfile = normalizeSmartProfile(req?.body?.smartProfile);
       const id = req?.user?.id;
       // get from smartProfileMap
       const existingUser = await smartProfileMapRepository.findOne({
@@ -96,9 +96,7 @@ smartProfileRouter.put(
       });
 
       if (existingUser) {
-        Logger.info(
-          `This user exists in database! email: ${existingUser.email}`,
-        );
+        Logger.info(`This user exists in database! email: ${existingUser.email}`);
         // Upload an image
         let uploadResult;
         if (userUpdateReqData.profileImg) {
@@ -127,7 +125,7 @@ smartProfileRouter.put(
               id: req?.user?.id,
             },
           });
-          const attestedSmartProfile = await attestSmartProfile(user?.id, smartProfile, user?.pkpAddress)
+          const attestedSmartProfile = await attestSmartProfile(user?.id, smartProfile, user?.pkpAddress);
           return res.status(200).json({ success: true, smartProfile: attestedSmartProfile });
         } else {
           Logger.error(`user profile not found on body`);
@@ -316,7 +314,11 @@ smartProfileRouter.post(
               id: req?.user?.id,
             },
           });
-          const attestedSmartProfile = await attestSmartProfile(req?.user?.id, newProfile, existingUser?.pkpAddress || "");
+          const attestedSmartProfile = await attestSmartProfile(
+            req?.user?.id,
+            newProfile,
+            existingUser?.pkpAddress || '',
+          );
           return res.status(200).json({ success: true, smartProfile: attestedSmartProfile });
         } else {
           // if profile map exists in database we return the smart profile based on the map
@@ -342,7 +344,11 @@ smartProfileRouter.post(
             },
           });
 
-          const attestedSmartProfile = await attestSmartProfile(req?.user?.id, oldProfile, existingUser?.pkpAddress || '');
+          const attestedSmartProfile = await attestSmartProfile(
+            req?.user?.id,
+            oldProfile,
+            existingUser?.pkpAddress || '',
+          );
           return res.status(200).json({ success: true, smartProfile: attestedSmartProfile });
         }
       } else {

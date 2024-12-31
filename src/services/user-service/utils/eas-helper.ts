@@ -1,4 +1,12 @@
-import { EAS, MerkleValueWithSalt, Offchain, OffchainAttestationVersion, OffchainConfig, PrivateData, SchemaEncoder } from '@ethereum-attestation-service/eas-sdk';
+import {
+  EAS,
+  MerkleValueWithSalt,
+  Offchain,
+  OffchainAttestationVersion,
+  OffchainConfig,
+  PrivateData,
+  SchemaEncoder,
+} from '@ethereum-attestation-service/eas-sdk';
 import { ethers } from 'ethers';
 import Logger from '../../../lib/logger';
 import { SmartProfile } from '../entity/smart-profile';
@@ -113,8 +121,13 @@ export function toMerkleValueWithSalt(
     let salt2 = '';
     let salt3 = '';
     let salt4 = '';
-    if (attestationObj?.interests?.length === 0 && attestationObj?.reputationTags?.length === 0 && attestationObj?.badges?.length === 0 && attestationObj?.collections?.length === 0) {
-      return []
+    if (
+      attestationObj?.interests?.length === 0 &&
+      attestationObj?.reputationTags?.length === 0 &&
+      attestationObj?.badges?.length === 0 &&
+      attestationObj?.collections?.length === 0
+    ) {
+      return [];
     }
     if (verification) {
       // verification workflow - we use existing salts from the object
@@ -216,7 +229,7 @@ export function parseAttestation(attestation: any) {
 export function verifyCredAttestation(attestedCred: AttestCred) {
   // check attestation exist or not
   if (attestedCred?.attestation && Object.keys(attestedCred?.attestation)?.length > 0) {
-    const isValidCredAttestation = verifyOffchainAttestation(attestedCred?.attestation)
+    const isValidCredAttestation = verifyOffchainAttestation(attestedCred?.attestation);
     if (isValidCredAttestation) {
       const credSchema = toMerkleValueWithSalt(attestedCred, true);
       if (credSchema?.length > 0) {
@@ -225,29 +238,26 @@ export function verifyCredAttestation(attestedCred: AttestCred) {
         const schemaEncoder = new SchemaEncoder('bytes32 privateData');
         const encodedData = schemaEncoder.encodeData([{ name: 'privateData', value: fullTree.root, type: 'bytes32' }]);
         const isValid = attestedCred.attestation.message.data === encodedData;
-        return isValid
+        return isValid;
+      } else {
+        Logger.error('something wrong in the merkel Cred Data.');
+        return false;
       }
-      else {
-        Logger.error("something wrong in the merkel Cred Data.")
-        return false
-      }
+    } else {
+      Logger.error('Attestation is not valid');
+      return false;
     }
-    else {
-      Logger.error("Attestation is not valid")
-      return false
-    }
-  }
-  else {
+  } else {
     // attestation not exist
-    Logger.info("attestaion does not exist.")
-    return true
+    Logger.info('attestaion does not exist.');
+    return true;
   }
 }
 // verify and validate PlatformIds attestation
 export function verifyPlatfomIdAttestation(attestedPlatformIds: AttestedPlatformIds) {
   // check attestation exist or not
   if (attestedPlatformIds?.attestation && Object.keys(attestedPlatformIds?.attestation)?.length > 0) {
-    const isValidPlatformIdsAttestation = verifyOffchainAttestation(attestedPlatformIds?.attestation)
+    const isValidPlatformIdsAttestation = verifyOffchainAttestation(attestedPlatformIds?.attestation);
     if (isValidPlatformIdsAttestation) {
       const platfomSchema = toMerkleValueWithSalt(attestedPlatformIds, true);
       if (platfomSchema?.length > 0) {
@@ -256,21 +266,18 @@ export function verifyPlatfomIdAttestation(attestedPlatformIds: AttestedPlatform
         const schemaEncoder = new SchemaEncoder('bytes32 privateData');
         const encodedData = schemaEncoder.encodeData([{ name: 'privateData', value: fullTree.root, type: 'bytes32' }]);
         const isValid = attestedPlatformIds.attestation.message.data === encodedData;
-        return isValid
+        return isValid;
+      } else {
+        Logger.error('something wrong in the merkel PlatformIds Data.');
+        return false;
       }
-      else {
-        Logger.error("something wrong in the merkel PlatformIds Data.")
-        return false
-      }
+    } else {
+      Logger.error('Attestation is not valid');
+      return false;
     }
-    else {
-      Logger.error("Attestation is not valid")
-      return false
-    }
-  }
-  else {
+  } else {
     // attestation not exist
-    Logger.info("attestaion does not exist.")
-    return true
+    Logger.info('attestaion does not exist.');
+    return true;
   }
 }

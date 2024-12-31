@@ -2,10 +2,7 @@ import Logger from '../../../lib/logger';
 import jwt from 'jsonwebtoken';
 import * as dotenv from 'dotenv';
 import { ethers } from 'ethers';
-import {
-  verifyPrivateAttestation,
-  verifyPublicAttestation,
-} from '../utils/plurality-attestation';
+import { verifyPrivateAttestation, verifyPublicAttestation } from '../utils/plurality-attestation';
 import { normalizeSmartProfile } from '../utils/helper';
 
 dotenv.config();
@@ -42,7 +39,7 @@ export const isValidAttestation = async (req, res, next) => {
     const isVerifiedPublicAttestaion = verifyPublicAttestation(smartProfile);
     const isVerifiedPrivateAttestaion = verifyPrivateAttestation(smartProfile);
     if (isVerifiedPublicAttestaion && isVerifiedPrivateAttestaion) {
-      Logger.info("Attestation Checked")
+      Logger.info('Attestation Checked');
       return next();
     } else {
       Logger.error('Attestaion is not verified');

@@ -1,6 +1,4 @@
-import {
-  SchemaEncoder
-} from '@ethereum-attestation-service/eas-sdk';
+import { SchemaEncoder } from '@ethereum-attestation-service/eas-sdk';
 import Logger from '../../../lib/logger';
 import { SmartProfile } from '../entity/smart-profile';
 import {
@@ -23,13 +21,13 @@ export async function attestSmartProfile(id: string, profile: SmartProfile, user
   Logger.info(`public Data of profile attested successfully for user id: ${id}`);
   // profile.privateData.attestedCred = plainToInstance(AttestCred,profile.privateData.attestedCred)
   //private data attestation
-  const credSchema = toMerkleValueWithSalt(profile.privateData.attestedCred , false);
+  const credSchema = toMerkleValueWithSalt(profile.privateData.attestedCred, false);
   if (credSchema?.length > 0) {
     const credAttestation = await privateOffchainAttestations(credSchema, userAddress);
     profile.privateData.attestedCred.attestation = parseAttestation(credAttestation);
     Logger.info(`private Cred Data of profile attested successfully for user id: ${id}`);
   }
-  const platformIdSchema = toMerkleValueWithSalt(profile.privateData.attestedPlatformIds,false);
+  const platformIdSchema = toMerkleValueWithSalt(profile.privateData.attestedPlatformIds, false);
   if (platformIdSchema?.length > 0) {
     const platformIdsAttestation = await privateOffchainAttestations(platformIdSchema, userAddress);
     profile.privateData.attestedPlatformIds.attestation = parseAttestation(platformIdsAttestation);
@@ -38,21 +36,20 @@ export async function attestSmartProfile(id: string, profile: SmartProfile, user
   return profile;
 }
 
-
 export function verifyPublicAttestation(profile: SmartProfile): boolean {
   try {
     // verifying public attestation
     // check attestation exist or not
     if (profile?.attestation && Object.keys(profile?.attestation)?.length > 0) {
-      const isValidAttestation = verifyOffchainAttestation(profile?.attestation)
+      const isValidAttestation = verifyOffchainAttestation(profile?.attestation);
       if (!isValidAttestation) {
-        Logger.error("attestaion is not valid.")
-        return isValidAttestation
+        Logger.error('attestaion is not valid.');
+        return isValidAttestation;
       }
     } else {
       // attestation not exist
-      Logger.info("attestaion does not exist.")
-      return true
+      Logger.info('attestaion does not exist.');
+      return true;
     }
     // verifying public attested data
     const schemaEncoder = new SchemaEncoder(
@@ -75,14 +72,12 @@ export function verifyPublicAttestation(profile: SmartProfile): boolean {
   }
 }
 
-
 export function verifyPrivateAttestation(profile: SmartProfile): boolean {
   try {
     // verifying private attestation
-    const isValidCredAttestation = verifyCredAttestation(profile?.privateData?.attestedCred)
-    const isValidPlatformIdAttestation = verifyPlatfomIdAttestation(profile?.privateData?.attestedPlatformIds)
+    const isValidCredAttestation = verifyCredAttestation(profile?.privateData?.attestedCred);
+    const isValidPlatformIdAttestation = verifyPlatfomIdAttestation(profile?.privateData?.attestedPlatformIds);
     return isValidCredAttestation && isValidPlatformIdAttestation;
-
   } catch (error) {
     Logger.error(`error occur while verifying offchain attestation ${JSON.stringify(error)}`);
     return false;
