@@ -13,9 +13,10 @@ import { SmartProfile } from '../entity/smart-profile';
 import { SmartProfileMap } from '../entity/smart-profile-map';
 import { EarlyUser } from '../entity/early-user';
 import { ClientApp } from '../../crm-service/entity/client-app';
-import { isValidAttestation, isValidAttestedData } from '../middlewares/auth-middleware';
+import { isValidAttestation } from '../middlewares/auth-middleware';
 import { User } from '../entity/user';
 import { attestSmartProfile } from '../utils/plurality-attestation';
+import { normalizeSmartProfile } from '../utils/helper';
 
 export const smartProfileRouter = express.Router();
 dotenv.config();
@@ -35,6 +36,7 @@ cloudinary.config({
 smartProfileRouter.put(
   '/',
   isAuthenticated,
+  isValidAttestation,
   [
     body('data.username').optional().trim().isLength({ max: 50 }),
     body('data.bio').optional().trim().isLength({ max: 300 }),
@@ -83,7 +85,7 @@ smartProfileRouter.put(
         return res.status(400).json({ error: 'Client id not found' });
       }
       const userUpdateReqData = JSON.parse(JSON.stringify(req.body.data));
-      const smartProfile = plainToInstance(SmartProfile, JSON.parse(JSON.stringify(req.body.smartProfile)));
+      const smartProfile = normalizeSmartProfile(req?.body?.smartProfile)
       const id = req?.user?.id;
       // get from smartProfileMap
       const existingUser = await smartProfileMapRepository.findOne({
@@ -95,7 +97,7 @@ smartProfileRouter.put(
 
       if (existingUser) {
         Logger.info(
-          `This user exists in database! email: ${existingUser.email}, address: ${existingUser.address}, subscribe: ${existingUser.subscribe} `,
+          `This user exists in database! email: ${existingUser.email}`,
         );
         // Upload an image
         let uploadResult;
@@ -119,7 +121,14 @@ smartProfileRouter.put(
           // Update the existing profile
           await smartProfileMapRepository.update({ id: existingUser.id }, updatedUser);
           Logger.info(`Smart profile updated locally for user id: ${id}`);
-          return res.status(200).json({ success: true, smartProfile: smartProfile });
+          // attest profile
+          const user = await userRepository.findOne({
+            where: {
+              id: req?.user?.id,
+            },
+          });
+          const attestedSmartProfile = await attestSmartProfile(user?.id, smartProfile, user?.pkpAddress)
+          return res.status(200).json({ success: true, smartProfile: attestedSmartProfile });
         } else {
           Logger.error(`user profile not found on body`);
           return res.status(400).json({ success: false, error: 'user profile not found in the body' });
@@ -144,7 +153,6 @@ smartProfileRouter.post(
   '/',
   isAuthenticated,
   isValidAttestation,
-  isValidAttestedData,
   [
     body('smartProfile').custom((value) => {
       // Ensure the object is an instance of SmartProfile
@@ -178,7 +186,7 @@ smartProfileRouter.post(
       // profile exchange workflow - profiles are present in both request and memory
       if (memorySmartProfile && !(Object.keys(reqSmartProfile).length === 0) && profileTypeStreamId) {
         Logger.info(`Profile exchange workflow`);
-        const smartProfile = plainToInstance(SmartProfile, reqSmartProfile);
+        const smartProfile = normalizeSmartProfile(plainToInstance(SmartProfile, reqSmartProfile));
 
         // this is not the first time this profile is being created - make sure the profile mapping exists in our database
         const profileMapping = await smartProfileMapRepository.findOne({
@@ -254,12 +262,12 @@ smartProfileRouter.post(
             id: req?.user?.id,
           },
         });
-        const updatedSmartProfile = await attestSmartProfile(
+        const attestedSmartProfile = await attestSmartProfile(
           req?.user?.id,
           smartProfile,
           existingUser?.pkpAddress || '',
         );
-        return res.status(200).json({ success: true, smartProfile: updatedSmartProfile });
+        return res.status(200).json({ success: true, smartProfile: attestedSmartProfile });
       }
       // new profile creation
       else if (!memorySmartProfile && Object.keys(reqSmartProfile).length === 0 && profileTypeStreamId) {
@@ -308,8 +316,8 @@ smartProfileRouter.post(
               id: req?.user?.id,
             },
           });
-          await attestSmartProfile(req?.user?.id, newProfile, existingUser?.pkpAddress);
-          return res.status(200).json({ success: true, smartProfile: newProfile });
+          const attestedSmartProfile = await attestSmartProfile(req?.user?.id, newProfile, existingUser?.pkpAddress || "");
+          return res.status(200).json({ success: true, smartProfile: attestedSmartProfile });
         } else {
           // if profile map exists in database we return the smart profile based on the map
           Logger.info(`Profile map already found in database`);
@@ -334,8 +342,8 @@ smartProfileRouter.post(
             },
           });
 
-          await attestSmartProfile(req?.user?.id, oldProfile, existingUser?.pkpAddress || '');
-          return res.status(200).json({ success: true, smartProfile: oldProfile });
+          const attestedSmartProfile = await attestSmartProfile(req?.user?.id, oldProfile, existingUser?.pkpAddress || '');
+          return res.status(200).json({ success: true, smartProfile: attestedSmartProfile });
         }
       } else {
         Logger.error(

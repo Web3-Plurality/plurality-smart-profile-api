@@ -1,8 +1,9 @@
-import { EAS, MerkleValueWithSalt, PrivateData, SchemaEncoder } from '@ethereum-attestation-service/eas-sdk';
+import { EAS, MerkleValueWithSalt, Offchain, OffchainAttestationVersion, OffchainConfig, PrivateData, SchemaEncoder } from '@ethereum-attestation-service/eas-sdk';
 import { ethers } from 'ethers';
 import Logger from '../../../lib/logger';
 import { SmartProfile } from '../entity/smart-profile';
 import { AttestCred, AttestedPlatformIds } from '../entity/profile-private-data';
+import { plainToInstance } from 'class-transformer';
 
 // creates offchain attestation of private data using merkle root based on EAS's published private data schema
 export async function privateOffchainAttestations(merkleObj: MerkleValueWithSalt[], userAddress: string) {
@@ -81,6 +82,27 @@ export async function publicOffchainAttestation(profile: SmartProfile, userAddre
   return offchainAttestation;
 }
 
+// verify offchain  public/private attestaion
+export function verifyOffchainAttestation(attestation: any) {
+  try {
+    const EASContractAddress = process.env.EAS_CONTRACT_ADDRESS || '0x';
+    // Initialize the sdk with the address of the EAS Schema contract address
+    const eas = new EAS(EASContractAddress);
+    const EAS_CONFIG: OffchainConfig = {
+      address: attestation.domain.verifyingContract,
+      version: attestation.domain.version,
+      chainId: BigInt(attestation.domain.chainId),
+    };
+    const signerAddress = process.env.PUBLIC_DAPP_OWNER_WALLET_ADDRESS || '';
+    const offchain = new Offchain(EAS_CONFIG, OffchainAttestationVersion.Version2, eas);
+    const isValidAttestation = offchain.verifyOffchainAttestationSignature(signerAddress, attestation);
+    return isValidAttestation;
+  } catch (error) {
+    Logger.error(`error occur while verifying offchain attestation ${JSON.stringify(error)}`);
+    return false;
+  }
+}
+
 // Typecasts attestedCred or attestedPlatformIds Object to MerkleValueWithSalt to create private data attestation
 export function toMerkleValueWithSalt(
   attestationObj: AttestCred | AttestedPlatformIds,
@@ -91,7 +113,9 @@ export function toMerkleValueWithSalt(
     let salt2 = '';
     let salt3 = '';
     let salt4 = '';
-
+    if (attestationObj?.interests?.length === 0 && attestationObj?.reputationTags?.length === 0 && attestationObj?.badges?.length === 0 && attestationObj?.collections?.length === 0) {
+      return []
+    }
     if (verification) {
       // verification workflow - we use existing salts from the object
       salt1 = attestationObj.salt?.interests;
@@ -186,4 +210,67 @@ export function parseAttestation(attestation: any) {
     types: attestation?.types,
     signature: attestation?.signature,
   };
+}
+
+// verify and validate Creds attestation
+export function verifyCredAttestation(attestedCred: AttestCred) {
+  // check attestation exist or not
+  if (attestedCred?.attestation && Object.keys(attestedCred?.attestation)?.length > 0) {
+    const isValidCredAttestation = verifyOffchainAttestation(attestedCred?.attestation)
+    if (isValidCredAttestation) {
+      const credSchema = toMerkleValueWithSalt(attestedCred, true);
+      if (credSchema?.length > 0) {
+        const privateData = new PrivateData(credSchema);
+        const fullTree = privateData.getFullTree();
+        const schemaEncoder = new SchemaEncoder('bytes32 privateData');
+        const encodedData = schemaEncoder.encodeData([{ name: 'privateData', value: fullTree.root, type: 'bytes32' }]);
+        const isValid = attestedCred.attestation.message.data === encodedData;
+        return isValid
+      }
+      else {
+        Logger.error("something wrong in the merkel Cred Data.")
+        return false
+      }
+    }
+    else {
+      Logger.error("Attestation is not valid")
+      return false
+    }
+  }
+  else {
+    // attestation not exist
+    Logger.info("attestaion does not exist.")
+    return true
+  }
+}
+// verify and validate PlatformIds attestation
+export function verifyPlatfomIdAttestation(attestedPlatformIds: AttestedPlatformIds) {
+  // check attestation exist or not
+  if (attestedPlatformIds?.attestation && Object.keys(attestedPlatformIds?.attestation)?.length > 0) {
+    const isValidPlatformIdsAttestation = verifyOffchainAttestation(attestedPlatformIds?.attestation)
+    if (isValidPlatformIdsAttestation) {
+      const platfomSchema = toMerkleValueWithSalt(attestedPlatformIds, true);
+      if (platfomSchema?.length > 0) {
+        const privateData = new PrivateData(platfomSchema);
+        const fullTree = privateData.getFullTree();
+        const schemaEncoder = new SchemaEncoder('bytes32 privateData');
+        const encodedData = schemaEncoder.encodeData([{ name: 'privateData', value: fullTree.root, type: 'bytes32' }]);
+        const isValid = attestedPlatformIds.attestation.message.data === encodedData;
+        return isValid
+      }
+      else {
+        Logger.error("something wrong in the merkel PlatformIds Data.")
+        return false
+      }
+    }
+    else {
+      Logger.error("Attestation is not valid")
+      return false
+    }
+  }
+  else {
+    // attestation not exist
+    Logger.info("attestaion does not exist.")
+    return true
+  }
 }

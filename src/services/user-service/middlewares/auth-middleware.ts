@@ -2,13 +2,11 @@ import Logger from '../../../lib/logger';
 import jwt from 'jsonwebtoken';
 import * as dotenv from 'dotenv';
 import { ethers } from 'ethers';
-import { SmartProfile } from '../entity/smart-profile';
-import { plainToInstance } from 'class-transformer';
 import {
-  verifyOffchainAttestation,
-  verifyPrivateAttestedData,
-  verifyPublicAttestedData,
+  verifyPrivateAttestation,
+  verifyPublicAttestation,
 } from '../utils/plurality-attestation';
+import { normalizeSmartProfile } from '../utils/helper';
 
 dotenv.config();
 // const client = new stytch.Client({
@@ -34,141 +32,21 @@ export const isAuthenticated = (req, res, next) => {
   });
 };
 
-// export const isValid = async (req, res, next) => {
-//   try {
-//     const stytchToken = req.headers['x-stytch-token'];
-//     const siweObj = req.headers['x-siwe'] ? JSON.parse(req.headers['x-siwe']) : '';
-//     const siweToken = siweObj?.siwe;
-
-//     if (stytchToken && siweToken) {
-//       Logger.error('get both siwe token and email session token at the same time');
-//       return res.status(500).json({ errors: 'internal server error' });
-//     }
-//     // email varification
-//     if (stytchToken && req?.body?.data['email'] && req?.body?.data['address']) {
-//       try {
-//         const stytchSession = await client.sessions.authenticateJwt({
-//           session_jwt: stytchToken,
-//         });
-//         if (stytchSession?.session?.authentication_factors[0]?.email_factor?.email_address !== req?.body?.data?.email) {
-//           Logger.error(`Invalid stytch token`);
-//           return res.status(401).json({ errors: 'Invalid stytch token' });
-//         }
-//         if (jwt.decode(stytchToken)?.exp < Math.floor(Date.now() / 1000)) {
-//           Logger.error(`stytch token expired`);
-//           return res.status(401).json({ errors: 'stytch token expired' });
-//         }
-//         if (jwt.decode(stytchToken)?.aud[0] !== process.env.STYTCH_PROJECT_ID) {
-//           Logger.error(`stytch token not belongs to this project`);
-//           return res.status(401).json({ errors: 'stytch token expired' });
-//         }
-//       } catch (error) {
-//         Logger.error(`Invalid stytch token: ${error}`);
-//         return res.status(400).send('Invalid stytch token');
-//       }
-//       return next();
-//     } else if (siweToken && req?.body?.data['address'] && !req?.body?.data['email']) {
-//       try {
-//         //address varification
-//         const message = decodeURIComponent(siweObj?.message);
-//         const nonce = memoryStoreNonce.get(req?.body?.data?.address);
-//         if (!nonce) {
-//           Logger.error(`Invalid nonce`);
-//           return res.status(400).send('Invalid nonce');
-//         }
-//         delete memoryStoreNonce[req?.body?.data?.address];
-//         const siweMessage = new SiweMessage(message);
-//         const signature = siweToken;
-//         const siweResponse = await siweMessage.verify({ signature });
-//         if (!siweResponse.success) {
-//           Logger.error(`Invalid siwe token`);
-//           return res.status(400).send('Invalid siwe token');
-//         }
-//         if (siweMessage?.address?.toLowerCase() !== req?.body?.data?.address?.toLowerCase()) {
-//           Logger.error(`Invalid siwe token`);
-//           return res.status(400).send('Invalid siwe token');
-//         }
-//         return next();
-//       } catch (e) {
-//         Logger.error(`Invalid siwe token: ${e}`);
-//         return res.status(400).send('Invalid siwe token');
-//       }
-//     } else {
-//       Logger.error(`neither stytch token nor siwe token found`);
-//       return res.status(400).send('Invalid request');
-//     }
-//   } catch (error) {
-//     Logger.error(`error: ${error}`);
-//     return res.status(400).send('Invalid request');
-//   }
-// };
-
 export const isValidAddress = async (req, res, next) => {
   ethers.isAddress(req?.body?.data?.address) ? next() : res.status(400).send('Invalid address');
 };
 
 export const isValidAttestation = async (req, res, next) => {
   try {
-    const smartProfile = plainToInstance(SmartProfile, JSON.parse(JSON.stringify(req?.body?.smartProfile)));
-    let isVerifiedPublicAttestaion = false;
-    let isVerifiedPrivateCredAttestaion = false;
-    let isVerifiedPrivatePlatformsIdAttestaion = false;
-    //  verification of public attestation
-    if (Object.keys(smartProfile?.attestation)?.length > 0) {
-      isVerifiedPublicAttestaion = verifyOffchainAttestation(smartProfile?.attestation);
-    } else {
-      // if no attestation exist then dont need to verify
-      isVerifiedPublicAttestaion = true;
-    }
-
-    //  verification of private cred attestation
-    if (Object.keys(smartProfile?.privateData?.attestedCred?.attestation)?.length > 0) {
-      isVerifiedPrivateCredAttestaion = verifyOffchainAttestation(smartProfile?.privateData?.attestedCred?.attestation);
-    } else {
-      // if no attestation exist then dont need to veify
-      isVerifiedPrivateCredAttestaion = true;
-    }
-
-    //  verification of private plaforms Ids attestation
-    if (Object.keys(smartProfile?.privateData?.attestedPlatformIds?.attestation)?.length > 0) {
-      isVerifiedPrivatePlatformsIdAttestaion = verifyOffchainAttestation(
-        smartProfile?.privateData?.attestedPlatformIds?.attestation,
-      );
-    } else {
-      // if no attestation exist then dont need to veify
-      isVerifiedPrivatePlatformsIdAttestaion = true;
-    }
-
-    if (isVerifiedPublicAttestaion && isVerifiedPrivateCredAttestaion && isVerifiedPrivatePlatformsIdAttestaion) {
-      Logger.info('Either Attestaion is verified or no attestation exist');
+    const smartProfile = normalizeSmartProfile(req?.body?.smartProfile);
+    const isVerifiedPublicAttestaion = verifyPublicAttestation(smartProfile);
+    const isVerifiedPrivateAttestaion = verifyPrivateAttestation(smartProfile);
+    if (isVerifiedPublicAttestaion && isVerifiedPrivateAttestaion) {
+      Logger.info("Attestation Checked")
       return next();
     } else {
       Logger.error('Attestaion is not verified');
       return res.status(400).send('Attestaion is not valid');
-    }
-  } catch (error) {
-    Logger.error(`error: ${error}`);
-    return res.status(400).send('Invalid request');
-  }
-};
-
-export const isValidAttestedData = async (req, res, next) => {
-  try {
-    const attestation = req?.body?.smartProfile?.attestation;
-    if (!attestation || Object.keys(attestation)?.length === 0) {
-      Logger.info('Attestaion Data does not exist');
-      return next();
-    }
-    const smartProfile = plainToInstance(SmartProfile, JSON.parse(JSON.stringify(req?.body?.smartProfile)));
-
-    const isValidPublicData: boolean = verifyPublicAttestedData(smartProfile);
-    const isValidPrivateData = verifyPrivateAttestedData(smartProfile);
-    if (isValidPublicData && isValidPrivateData) {
-      Logger.info('Attestaion Data is valid');
-      return next();
-    } else {
-      Logger.error('Attestaion Data is not valid');
-      return res.status(400).send('Attestaion Data is not valid');
     }
   } catch (error) {
     Logger.error(`error: ${error}`);
