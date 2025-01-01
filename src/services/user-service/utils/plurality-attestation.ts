@@ -10,8 +10,6 @@ import {
   verifyCredAttestation,
   verifyPlatfomIdAttestation,
 } from './eas-helper';
-import { AttestCred, AttestedPlatformIds } from '../entity/profile-private-data';
-import { plainToInstance } from 'class-transformer';
 
 // attest profile
 export async function attestSmartProfile(id: string, profile: SmartProfile, userAddress: string) {
@@ -36,12 +34,12 @@ export async function attestSmartProfile(id: string, profile: SmartProfile, user
   return profile;
 }
 
-export function verifyPublicAttestation(profile: SmartProfile): boolean {
+export async function verifyPublicAttestation(profile: SmartProfile): boolean {
   try {
     // verifying public attestation
     // check attestation exist or not
     if (profile?.attestation && Object.keys(profile?.attestation)?.length > 0) {
-      const isValidAttestation = verifyOffchainAttestation(profile?.attestation);
+      const isValidAttestation = await verifyOffchainAttestation(profile?.attestation);
       if (!isValidAttestation) {
         Logger.error('attestaion is not valid.');
         return isValidAttestation;

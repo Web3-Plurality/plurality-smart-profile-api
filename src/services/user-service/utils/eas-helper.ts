@@ -91,7 +91,7 @@ export async function publicOffchainAttestation(profile: SmartProfile, userAddre
 }
 
 // verify offchain  public/private attestaion
-export function verifyOffchainAttestation(attestation: any) {
+export async function verifyOffchainAttestation(attestation: any) {
   try {
     const EASContractAddress = process.env.EAS_CONTRACT_ADDRESS || '0x';
     // Initialize the sdk with the address of the EAS Schema contract address
@@ -101,7 +101,10 @@ export function verifyOffchainAttestation(attestation: any) {
       version: attestation.domain.version,
       chainId: BigInt(attestation.domain.chainId),
     };
-    const signerAddress = process.env.PUBLIC_DAPP_OWNER_WALLET_ADDRESS || '';
+    const privateKey: string = process.env.PUBLIC_DAPP_OWNER_WALLET_PRIVATE_KEY || '';
+    const provider = ethers.getDefaultProvider(process.env.EAS_BLOCKCHAIN_RPC);
+    const signer: any = new ethers.Wallet(privateKey, provider);
+    const signerAddress = await signer.getAddress()
     const offchain = new Offchain(EAS_CONFIG, OffchainAttestationVersion.Version2, eas);
     const isValidAttestation = offchain.verifyOffchainAttestationSignature(signerAddress, attestation);
     return isValidAttestation;
@@ -226,10 +229,10 @@ export function parseAttestation(attestation: any) {
 }
 
 // verify and validate Creds attestation
-export function verifyCredAttestation(attestedCred: AttestCred) {
+export async function verifyCredAttestation(attestedCred: AttestCred) {
   // check attestation exist or not
   if (attestedCred?.attestation && Object.keys(attestedCred?.attestation)?.length > 0) {
-    const isValidCredAttestation = verifyOffchainAttestation(attestedCred?.attestation);
+    const isValidCredAttestation = await verifyOffchainAttestation(attestedCred?.attestation);
     if (isValidCredAttestation) {
       const credSchema = toMerkleValueWithSalt(attestedCred, true);
       if (credSchema?.length > 0) {
@@ -254,10 +257,10 @@ export function verifyCredAttestation(attestedCred: AttestCred) {
   }
 }
 // verify and validate PlatformIds attestation
-export function verifyPlatfomIdAttestation(attestedPlatformIds: AttestedPlatformIds) {
+export async function verifyPlatfomIdAttestation(attestedPlatformIds: AttestedPlatformIds) {
   // check attestation exist or not
   if (attestedPlatformIds?.attestation && Object.keys(attestedPlatformIds?.attestation)?.length > 0) {
-    const isValidPlatformIdsAttestation = verifyOffchainAttestation(attestedPlatformIds?.attestation);
+    const isValidPlatformIdsAttestation = await verifyOffchainAttestation(attestedPlatformIds?.attestation);
     if (isValidPlatformIdsAttestation) {
       const platfomSchema = toMerkleValueWithSalt(attestedPlatformIds, true);
       if (platfomSchema?.length > 0) {
