@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken';
 import * as dotenv from 'dotenv';
 import { ethers } from 'ethers';
 import { verifyPrivateAttestation, verifyPublicAttestation } from '../utils/plurality-attestation';
-import { normalizeSmartProfile } from '../utils/helper';
+import { normalizeSmartProfile } from '../utils/smart-profile';
 
 dotenv.config();
 // const client = new stytch.Client({
@@ -37,9 +37,10 @@ export const isValidAttestation = async (req, res, next) => {
   try {
     const smartProfile = normalizeSmartProfile(req?.body?.smartProfile);
     const isVerifiedPublicAttestaion = verifyPublicAttestation(smartProfile);
-    const isVerifiedPrivateAttestaion = verifyPrivateAttestation(smartProfile);
+    const isVerifiedPrivateAttestaion = verifyPrivateAttestation(smartProfile.privateData);
     if (isVerifiedPublicAttestaion && isVerifiedPrivateAttestaion) {
       Logger.info('Attestation Checked');
+      //req.smartProfile=smartProfile;
       return next();
     } else {
       Logger.error('Attestaion is not verified');

@@ -90,7 +90,8 @@ export async function publicOffchainAttestation(profile: SmartProfile, userAddre
   return offchainAttestation;
 }
 
-// verify offchain  public/private attestaion
+// verify offchain public/private attestaion
+// signer and recpient should be passed in arguments
 export async function verifyOffchainAttestation(attestation: any) {
   try {
     const EASContractAddress = process.env.EAS_CONTRACT_ADDRESS || '0x';
@@ -104,8 +105,9 @@ export async function verifyOffchainAttestation(attestation: any) {
     const privateKey: string = process.env.PUBLIC_DAPP_OWNER_WALLET_PRIVATE_KEY || '';
     const provider = ethers.getDefaultProvider(process.env.EAS_BLOCKCHAIN_RPC);
     const signer: any = new ethers.Wallet(privateKey, provider);
-    const signerAddress = await signer.getAddress()
+    const signerAddress = await signer.getAddress();
     const offchain = new Offchain(EAS_CONFIG, OffchainAttestationVersion.Version2, eas);
+    // should also check the recipient against the current pkp
     const isValidAttestation = offchain.verifyOffchainAttestationSignature(signerAddress, attestation);
     return isValidAttestation;
   } catch (error) {

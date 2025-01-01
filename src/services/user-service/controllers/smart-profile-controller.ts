@@ -16,7 +16,7 @@ import { ClientApp } from '../../crm-service/entity/client-app';
 import { isValidAttestation } from '../middlewares/auth-middleware';
 import { User } from '../entity/user';
 import { attestSmartProfile } from '../utils/plurality-attestation';
-import { normalizeSmartProfile } from '../utils/helper';
+import { normalizeSmartProfile } from '../utils/smart-profile';
 
 export const smartProfileRouter = express.Router();
 dotenv.config();

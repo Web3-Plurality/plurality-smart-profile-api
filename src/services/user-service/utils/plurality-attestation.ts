@@ -10,6 +10,7 @@ import {
   verifyCredAttestation,
   verifyPlatfomIdAttestation,
 } from './eas-helper';
+import { ProfilePrivateData } from '../entity/profile-private-data';
 
 // attest profile
 export async function attestSmartProfile(id: string, profile: SmartProfile, userAddress: string) {
@@ -17,7 +18,6 @@ export async function attestSmartProfile(id: string, profile: SmartProfile, user
   const publicAttestation = await publicOffchainAttestation(profile, userAddress);
   profile.attestation = parseAttestation(publicAttestation);
   Logger.info(`public Data of profile attested successfully for user id: ${id}`);
-  // profile.privateData.attestedCred = plainToInstance(AttestCred,profile.privateData.attestedCred)
   //private data attestation
   const credSchema = toMerkleValueWithSalt(profile.privateData.attestedCred, false);
   if (credSchema?.length > 0) {
@@ -33,7 +33,7 @@ export async function attestSmartProfile(id: string, profile: SmartProfile, user
   }
   return profile;
 }
-
+// verify public smart profile attestation
 export async function verifyPublicAttestation(profile: SmartProfile): boolean {
   try {
     // verifying public attestation
@@ -70,11 +70,12 @@ export async function verifyPublicAttestation(profile: SmartProfile): boolean {
   }
 }
 
-export function verifyPrivateAttestation(profile: SmartProfile): boolean {
+// verify private smart profile attestation
+export function verifyPrivateAttestation(privateData: ProfilePrivateData): boolean {
   try {
     // verifying private attestation
-    const isValidCredAttestation = verifyCredAttestation(profile?.privateData?.attestedCred);
-    const isValidPlatformIdAttestation = verifyPlatfomIdAttestation(profile?.privateData?.attestedPlatformIds);
+    const isValidCredAttestation = verifyCredAttestation(privateData?.attestedCred);
+    const isValidPlatformIdAttestation = verifyPlatfomIdAttestation(privateData?.attestedPlatformIds);
     return isValidCredAttestation && isValidPlatformIdAttestation;
   } catch (error) {
     Logger.error(`error occur while verifying offchain attestation ${JSON.stringify(error)}`);
