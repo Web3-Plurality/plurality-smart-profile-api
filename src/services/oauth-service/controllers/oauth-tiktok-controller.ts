@@ -18,7 +18,7 @@ import { calculateReputation } from '../utils/tiktok';
 import Logger from '../../../lib/logger';
 import { createPrompt, TIKTOK_FETCH_INTEREST_PROMPT } from '../utils/ai-prompts';
 import { v4 as uuidv4 } from 'uuid';
-import { SmartProfile } from '../../user-service/entity/smart-profile';
+import { SmartProfile } from 'plurality-eas';
 
 dotenv.config();
 

@@ -9,14 +9,13 @@ import { isAuthenticated } from '../../oauth-service/middlewares/oauth-middlewar
 import { memoryStoreProfile, ScoreTypes } from '../../../utils/global';
 import { calculateSocialScore } from '../utils/score';
 import { plainToInstance } from 'class-transformer';
-import { SmartProfile } from '../entity/smart-profile';
 import { SmartProfileMap } from '../entity/smart-profile-map';
 import { EarlyUser } from '../entity/early-user';
 import { ClientApp } from '../../crm-service/entity/client-app';
 import { isValidAttestation } from '../middlewares/auth-middleware';
 import { User } from '../entity/user';
-import { attestSmartProfile } from '../utils/plurality-attestation';
-import { normalizeSmartProfile } from '../utils/smart-profile';
+import { normalizeSmartProfile, PluralityEas, SmartProfile } from 'plurality-eas';
+
 
 export const smartProfileRouter = express.Router();
 dotenv.config();
@@ -32,6 +31,13 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET, // Click 'View Credentials' below to copy your API secret
 });
 /* eslint-enable */
+
+const pluralityEas = new PluralityEas({
+  privateKey: process.env.PUBLIC_DAPP_OWNER_WALLET_PRIVATE_KEY || "",
+  easContractAddress: process.env.EAS_CONTRACT_ADDRESS || "",
+  rpcProvider: process.env.EAS_BLOCKCHAIN_RPC || ""
+})
+
 
 smartProfileRouter.put(
   '/',
@@ -125,7 +131,7 @@ smartProfileRouter.put(
               id: req?.user?.id,
             },
           });
-          const attestedSmartProfile = await attestSmartProfile(user?.id, smartProfile, user?.pkpAddress);
+          const attestedSmartProfile = await pluralityEas.attestSmartProfile(user?.id, smartProfile, user?.pkpAddress,process.env.PUBLIC_SCHEMA_UID,process.env.PRIVATE_SCHEMA_UID);
           return res.status(200).json({ success: true, smartProfile: attestedSmartProfile });
         } else {
           Logger.error(`user profile not found on body`);
@@ -260,10 +266,12 @@ smartProfileRouter.post(
             id: req?.user?.id,
           },
         });
-        const attestedSmartProfile = await attestSmartProfile(
+        const attestedSmartProfile = await pluralityEas.attestSmartProfile(
           req?.user?.id,
           smartProfile,
           existingUser?.pkpAddress || '',
+          process.env.PUBLIC_SCHEMA_UID || "",
+          process.env.PRIVATE_SCHEMA_UID || ""
         );
         return res.status(200).json({ success: true, smartProfile: attestedSmartProfile });
       }
@@ -314,10 +322,12 @@ smartProfileRouter.post(
               id: req?.user?.id,
             },
           });
-          const attestedSmartProfile = await attestSmartProfile(
+          const attestedSmartProfile = await pluralityEas.attestSmartProfile(
             req?.user?.id,
             newProfile,
             existingUser?.pkpAddress || '',
+            process.env.PUBLIC_SCHEMA_UID || "",
+            process.env.PRIVATE_SCHEMA_UID || ""
           );
           return res.status(200).json({ success: true, smartProfile: attestedSmartProfile });
         } else {
@@ -344,10 +354,12 @@ smartProfileRouter.post(
             },
           });
 
-          const attestedSmartProfile = await attestSmartProfile(
+          const attestedSmartProfile = await pluralityEas.attestSmartProfile(
             req?.user?.id,
             oldProfile,
             existingUser?.pkpAddress || '',
+            process.env.PUBLIC_SCHEMA_UID || "",
+            process.env.PRIVATE_SCHEMA_UID || ""
           );
           return res.status(200).json({ success: true, smartProfile: attestedSmartProfile });
         }

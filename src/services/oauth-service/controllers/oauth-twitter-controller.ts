@@ -16,7 +16,7 @@ import Logger from '../../../lib/logger';
 import { memoryStoreProfile, memoryStoreSSE, memoryStoreToken, ScoreTypes } from '../../../utils/global';
 import { INTERNAL_SERVER_ERROR, TIMEOUT_ERROR, TWITTER_APP } from '../utils/constants';
 import { v4 as uuidv4 } from 'uuid';
-import { SmartProfile } from '../../user-service/entity/smart-profile';
+import { SmartProfile } from 'plurality-eas';
 
 dotenv.config();
 

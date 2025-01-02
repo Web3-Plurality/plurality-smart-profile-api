@@ -17,7 +17,7 @@ import { InstaProfile } from '../entity/instagram';
 import { analyze } from '../utils/groq';
 import { createPrompt, INSTA_FETCH_INTEREST_PROMPT } from '../utils/ai-prompts';
 import { v4 as uuidv4 } from 'uuid';
-import { SmartProfile } from '../../user-service/entity/smart-profile';
+import { SmartProfile } from 'plurality-eas';
 
 dotenv.config();
 

@@ -15,7 +15,7 @@ import { INTERNAL_SERVER_ERROR, SNAPCHAT_APP, TIMEOUT_ERROR } from '../utils/con
 import OAuthSnapChatStrategy from '../strategies/OAuthSnapChatStrategy';
 import { SnapChatProfile } from '../entity/snapchat';
 import { v4 as uuidv4 } from 'uuid';
-import { SmartProfile } from '../../user-service/entity/smart-profile';
+import { SmartProfile } from 'plurality-eas';
 
 dotenv.config();
 
