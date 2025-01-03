@@ -342,6 +342,7 @@ smartProfileRouter.post(
           return res.status(200).json({ success: true, smartProfile: attestedSmartProfile });
         } else {
           // if profile map exists in database we return the smart profile based on the map
+          // TODO: Rethink this logic.. in case we get empty SP from the UI but in db is exists.. we need to return the partial state (from smart profile map) that we have in db 
           Logger.info(`Profile map already found in database`);
           const oldProfile = new SmartProfile({
             username: profileMapping?.username ? profileMapping?.username : faker.person.lastName().toLocaleLowerCase(),
