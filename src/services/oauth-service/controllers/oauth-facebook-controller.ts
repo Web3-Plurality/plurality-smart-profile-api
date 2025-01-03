@@ -140,9 +140,9 @@ facebookRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfil
       const moreLikesData = await getPagingData(fbUser?.data?.likes?.paging?.next);
       const moreMusicData = await getPagingData(fbUser?.data?.music?.paging?.next);
 
-      fbUser?.data?.feed?.data = fbUser?.data?.feed?.data?.concat(moreFeedData);
-      fbUser?.data?.likes?.data = fbUser?.data?.likes?.data?.concat(moreLikesData);
-      fbUser?.data?.music?.data = fbUser?.data?.music?.data?.concat(moreMusicData);
+      fbUser.data.feed.data = fbUser?.data?.feed?.data?.concat(moreFeedData);
+      fbUser.data.likes.data = fbUser?.data?.likes?.data?.concat(moreLikesData);
+      fbUser.data.music.data = fbUser?.data?.music?.data?.concat(moreMusicData);
 
       const facebookProfile = new FacebookProfile(fbUser?.data);
       const feed = sanitizeObject(facebookProfile?.feed);

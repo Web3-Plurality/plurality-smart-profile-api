@@ -2,7 +2,7 @@ import Logger from '../../../lib/logger';
 import jwt from 'jsonwebtoken';
 import * as dotenv from 'dotenv';
 import { ethers } from 'ethers';
-import { PluralityAttestation, normalizeSmartProfile } from '@plurality-network/smart-profile-utils';
+import  {PluralityAttestation, normalizeSmartProfile}  from '@plurality-network/smart-profile-utils';
 import { User } from '../entity/user';
 import { AppDataSource } from '../../../data-source';
 
@@ -48,15 +48,11 @@ export const isValidAttestation = async (req, res, next) => {
         id: req?.user?.id,
       },
     });
-    const isVerifiedPublicAttestaion = await pluralityAttestation.verifyPublicAttestation(
+    const isVerifiedSmartProfileAttestaion = await pluralityAttestation.verifySmartProfileAttestation(
       smartProfile,
       existingUser?.pkpAddress,
     );
-    const isVerifiedPrivateAttestaion = await pluralityAttestation.verifyPrivateAttestation(
-      smartProfile.privateData,
-      existingUser?.pkpAddress,
-    );
-    if (isVerifiedPublicAttestaion && isVerifiedPrivateAttestaion) {
+    if (isVerifiedSmartProfileAttestaion) {
       Logger.info('Attestation Checked');
       //req.smartProfile=smartProfile;
       return next();
