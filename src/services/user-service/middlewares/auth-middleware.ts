@@ -2,7 +2,7 @@ import Logger from '../../../lib/logger';
 import jwt from 'jsonwebtoken';
 import * as dotenv from 'dotenv';
 import { ethers } from 'ethers';
-import {PluralityEas, normalizeSmartProfile} from "plurality-eas"
+import { PluralityAttestation, normalizeSmartProfile } from '@plurality-network/smart-profile-utils';
 import { User } from '../entity/user';
 import { AppDataSource } from '../../../data-source';
 
@@ -36,19 +36,26 @@ export const isValidAddress = async (req, res, next) => {
 
 export const isValidAttestation = async (req, res, next) => {
   try {
-    const pluralityEas = new PluralityEas({
-      privateKey: process.env.PUBLIC_DAPP_OWNER_WALLET_PRIVATE_KEY || "",
-      easContractAddress: process.env.EAS_CONTRACT_ADDRESS || "",
-      rpcProvider: process.env.EAS_BLOCKCHAIN_RPC || ""
-    })
+    const pluralityAttestation = new PluralityAttestation({
+      signerPrivateKey: process.env.PUBLIC_DAPP_OWNER_WALLET_PRIVATE_KEY || '',
+      signerAddress: process.env.PUBLIC_DAPP_OWNER_WALLET_ADDRESS || '',
+      easContractAddress: process.env.EAS_CONTRACT_ADDRESS || '',
+      rpcProvider: process.env.EAS_BLOCKCHAIN_RPC || '',
+    });
     const smartProfile = normalizeSmartProfile(req?.body?.smartProfile);
     const existingUser = await AppDataSource.getRepository(User).findOne({
       where: {
         id: req?.user?.id,
       },
     });
-    const isVerifiedPublicAttestaion = await pluralityEas.verifyPublicAttestation(smartProfile, existingUser?.pkpAddress);
-    const isVerifiedPrivateAttestaion = await pluralityEas.verifyPrivateAttestation(smartProfile.privateData, existingUser?.pkpAddress);
+    const isVerifiedPublicAttestaion = await pluralityAttestation.verifyPublicAttestation(
+      smartProfile,
+      existingUser?.pkpAddress,
+    );
+    const isVerifiedPrivateAttestaion = await pluralityAttestation.verifyPrivateAttestation(
+      smartProfile.privateData,
+      existingUser?.pkpAddress,
+    );
     if (isVerifiedPublicAttestaion && isVerifiedPrivateAttestaion) {
       Logger.info('Attestation Checked');
       //req.smartProfile=smartProfile;

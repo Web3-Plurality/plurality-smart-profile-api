@@ -16,7 +16,7 @@ import OAuthFortniteStrategy from '../strategies/OAuthFortniteStrategy';
 import jwt from 'jsonwebtoken';
 import { FortniteProfile } from '../entity/fortnite';
 import { v4 as uuidv4 } from 'uuid';
-import { SmartProfile } from 'plurality-eas';
+import { SmartProfile } from '@plurality-network/smart-profile-utils';
 
 dotenv.config();
 

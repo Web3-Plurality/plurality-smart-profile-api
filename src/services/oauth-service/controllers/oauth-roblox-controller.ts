@@ -10,7 +10,7 @@ import {
   isProfileMapEmpty,
 } from '../middlewares/oauth-middleware';
 import Logger from '../../../lib/logger';
-import { memoryStoreToken, memoryStoreSSE, memoryStoreProfile, ScoreTypes } from '../../../utils/global';
+import { memoryStoreToken, memoryStoreSSE, memoryStoreProfile } from '../../../utils/global';
 import { INTERNAL_SERVER_ERROR, ROBLOX_APP, TIMEOUT_ERROR } from '../utils/constants';
 import OAuthRobloxStrategy from '../strategies/OAuthRobloxStrategy';
 import { RobloxProfile } from '../entity/roblox';
@@ -18,7 +18,7 @@ import { analyze } from '../utils/groq';
 import { calculateReputation, scrapRoblox } from '../utils/roblox';
 import { createPrompt, ROBLOX_FETCH_INTEREST_PROMPT } from '../utils/ai-prompts';
 import { v4 as uuidv4 } from 'uuid';
-import { SmartProfile } from 'plurality-eas';
+import { SmartProfile, ScoreTypes } from '@plurality-network/smart-profile-utils';
 
 dotenv.config();
 

@@ -13,10 +13,10 @@ import {
   isProfileMapEmpty,
 } from '../middlewares/oauth-middleware';
 import Logger from '../../../lib/logger';
-import { memoryStoreProfile, memoryStoreSSE, memoryStoreToken, ScoreTypes } from '../../../utils/global';
+import { memoryStoreProfile, memoryStoreSSE, memoryStoreToken } from '../../../utils/global';
 import { INTERNAL_SERVER_ERROR, TIMEOUT_ERROR, TWITTER_APP } from '../utils/constants';
 import { v4 as uuidv4 } from 'uuid';
-import { SmartProfile } from 'plurality-eas';
+import { SmartProfile, ScoreTypes } from '@plurality-network/smart-profile-utils';
 
 dotenv.config();
 

@@ -10,7 +10,8 @@ import {
   isProfileMapEmpty,
 } from '../middlewares/oauth-middleware';
 import Logger from '../../../lib/logger';
-import { memoryStoreToken, memoryStoreSSE, memoryStoreProfile, ScoreTypes } from '../../../utils/global';
+import { memoryStoreToken, memoryStoreSSE, memoryStoreProfile } from '../../../utils/global';
+
 import { FACEBOOK_APP, INTERNAL_SERVER_ERROR, TIMEOUT_ERROR } from '../utils/constants';
 import OAuthFacebookStrategy from '../strategies/OAuthFacebookStrategy';
 import { analyze } from '../utils/groq';
@@ -22,7 +23,7 @@ import {
   FACEBOOK_FETCH_INTEREST_PROMPT,
 } from '../utils/ai-prompts';
 import { v4 as uuidv4 } from 'uuid';
-import { SmartProfile } from "plurality-eas";
+import { SmartProfile, ScoreTypes } from '@plurality-network/smart-profile-utils';
 
 dotenv.config();
 

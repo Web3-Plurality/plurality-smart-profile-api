@@ -4,7 +4,7 @@ import TikTokOAuth2Strategy from '../strategies/OAuthTikTokStrategy';
 import passport from 'passport';
 import axios from 'axios';
 import { TikTokProfile } from '../entity/tiktok';
-import { memoryStoreToken, memoryStoreSSE, memoryStoreProfile, ScoreTypes } from '../../../utils/global';
+import { memoryStoreToken, memoryStoreSSE, memoryStoreProfile } from '../../../utils/global';
 import { INTERNAL_SERVER_ERROR, TIKTOK_APP } from '../utils/constants';
 import {
   hasValidAccessTokenHeader,
@@ -18,7 +18,7 @@ import { calculateReputation } from '../utils/tiktok';
 import Logger from '../../../lib/logger';
 import { createPrompt, TIKTOK_FETCH_INTEREST_PROMPT } from '../utils/ai-prompts';
 import { v4 as uuidv4 } from 'uuid';
-import { SmartProfile } from 'plurality-eas';
+import { SmartProfile, ScoreTypes } from '@plurality-network/smart-profile-utils';
 
 dotenv.config();
 
