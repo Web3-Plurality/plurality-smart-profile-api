@@ -2,7 +2,7 @@ import Logger from '../../../lib/logger';
 import jwt from 'jsonwebtoken';
 import * as dotenv from 'dotenv';
 import { ethers } from 'ethers';
-import  {PluralityAttestation, normalizeSmartProfile}  from '@plurality-network/smart-profile-utils';
+import { PluralityAttestation, normalizeSmartProfile } from '@plurality-network/smart-profile-utils';
 import { User } from '../entity/user';
 import { AppDataSource } from '../../../data-source';
 

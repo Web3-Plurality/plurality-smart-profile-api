@@ -342,22 +342,34 @@ smartProfileRouter.post(
           return res.status(200).json({ success: true, smartProfile: attestedSmartProfile });
         } else {
           // if profile map exists in database we return the smart profile based on the map
-          // TODO: Rethink this logic.. in case we get empty SP from the UI but in db is exists.. we need to return the partial state (from smart profile map) that we have in db 
+          // TODO: Rethink this logic.. in case we get empty SP from the UI but in db is exists.. we need to return the partial state (from smart profile map) that we have in db
           Logger.info(`Profile map already found in database`);
+          // Reseting SmartProfile
           const oldProfile = new SmartProfile({
             username: profileMapping?.username ? profileMapping?.username : faker.person.lastName().toLocaleLowerCase(),
             avatar: profileMapping?.avatar
               ? profileMapping?.avatar
               : 'https://res.cloudinary.com/dblrsf3fe/image/upload/v1721919290/wkaejhi7ocnwhfl42vb8.png',
-            //scores: profileMapping?.scores,
-            connectedProfiles: profileMapping?.connectedProfiles,
-            connectedPlatforms: profileMapping?.connectedProfiles?.map((profile) => {
-              return profile.platformName;
-            }),
+            bio: profileMapping?.bio
           });
-          // need to set this explicitly
-          oldProfile.scores = profileMapping?.scores;
+
+          const earlyUser = await earlyUserRepository.findOne({
+            where: {
+              id: req?.user?.id,
+            },
+          });
+          // reset score
+          oldProfile.updateScoreValue(
+            ScoreTypes.socialScore,
+            earlyUser?.username ? 1000 : Number(process.env.DEFAULT_SOCIAL_SCORE),
+          );
           Logger.info(`Old version of smart profile returned from profile map: ${id}, This is not normal workflow`);
+          // updatin previous map of smart profile
+          await smartProfileMapRepository.update({ userId: req?.user?.id }, {
+            connectedProfiles: [],
+            scores: oldProfile?.scores
+          });
+
           // profile attestation
           const existingUser = await userRepository.findOne({
             where: {
