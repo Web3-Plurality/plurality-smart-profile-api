@@ -308,6 +308,7 @@ smartProfileRouter.post(
               ? earlyUser?.profileImg
               : 'https://res.cloudinary.com/dblrsf3fe/image/upload/v1721919290/wkaejhi7ocnwhfl42vb8.png',
             bio: '',
+            profileTypeStreamId: profileTypeStreamId,
           });
           newProfile.updateScoreValue(
             ScoreTypes.socialScore,
@@ -342,7 +343,6 @@ smartProfileRouter.post(
           return res.status(200).json({ success: true, smartProfile: attestedSmartProfile });
         } else {
           // if profile map exists in database we return the smart profile based on the map
-          // TODO: Rethink this logic.. in case we get empty SP from the UI but in db is exists.. we need to return the partial state (from smart profile map) that we have in db
           Logger.info(`Profile map already found in database`);
           // Reseting SmartProfile
           const oldProfile = new SmartProfile({
@@ -350,7 +350,8 @@ smartProfileRouter.post(
             avatar: profileMapping?.avatar
               ? profileMapping?.avatar
               : 'https://res.cloudinary.com/dblrsf3fe/image/upload/v1721919290/wkaejhi7ocnwhfl42vb8.png',
-            bio: profileMapping?.bio
+            bio: profileMapping?.bio,
+            profileTypeStreamId: profileTypeStreamId,
           });
 
           const earlyUser = await earlyUserRepository.findOne({
@@ -365,10 +366,13 @@ smartProfileRouter.post(
           );
           Logger.info(`Old version of smart profile returned from profile map: ${id}, This is not normal workflow`);
           // updatin previous map of smart profile
-          await smartProfileMapRepository.update({ userId: req?.user?.id }, {
-            connectedProfiles: [],
-            scores: oldProfile?.scores
-          });
+          await smartProfileMapRepository.update(
+            { userId: req?.user?.id },
+            {
+              connectedProfiles: [],
+              scores: oldProfile?.scores,
+            },
+          );
 
           // profile attestation
           const existingUser = await userRepository.findOne({
