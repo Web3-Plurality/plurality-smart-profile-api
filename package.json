@@ -64,7 +64,7 @@
     "@lit-protocol/constants": "^6.4.5",
     "@lit-protocol/lit-auth-client": "^6.4.5",
     "@lit-protocol/lit-node-client": "^6.4.5",
-    "@plurality-network/smart-profile-utils": "file:../plurality-smart-profile-utils",
+    "@plurality-network/smart-profile-utils": "^1.0.1",
     "@superfaceai/passport-twitter-oauth2": "^1.2.3",
     "arweave": "^1.14.4",
     "axios": "^1.5.0",
