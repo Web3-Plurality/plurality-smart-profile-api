@@ -212,14 +212,14 @@ tiktokRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfileM
         scoreType: ScoreTypes.reputationScore,
         scoreValue: tiktokProfile?.reputationScore,
       });
-      const counts = [
-        { field: 'follower count', value: tiktokProfile?.user.followerCount },
-        { field: 'following count', value: tiktokProfile?.user.followingCount },
-        { field: 'video count', value: tiktokProfile?.user.videoCount },
-        { field: 'likes count', value: tiktokProfile?.user.likesCount },
-      ];
+      const counts = {
+        followerCount: tiktokProfile?.user.followerCount,
+        followingCount: tiktokProfile?.user.followingCount,
+        videoCount: tiktokProfile?.user.videoCount,
+        likesCount: tiktokProfile?.user.likesCount
 
-      smartProfile.privateData.extendedPrivateData.push({ field: 'counts', value: JSON.stringify(counts) });
+      }
+      smartProfile.privateData.extendedPrivateData["tikTokCounts"] = counts;
 
       if (!memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
         smartProfile.privateData.attestedPlatformIds.connectedProfiles = [

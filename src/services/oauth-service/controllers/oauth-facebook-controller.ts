@@ -182,14 +182,14 @@ facebookRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfil
         scoreType: ScoreTypes.reputationScore,
         scoreValue: facebookProfile?.reputationScore,
       });
-      const counts = [
-        { field: 'friends count', value: facebookProfile?.friendsCount },
-        { field: 'likes count', value: facebookProfile?.likesCount },
-        { field: 'music count', value: facebookProfile?.musicCount },
-        { field: 'athleast count', value: facebookProfile?.athletesCount },
-        { field: 'favourite team count', value: facebookProfile?.favTeamCount },
-      ];
-      smartProfile.privateData.extendedPrivateData.push({ field: 'counts', value: JSON.stringify(counts) });
+      const counts = {
+        friendsCount: facebookProfile?.friendsCount ,
+        likesCount: facebookProfile?.likesCount,
+        musicCount: facebookProfile?.musicCount ,
+         athleastCount: facebookProfile?.athletesCount,
+        favouriteTeamCount: facebookProfile?.favTeamCount,
+      }
+      smartProfile.privateData.extendedPrivateData['facebookCounts'] = counts;
       if (!memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
         smartProfile.privateData.attestedPlatformIds.connectedProfiles = [
           { platformType: FACEBOOK_APP, userPlatformId: '', username: facebookProfile?.name },

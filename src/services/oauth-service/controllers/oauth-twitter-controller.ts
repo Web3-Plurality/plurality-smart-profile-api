@@ -250,15 +250,15 @@ twitterRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfile
         scoreType: ScoreTypes.reputationScore,
         scoreValue: twitterProfile?.reputationScore,
       });
-      const counts = [
-        { field: 'tweet count', value: twitterProfile?.tweetCount },
-        { field: 'like count', value: twitterProfile?.likeCount },
-        { field: 'listed count', value: twitterProfile?.listedCount },
-        { field: 'followers count', value: twitterProfile?.followersCount },
-        { field: 'following count', value: twitterProfile?.followingCount },
-      ];
+      const counts = {
+        tweetCount: twitterProfile?.tweetCount,
+        likeCount: twitterProfile?.likeCount,
+        listedCount: twitterProfile?.listedCount,
+        followersCount: twitterProfile?.followersCount,
+        followingCount: twitterProfile?.followingCount,
+      }
 
-      smartProfile.privateData.extendedPrivateData.push({ field: 'counts', value: JSON.stringify(counts) });
+      smartProfile.privateData.extendedPrivateData["twitterCounts"] = counts;
 
       if (!memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
         smartProfile.privateData.attestedPlatformIds.connectedProfiles = [
