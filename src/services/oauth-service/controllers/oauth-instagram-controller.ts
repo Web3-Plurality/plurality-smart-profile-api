@@ -161,23 +161,25 @@ instagramRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfi
       smartProfile.username = instaProfile?.username;
       smartProfile.privateData.attestedCred.interests = instaProfile?.interests;
 
-      if (!memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
-        smartProfile.privateData.attestedPlatformIds.connectedProfiles = [
-          { platformType: INSTAGRAM_APP, userPlatformId: instaProfile?.id, username: instaProfile?.username },
-        ];
-        memoryStoreProfile.set(req?.user?.uniqueSessionId, smartProfile);
-        memoryStoreToken.delete(req?.accessTokenID);
-        Logger.info(`${INSTAGRAM_APP}: Session destroyed successfully`);
-        Logger.info(`${INSTAGRAM_APP}: User information has been delivered successfully`);
-        return res.status(200).json({ app: INSTAGRAM_APP, message: 'success' });
-      } else {
-        Logger.error(`${INSTAGRAM_APP}: A profile already exists`);
-        return res.status(500).json({ app: INSTAGRAM_APP, error: 'Unauthorized', message: INTERNAL_SERVER_ERROR });
-      }
+      // if (!memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
+      smartProfile.privateData.attestedPlatformIds.connectedProfiles = [
+        { platformType: INSTAGRAM_APP, userPlatformId: instaProfile?.id, username: instaProfile?.username },
+      ];
+      // storing time to avoid deadlock
+      const time = new Date().getTime(); // Current time in milliseconds
+      memoryStoreProfile.set(req?.user?.uniqueSessionId, { smartProfile, time });
+      memoryStoreToken.delete(req?.accessTokenID);
+      Logger.info(`${INSTAGRAM_APP}: Session destroyed successfully`);
+      Logger.info(`${INSTAGRAM_APP}: User information has been delivered successfully`);
+      return res.status(200).json({ app: INSTAGRAM_APP, message: 'success' });
     } else {
-      Logger.error(`${INSTAGRAM_APP}: Token has been expired.`);
-      return res.status(500).json({ app: INSTAGRAM_APP, message: INTERNAL_SERVER_ERROR });
+      Logger.error(`${INSTAGRAM_APP}: A profile already exists`);
+      return res.status(500).json({ app: INSTAGRAM_APP, error: 'Unauthorized', message: INTERNAL_SERVER_ERROR });
     }
+    // } else {
+    //   Logger.error(`${INSTAGRAM_APP}: Token has been expired.`);
+    //   return res.status(500).json({ app: INSTAGRAM_APP, message: INTERNAL_SERVER_ERROR });
+    // }
   } catch (error: any) {
     if (error.code === 'ECONNABORTED') {
       Logger.error(`${INSTAGRAM_APP}: Request timeout error in fetching userinfo: ${error.message}`);

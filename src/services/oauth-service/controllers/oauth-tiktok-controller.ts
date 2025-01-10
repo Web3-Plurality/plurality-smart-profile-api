@@ -103,143 +103,147 @@ tiktokRouter.post(
 );
 
 // Return User Object
-tiktokRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfileMapEmpty, async (req, res) => {
-  // #swagger.tags = ['OAuth']
-  /* #swagger.security = [{
-          "bearerAuth": []
-  }] */
-  try {
-    Logger.info(`${TIKTOK_APP}: Request for information has been received successfully with id ${req.accessTokenID}`);
-    const accessToken = memoryStoreToken.get(req.accessTokenID);
+tiktokRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated,
+  isProfileMapEmpty,
+  async (req, res) => {
+    // #swagger.tags = ['OAuth']
+    /* #swagger.security = [{
+            "bearerAuth": []
+    }] */
+    try {
+      Logger.info(`${TIKTOK_APP}: Request for information has been received successfully with id ${req.accessTokenID}`);
+      const accessToken = memoryStoreToken.get(req.accessTokenID);
 
-    if (accessToken) {
-      let userData = { data: { data: { user: {} } } };
-      let videoList = { data: { data: { videos: [] } } };
-      const userObjField = [
-        'open_id',
-        'union_id',
-        'avatar_url',
-        'display_name',
-        'bio_description',
-        'profile_deep_link',
-        'is_verified',
-        'username',
-        'follower_count',
-        'following_count',
-        'likes_count',
-        'video_count',
-      ];
-      const videoObjFields = [
-        'id',
-        'create_time',
-        'cover_image_url',
-        'share_url',
-        'video_description',
-        'duration',
-        'height',
-        'width',
-        'title',
-        // "embed_html", //not seems to be useful
-        'embed_link',
-        'like_count',
-        'comment_count',
-        'share_count',
-        'view_count',
-      ];
+      if (accessToken) {
+        let userData = { data: { data: { user: {} } } };
+        let videoList = { data: { data: { videos: [] } } };
+        const userObjField = [
+          'open_id',
+          'union_id',
+          'avatar_url',
+          'display_name',
+          'bio_description',
+          'profile_deep_link',
+          'is_verified',
+          'username',
+          'follower_count',
+          'following_count',
+          'likes_count',
+          'video_count',
+        ];
+        const videoObjFields = [
+          'id',
+          'create_time',
+          'cover_image_url',
+          'share_url',
+          'video_description',
+          'duration',
+          'height',
+          'width',
+          'title',
+          // "embed_html", //not seems to be useful
+          'embed_link',
+          'like_count',
+          'comment_count',
+          'share_count',
+          'view_count',
+        ];
 
-      try {
-        // request for user info
-        userData = await axios.get(`https://open.tiktokapis.com/v2/user/info/?fields=${userObjField.join(',')}`, {
-          headers: {
-            Authorization: `Bearer ${accessToken}`, // eslint-disable-line
-            'Content-Type': 'application/json', // eslint-disable-line
-          },
-          timeout: 20000,
-        });
-      } catch (error) {
-        if (error.code === 'ECONNABORTED') {
-          Logger.error(`${TIKTOK_APP}: Request timeout error in fetching userinfo: ${error.message}`);
-        } else {
-          Logger.error(`${TIKTOK_APP}: An error occurred: ${error.message}`);
-        }
-      }
-
-      try {
-        //request for videoObj list of user
-        videoList = await axios.post(
-          `https://open.tiktokapis.com/v2/video/list/?fields=${videoObjFields.join(',')}`,
-          {
-            max_count: 20, // eslint-disable-line
-          },
-          {
+        try {
+          // request for user info
+          userData = await axios.get(`https://open.tiktokapis.com/v2/user/info/?fields=${userObjField.join(',')}`, {
             headers: {
               Authorization: `Bearer ${accessToken}`, // eslint-disable-line
               'Content-Type': 'application/json', // eslint-disable-line
             },
             timeout: 20000,
-          },
-        );
-      } catch (error) {
-        if (error.code === 'ECONNABORTED') {
-          Logger.error(`${TIKTOK_APP}: Request timeout error: ${error.message}`);
-        } else {
-          Logger.error(`${TIKTOK_APP}: An error occurred: ${error.message}`);
+          });
+        } catch (error) {
+          if (error.code === 'ECONNABORTED') {
+            Logger.error(`${TIKTOK_APP}: Request timeout error in fetching userinfo: ${error.message}`);
+          } else {
+            Logger.error(`${TIKTOK_APP}: An error occurred: ${error.message}`);
+          }
         }
-      }
 
-      const tiktokProfile = new TikTokProfile({
-        user: userData?.data?.data?.user,
-        video: videoList?.data?.data?.videos,
-      });
-      const vidDescription = tiktokProfile?.video?.length
-        ? tiktokProfile?.video.map((vid: any) => vid?.title + ' ' + vid?.videoDescription).join(' ')
-        : '';
-      const prompt = createPrompt(TIKTOK_FETCH_INTEREST_PROMPT, tiktokProfile?.user?.bioDescription + vidDescription);
-      const semanticObj = tiktokProfile?.user?.bioDescription ? await analyze(prompt) : {};
-      const reputationScore = calculateReputation(tiktokProfile);
-      tiktokProfile.interests = semanticObj?.Interests || [];
-      tiktokProfile.introTags = semanticObj?.IntroTags || [];
+        try {
+          //request for videoObj list of user
+          videoList = await axios.post(
+            `https://open.tiktokapis.com/v2/video/list/?fields=${videoObjFields.join(',')}`,
+            {
+              max_count: 20, // eslint-disable-line
+            },
+            {
+              headers: {
+                Authorization: `Bearer ${accessToken}`, // eslint-disable-line
+                'Content-Type': 'application/json', // eslint-disable-line
+              },
+              timeout: 20000,
+            },
+          );
+        } catch (error) {
+          if (error.code === 'ECONNABORTED') {
+            Logger.error(`${TIKTOK_APP}: Request timeout error: ${error.message}`);
+          } else {
+            Logger.error(`${TIKTOK_APP}: An error occurred: ${error.message}`);
+          }
+        }
 
-      tiktokProfile.reputationScore = reputationScore;
+        const tiktokProfile = new TikTokProfile({
+          user: userData?.data?.data?.user,
+          video: videoList?.data?.data?.videos,
+        });
+        const vidDescription = tiktokProfile?.video?.length
+          ? tiktokProfile?.video.map((vid: any) => vid?.title + ' ' + vid?.videoDescription).join(' ')
+          : '';
+        const prompt = createPrompt(TIKTOK_FETCH_INTEREST_PROMPT, tiktokProfile?.user?.bioDescription + vidDescription);
+        const semanticObj = tiktokProfile?.user?.bioDescription ? await analyze(prompt) : {};
+        const reputationScore = calculateReputation(tiktokProfile);
+        tiktokProfile.interests = semanticObj?.Interests || [];
+        tiktokProfile.introTags = semanticObj?.IntroTags || [];
 
-      // Create User Profile Objects
-      const smartProfile = new SmartProfile();
-      smartProfile.username = tiktokProfile?.user.username;
-      smartProfile.avatar = tiktokProfile?.user.avatarUrl;
-      smartProfile.privateData.attestedCred.interests = tiktokProfile?.interests;
-      smartProfile.privateData.attestedCred.reputationTags = tiktokProfile?.introTags;
-      smartProfile.scores.push({
-        scoreType: ScoreTypes.reputationScore,
-        scoreValue: tiktokProfile?.reputationScore,
-      });
-      const counts = {
-        followerCount: tiktokProfile?.user.followerCount,
-        followingCount: tiktokProfile?.user.followingCount,
-        videoCount: tiktokProfile?.user.videoCount,
-        likesCount: tiktokProfile?.user.likesCount
+        tiktokProfile.reputationScore = reputationScore;
 
-      }
-      smartProfile.privateData.extendedPrivateData["tikTokCounts"] = counts;
+        // Create User Profile Objects
+        const smartProfile = new SmartProfile();
+        smartProfile.username = tiktokProfile?.user.username;
+        smartProfile.avatar = tiktokProfile?.user.avatarUrl;
+        smartProfile.privateData.attestedCred.interests = tiktokProfile?.interests;
+        smartProfile.privateData.attestedCred.reputationTags = tiktokProfile?.introTags;
+        smartProfile.scores.push({
+          scoreType: ScoreTypes.reputationScore,
+          scoreValue: tiktokProfile?.reputationScore,
+        });
+        const counts = {
+          followerCount: tiktokProfile?.user.followerCount,
+          followingCount: tiktokProfile?.user.followingCount,
+          videoCount: tiktokProfile?.user.videoCount,
+          likesCount: tiktokProfile?.user.likesCount
 
-      if (!memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
+        }
+        smartProfile.privateData.extendedPrivateData["tikTokCounts"] = counts;
+
+        // if (!memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
         smartProfile.privateData.attestedPlatformIds.connectedProfiles = [
           { platformType: TIKTOK_APP, userPlatformId: '', username: tiktokProfile?.user?.username },
         ];
-        memoryStoreProfile.set(req?.user?.uniqueSessionId, smartProfile);
+        // storing time to avoid deadlock
+        const time = new Date().getTime(); // Current time in milliseconds
+        memoryStoreProfile.set(req?.user?.uniqueSessionId, { smartProfile, time });
         memoryStoreToken.delete(req?.accessTokenID);
         Logger.info(`${TIKTOK_APP}: Session destroyed successfully`);
         Logger.info(`${TIKTOK_APP}: User information has been delivered successfully`);
         return res.status(200).json({ app: TIKTOK_APP, message: 'success' });
+        // } else {
+        //   Logger.error(`${TIKTOK_APP}: A profile already exists`);
+        //   return res.status(500).json({ app: TIKTOK_APP, error: 'Unauthorized', message: INTERNAL_SERVER_ERROR });
+        // }
       } else {
-        Logger.error(`${TIKTOK_APP}: A profile already exists`);
-        return res.status(500).json({ app: TIKTOK_APP, error: 'Unauthorized', message: INTERNAL_SERVER_ERROR });
+        Logger.error(`${TIKTOK_APP}: Token has been expired.`);
+        return res.status(500).json({ app: TIKTOK_APP, message: INTERNAL_SERVER_ERROR });
       }
-    } else {
-      Logger.error(`${TIKTOK_APP}: Token has been expired.`);
+    } catch (error: any) {
+      Logger.error(`${TIKTOK_APP}: Error occurred in fetching user informantion: ${error.message}`);
       return res.status(500).json({ app: TIKTOK_APP, message: INTERNAL_SERVER_ERROR });
     }
-  } catch (error: any) {
-    Logger.error(`${TIKTOK_APP}: Error occurred in fetching user informantion: ${error.message}`);
-    return res.status(500).json({ app: TIKTOK_APP, message: INTERNAL_SERVER_ERROR });
-  }
-});
+  });

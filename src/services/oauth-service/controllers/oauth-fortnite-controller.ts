@@ -104,7 +104,8 @@ fortniteRouter.post(
 );
 
 // Return User Object
-fortniteRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfileMapEmpty, async (req, res) => {
+fortniteRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfileMapEmpty,
+   async (req, res) => {
   // #swagger.tags = ['OAuth']
   /* #swagger.security = [{
           "bearerAuth": []
@@ -137,7 +138,7 @@ fortniteRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfil
       const smartProfile = new SmartProfile();
       smartProfile.username = fortniteProfile?.displayName;
 
-      if (!memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
+      // if (!memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
         smartProfile.privateData.attestedPlatformIds.connectedProfiles = [
           {
             platformType: FORTNITE_APP,
@@ -145,14 +146,16 @@ fortniteRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfil
             username: fortniteProfile?.displayName,
           },
         ];
-        memoryStoreProfile.set(req?.user?.uniqueSessionId, smartProfile);
+        // storing time to avoid deadlock
+        const time = new Date().getTime(); // Current time in milliseconds
+        memoryStoreProfile.set(req?.user?.uniqueSessionId, {smartProfile, time});
         memoryStoreToken.delete(req?.accessTokenID);
         Logger.info(`${FORTNITE_APP}: User information has been delivered successfully`);
         return res.status(200).json({ app: FORTNITE_APP, message: 'success' });
-      } else {
-        Logger.error(`${FORTNITE_APP}: A profile already exists`);
-        return res.status(500).json({ app: FORTNITE_APP, error: 'Unauthorized', message: INTERNAL_SERVER_ERROR });
-      }
+      // } else {
+      //   Logger.error(`${FORTNITE_APP}: A profile already exists`);
+      //   return res.status(500).json({ app: FORTNITE_APP, error: 'Unauthorized', message: INTERNAL_SERVER_ERROR });
+      // }
     } else {
       Logger.error(`${FORTNITE_APP}: Token has been expired.`);
       return res.status(500).json({ app: FORTNITE_APP, error: 'Unauthorized', message: INTERNAL_SERVER_ERROR });

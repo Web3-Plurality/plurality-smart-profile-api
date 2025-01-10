@@ -196,7 +196,7 @@ smartProfileRouter.post(
         return res.status(400).json({ error: 'Client id not found' });
       }
       const id = req?.user?.uniqueSessionId;
-      const memorySmartProfile = memoryStoreProfile.get(id);
+      const memorySmartProfile = memoryStoreProfile.get(id)?.smartProfile;
       // profile exchange workflow - profiles are present in both request and memory
       if (memorySmartProfile && !(Object.keys(reqSmartProfile).length === 0) && profileTypeStreamId) {
         Logger.info(`Profile exchange workflow`);

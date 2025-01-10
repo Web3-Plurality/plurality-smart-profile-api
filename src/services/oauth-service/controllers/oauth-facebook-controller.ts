@@ -108,7 +108,8 @@ facebookRouter.post(
 );
 
 // Return User Object
-facebookRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfileMapEmpty, async (req, res) => {
+facebookRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfileMapEmpty,
+   async (req, res) => {
   // #swagger.tags = ['OAuth']
   /* #swagger.security = [{
           "bearerAuth": []
@@ -190,18 +191,20 @@ facebookRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfil
         favouriteTeamCount: facebookProfile?.favTeamCount,
       }
       smartProfile.privateData.extendedPrivateData['facebookCounts'] = counts;
-      if (!memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
+      // if (!memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
         smartProfile.privateData.attestedPlatformIds.connectedProfiles = [
           { platformType: FACEBOOK_APP, userPlatformId: '', username: facebookProfile?.name },
         ];
-        memoryStoreProfile.set(req?.user?.uniqueSessionId, smartProfile);
+        // storing time to avoid deadlock
+        const time = new Date().getTime(); // Current time in milliseconds
+        memoryStoreProfile.set(req?.user?.uniqueSessionId, {smartProfile, time});
         memoryStoreToken.delete(req?.accessTokenID);
         Logger.info(`${FACEBOOK_APP}: User information has been delivered successfully`);
         return res.status(200).json({ app: FACEBOOK_APP, message: 'success' });
-      } else {
-        Logger.error(`${FACEBOOK_APP}: A profile already exists`);
-        return res.status(500).json({ app: FACEBOOK_APP, error: 'Unauthorized', message: INTERNAL_SERVER_ERROR });
-      }
+      // } else {
+      //   Logger.error(`${FACEBOOK_APP}: A profile already exists`);
+      //   return res.status(500).json({ app: FACEBOOK_APP, error: 'Unauthorized', message: INTERNAL_SERVER_ERROR });
+      // }
     } else {
       Logger.error(`${FACEBOOK_APP}: Token has been expired.`);
       return res.status(500).json({ app: FACEBOOK_APP, error: 'Unauthorized', message: INTERNAL_SERVER_ERROR });
