@@ -6,21 +6,27 @@ import Logger from '../../../lib/logger';
 import { v2 as cloudinary } from 'cloudinary';
 import { faker } from '@faker-js/faker';
 import { isAuthenticated } from '../../oauth-service/middlewares/oauth-middleware';
-import { memoryStoreProfile, ScoreTypes } from '../../../utils/global';
+import { memoryStoreProfile } from '../../../utils/global';
 import { calculateSocialScore } from '../utils/score';
 import { plainToInstance } from 'class-transformer';
-import { SmartProfile } from '../entity/smart-profile';
 import { SmartProfileMap } from '../entity/smart-profile-map';
 import { EarlyUser } from '../entity/early-user';
 import { ClientApp } from '../../crm-service/entity/client-app';
 import { isValidAttestation } from '../middlewares/auth-middleware';
-import { attestProfile } from '../../oauth-service/utils/eas';
+import { User } from '../entity/user';
+import {
+  normalizeSmartProfile,
+  PluralityAttestation,
+  SmartProfile,
+  ScoreTypes,
+} from '@plurality-network/smart-profile-utils';
 
 export const smartProfileRouter = express.Router();
 dotenv.config();
 const smartProfileMapRepository = AppDataSource.getRepository(SmartProfileMap);
 const earlyUserRepository = AppDataSource.getRepository(EarlyUser);
 const clientAppRepository = AppDataSource.getRepository(ClientApp);
+const userRepository = AppDataSource.getRepository(User);
 
 /* eslint-disable */
 cloudinary.config({
@@ -30,9 +36,17 @@ cloudinary.config({
 });
 /* eslint-enable */
 
+const pluralityAttestation = new PluralityAttestation({
+  signerPrivateKey: process.env.PUBLIC_DAPP_OWNER_WALLET_PRIVATE_KEY || '',
+  signerAddress: process.env.PUBLIC_DAPP_OWNER_WALLET_ADDRESS || '',
+  easContractAddress: process.env.EAS_CONTRACT_ADDRESS || '',
+  rpcProvider: process.env.EAS_BLOCKCHAIN_RPC || '',
+});
+
 smartProfileRouter.put(
   '/',
   isAuthenticated,
+  isValidAttestation,
   [
     body('data.username').optional().trim().isLength({ max: 50 }),
     body('data.bio').optional().trim().isLength({ max: 300 }),
@@ -81,7 +95,7 @@ smartProfileRouter.put(
         return res.status(400).json({ error: 'Client id not found' });
       }
       const userUpdateReqData = JSON.parse(JSON.stringify(req.body.data));
-      const smartProfile = plainToInstance(SmartProfile, JSON.parse(JSON.stringify(req.body.smartProfile)));
+      const smartProfile = normalizeSmartProfile(req?.body?.smartProfile);
       const id = req?.user?.id;
       // get from smartProfileMap
       const existingUser = await smartProfileMapRepository.findOne({
@@ -92,9 +106,7 @@ smartProfileRouter.put(
       });
 
       if (existingUser) {
-        Logger.info(
-          `This user exists in database! email: ${existingUser.email}, address: ${existingUser.address}, subscribe: ${existingUser.subscribe} `,
-        );
+        Logger.info(`This user exists in database! email: ${existingUser.email}`);
         // Upload an image
         let uploadResult;
         if (userUpdateReqData.profileImg) {
@@ -117,7 +129,20 @@ smartProfileRouter.put(
           // Update the existing profile
           await smartProfileMapRepository.update({ id: existingUser.id }, updatedUser);
           Logger.info(`Smart profile updated locally for user id: ${id}`);
-          return res.status(200).json({ success: true, smartProfile: smartProfile });
+          // attest profile
+          const user = await userRepository.findOne({
+            where: {
+              id: req?.user?.id,
+            },
+          });
+          const attestedSmartProfile = await pluralityAttestation.attestSmartProfile(
+            user?.id,
+            smartProfile,
+            user?.pkpAddress,
+            process.env.PUBLIC_SCHEMA_UID,
+            process.env.PRIVATE_SCHEMA_UID,
+          );
+          return res.status(200).json({ success: true, smartProfile: attestedSmartProfile });
         } else {
           Logger.error(`user profile not found on body`);
           return res.status(400).json({ success: false, error: 'user profile not found in the body' });
@@ -141,6 +166,7 @@ smartProfileRouter.put(
 smartProfileRouter.post(
   '/',
   isAuthenticated,
+  isValidAttestation,
   [
     body('smartProfile').custom((value) => {
       // Ensure the object is an instance of SmartProfile
@@ -170,11 +196,11 @@ smartProfileRouter.post(
         return res.status(400).json({ error: 'Client id not found' });
       }
       const id = req?.user?.uniqueSessionId;
-      const memorySmartProfile = memoryStoreProfile.get(id);
+      const memorySmartProfile = memoryStoreProfile.get(id)?.smartProfile;
       // profile exchange workflow - profiles are present in both request and memory
       if (memorySmartProfile && !(Object.keys(reqSmartProfile).length === 0) && profileTypeStreamId) {
         Logger.info(`Profile exchange workflow`);
-        const smartProfile = plainToInstance(SmartProfile, reqSmartProfile);
+        const smartProfile = normalizeSmartProfile(plainToInstance(SmartProfile, reqSmartProfile));
 
         // this is not the first time this profile is being created - make sure the profile mapping exists in our database
         const profileMapping = await smartProfileMapRepository.findOne({
@@ -190,7 +216,7 @@ smartProfileRouter.post(
             username: smartProfile?.username,
             avatar: smartProfile?.avatar,
             bio: smartProfile?.bio,
-            connectedProfiles: smartProfile?.connectedProfiles,
+            connectedProfiles: smartProfile?.privateData.attestedPlatformIds.connectedProfiles,
             scores: smartProfile?.scores,
             profileTypeStreamId: profileTypeStreamId,
             userId: req?.user?.id,
@@ -204,28 +230,36 @@ smartProfileRouter.post(
         }
 
         // check if the current platform is already connected
-        if (smartProfile.connectedPlatforms.includes(memorySmartProfile?.connectedProfiles[0]?.platformName)) {
+        if (
+          smartProfile.connectedPlatforms.includes(
+            memorySmartProfile?.privateData.attestedPlatformIds.connectedProfiles[0]?.platformType,
+          )
+        ) {
           // If this platform is already connected there is no need to add this one to profile
-          Logger.info(`The profile is already connected: ${memorySmartProfile.connectedProfiles[0]?.platformName}`);
+          Logger.info(
+            `The profile is already connected: ${memorySmartProfile?.privateData.attestedPlatformIds.connectedProfiles[0]?.platformType}`,
+          );
           memoryStoreProfile.delete(id);
           return res.status(400).json({ error: 'Bad request' });
         }
         // Calculate the social score based on the input profiles data
         const socialScore = calculateSocialScore(
-          memorySmartProfile?.connectedProfiles,
-          smartProfile?.connectedProfiles,
+          memorySmartProfile?.privateData.attestedPlatformIds.connectedProfiles,
+          smartProfile?.privateData.attestedPlatformIds.connectedProfiles,
         );
         memorySmartProfile.updateScoreValue(ScoreTypes.socialScore, socialScore);
 
         // Now we aggregate profiles
         smartProfile.aggregateProfile(memorySmartProfile);
-        smartProfile.connectedPlatforms = smartProfile.connectedProfiles.map((profile) => {
-          return profile.platformName;
-        });
+        smartProfile.connectedPlatforms = smartProfile?.privateData.attestedPlatformIds.connectedProfiles.map(
+          (profile) => {
+            return profile.platformType;
+          },
+        );
         memoryStoreProfile.delete(id);
 
         const updatedSmartProfileMap = {
-          connectedProfiles: smartProfile?.connectedProfiles,
+          connectedProfiles: smartProfile?.privateData.attestedPlatformIds.connectedProfiles,
           scores: smartProfile?.scores,
         };
 
@@ -237,14 +271,19 @@ smartProfileRouter.post(
         Logger.info(`Smart profile updated for user id: ${req?.user?.id}`);
 
         // profile attestation
-        // const existingUser = await userRepository.findOne({
-        //   where: {
-        //     id: req?.user?.id
-        //   },
-        // });
-        // const attestation = await attestProfile(req?.user?.id, smartProfile, existingUser?.address || "");
-        // smartProfile.setAttestation(attestation);
-        return res.status(200).json({ success: true, smartProfile: smartProfile });
+        const existingUser = await userRepository.findOne({
+          where: {
+            id: req?.user?.id,
+          },
+        });
+        const attestedSmartProfile = await pluralityAttestation.attestSmartProfile(
+          req?.user?.id,
+          smartProfile,
+          existingUser?.pkpAddress || '',
+          process.env.PUBLIC_SCHEMA_UID || '',
+          process.env.PRIVATE_SCHEMA_UID || '',
+        );
+        return res.status(200).json({ success: true, smartProfile: attestedSmartProfile });
       }
       // new profile creation
       else if (!memorySmartProfile && Object.keys(reqSmartProfile).length === 0 && profileTypeStreamId) {
@@ -269,6 +308,7 @@ smartProfileRouter.post(
               ? earlyUser?.profileImg
               : 'https://res.cloudinary.com/dblrsf3fe/image/upload/v1721919290/wkaejhi7ocnwhfl42vb8.png',
             bio: '',
+            profileTypeStreamId: profileTypeStreamId,
           });
           newProfile.updateScoreValue(
             ScoreTypes.socialScore,
@@ -288,40 +328,67 @@ smartProfileRouter.post(
           await smartProfileMapRepository.save(newSmartProfileMap);
           Logger.info(`New smart profile created for user id: ${id}`);
           // profile attestation
-          // const existingUser = await userRepository.findOne({
-          //   where: {
-          //     id: req?.user?.id
-          //   },
-          // });
-          // const attestation = await attestProfile(req?.user?.id, newProfile, existingUser?.address || "");
-          // newProfile.setAttestation(attestation);
-          return res.status(200).json({ success: true, smartProfile: newProfile });
+          const existingUser = await userRepository.findOne({
+            where: {
+              id: req?.user?.id,
+            },
+          });
+          const attestedSmartProfile = await pluralityAttestation.attestSmartProfile(
+            req?.user?.id,
+            newProfile,
+            existingUser?.pkpAddress || '',
+            process.env.PUBLIC_SCHEMA_UID || '',
+            process.env.PRIVATE_SCHEMA_UID || '',
+          );
+          return res.status(200).json({ success: true, smartProfile: attestedSmartProfile });
         } else {
           // if profile map exists in database we return the smart profile based on the map
           Logger.info(`Profile map already found in database`);
+          // Reseting SmartProfile
           const oldProfile = new SmartProfile({
             username: profileMapping?.username ? profileMapping?.username : faker.person.lastName().toLocaleLowerCase(),
             avatar: profileMapping?.avatar
               ? profileMapping?.avatar
               : 'https://res.cloudinary.com/dblrsf3fe/image/upload/v1721919290/wkaejhi7ocnwhfl42vb8.png',
-            //scores: profileMapping?.scores,
-            connectedProfiles: profileMapping?.connectedProfiles,
-            connectedPlatforms: profileMapping?.connectedProfiles?.map((profile) => {
-              return profile.platformName;
-            }),
+            bio: profileMapping?.bio,
+            profileTypeStreamId: profileTypeStreamId,
           });
-          // need to set this explicitly
-          oldProfile.scores = profileMapping?.scores;
+
+          const earlyUser = await earlyUserRepository.findOne({
+            where: {
+              id: req?.user?.id,
+            },
+          });
+          // reset score
+          oldProfile.updateScoreValue(
+            ScoreTypes.socialScore,
+            earlyUser?.username ? 1000 : Number(process.env.DEFAULT_SOCIAL_SCORE),
+          );
           Logger.info(`Old version of smart profile returned from profile map: ${id}, This is not normal workflow`);
+          // updatin previous map of smart profile
+          await smartProfileMapRepository.update(
+            { userId: req?.user?.id },
+            {
+              connectedProfiles: [],
+              scores: oldProfile?.scores,
+            },
+          );
+
           // profile attestation
-          // const existingUser = await userRepository.findOne({
-          //   where: {
-          //     id: req?.user?.id
-          //   },
-          // });
-          // const attestation = await attestProfile(req?.user?.id, oldProfile, existingUser?.address || "");
-          // oldProfile.setAttestation(attestation);
-          return res.status(200).json({ success: true, smartProfile: oldProfile });
+          const existingUser = await userRepository.findOne({
+            where: {
+              id: req?.user?.id,
+            },
+          });
+
+          const attestedSmartProfile = await pluralityAttestation.attestSmartProfile(
+            req?.user?.id,
+            oldProfile,
+            existingUser?.pkpAddress || '',
+            process.env.PUBLIC_SCHEMA_UID || '',
+            process.env.PRIVATE_SCHEMA_UID || '',
+          );
+          return res.status(200).json({ success: true, smartProfile: attestedSmartProfile });
         }
       } else {
         Logger.error(

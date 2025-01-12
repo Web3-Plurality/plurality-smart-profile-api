@@ -17,11 +17,8 @@ import { InstaProfile } from '../entity/instagram';
 import { analyze } from '../utils/groq';
 import { createPrompt, INSTA_FETCH_INTEREST_PROMPT } from '../utils/ai-prompts';
 import { v4 as uuidv4 } from 'uuid';
-import { UserProfile } from '../entity/user-profile';
-import { SmartProfile } from '../../user-service/entity/smart-profile';
-// import { attestProfile } from '../utils/eas';
-// import { AppDataSource } from '../../../data-source';
-// import { User } from '../../user-service/entity/user';
+import { SmartProfile } from '@plurality-network/smart-profile-utils';
+
 dotenv.config();
 
 export const instagramRouter = express.Router();
@@ -158,37 +155,22 @@ instagramRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfi
         const interests = await analyze(prompt);
         instaProfile.interests = interests?.Interests || [];
       }
-
       // Create user profile object
-      const userProfile = new UserProfile();
-      userProfile.username = instaProfile?.username;
-      userProfile.interests = instaProfile?.interests;
-      // profile attestation
-      // const existingUser = await AppDataSource.getRepository(User).findOne({
-      //   where: {
-      //     id: req?.user?.id
-      //   },
-      // });
-      // const attestation = await attestProfile(req?.user?.id, userProfile, existingUser?.address || "");
-      // userProfile.setAttestation(attestation)
-
-      if (!memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
-        const smartProfile = new SmartProfile(userProfile);
-        smartProfile.connectedProfiles = [
-          { platformName: INSTAGRAM_APP, userPlatformId: instaProfile?.id, username: instaProfile?.username },
-        ];
-        memoryStoreProfile.set(req?.user?.uniqueSessionId, smartProfile);
-        memoryStoreToken.delete(req?.accessTokenID);
-        Logger.info(`${INSTAGRAM_APP}: Session destroyed successfully`);
-        Logger.info(`${INSTAGRAM_APP}: User information has been delivered successfully`);
-        return res.status(200).json({ app: INSTAGRAM_APP, message: 'success', individualProfile: userProfile });
-      } else {
-        Logger.error(`${INSTAGRAM_APP}: A profile already exists`);
-        return res.status(500).json({ app: INSTAGRAM_APP, error: 'Unauthorized', message: INTERNAL_SERVER_ERROR });
-      }
+      const smartProfile = new SmartProfile();
+      smartProfile.privateData.attestedCred.interests = instaProfile?.interests;
+      smartProfile.privateData.attestedPlatformIds.connectedProfiles = [
+        { platformType: INSTAGRAM_APP, userPlatformId: instaProfile?.id, username: instaProfile?.username },
+      ];
+      // storing time to avoid deadlock
+      const time = new Date().getTime(); // Current time in milliseconds
+      memoryStoreProfile.set(req?.user?.uniqueSessionId, { smartProfile, time });
+      memoryStoreToken.delete(req?.accessTokenID);
+      Logger.info(`${INSTAGRAM_APP}: Session destroyed successfully`);
+      Logger.info(`${INSTAGRAM_APP}: User information has been delivered successfully`);
+      return res.status(200).json({ app: INSTAGRAM_APP, message: 'success' });
     } else {
-      Logger.error(`${INSTAGRAM_APP}: Token has been expired.`);
-      return res.status(500).json({ app: INSTAGRAM_APP, message: INTERNAL_SERVER_ERROR });
+      Logger.error(`${INSTAGRAM_APP}: A profile already exists`);
+      return res.status(500).json({ app: INSTAGRAM_APP, error: 'Unauthorized', message: INTERNAL_SERVER_ERROR });
     }
   } catch (error: any) {
     if (error.code === 'ECONNABORTED') {

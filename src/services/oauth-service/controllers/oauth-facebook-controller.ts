@@ -10,7 +10,8 @@ import {
   isProfileMapEmpty,
 } from '../middlewares/oauth-middleware';
 import Logger from '../../../lib/logger';
-import { memoryStoreToken, memoryStoreSSE, memoryStoreProfile, ScoreTypes } from '../../../utils/global';
+import { memoryStoreToken, memoryStoreSSE, memoryStoreProfile } from '../../../utils/global';
+
 import { FACEBOOK_APP, INTERNAL_SERVER_ERROR, TIMEOUT_ERROR } from '../utils/constants';
 import OAuthFacebookStrategy from '../strategies/OAuthFacebookStrategy';
 import { analyze } from '../utils/groq';
@@ -22,11 +23,7 @@ import {
   FACEBOOK_FETCH_INTEREST_PROMPT,
 } from '../utils/ai-prompts';
 import { v4 as uuidv4 } from 'uuid';
-import { UserProfile } from '../entity/user-profile';
-import { SmartProfile } from '../../user-service/entity/smart-profile';
-// import { AppDataSource } from '../../../data-source';
-// import { User } from '../../user-service/entity/user';
-// import { attestProfile } from '../utils/eas';
+import { SmartProfile, ScoreTypes } from '@plurality-network/smart-profile-utils';
 
 dotenv.config();
 
@@ -143,9 +140,9 @@ facebookRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfil
       const moreLikesData = await getPagingData(fbUser?.data?.likes?.paging?.next);
       const moreMusicData = await getPagingData(fbUser?.data?.music?.paging?.next);
 
-      fbUser?.data?.feed?.data = fbUser?.data?.feed?.data?.concat(moreFeedData);
-      fbUser?.data?.likes?.data = fbUser?.data?.likes?.data?.concat(moreLikesData);
-      fbUser?.data?.music?.data = fbUser?.data?.music?.data?.concat(moreMusicData);
+      fbUser.data.feed.data = fbUser?.data?.feed?.data?.concat(moreFeedData);
+      fbUser.data.likes.data = fbUser?.data?.likes?.data?.concat(moreLikesData);
+      fbUser.data.music.data = fbUser?.data?.music?.data?.concat(moreMusicData);
 
       const facebookProfile = new FacebookProfile(fbUser?.data);
       const feed = sanitizeObject(facebookProfile?.feed);
@@ -178,40 +175,29 @@ facebookRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfil
       facebookProfile.reputationScore = calculateReputation(facebookProfile);
 
       // Create User Profile Objects
-      const userProfile = new UserProfile();
-      userProfile.username = facebookProfile?.name;
-      userProfile.interests = facebookProfile?.interests;
-      userProfile.scores.push({
+      const smartProfile = new SmartProfile();
+      smartProfile.privateData.attestedCred.interests = facebookProfile?.interests;
+      smartProfile.scores.push({
         scoreType: ScoreTypes.reputationScore,
         scoreValue: facebookProfile?.reputationScore,
       });
-      userProfile.extra.push({ field: 'friends count', value: facebookProfile?.friendsCount });
-      userProfile.extra.push({ field: 'likes count', value: facebookProfile?.likesCount });
-      userProfile.extra.push({ field: 'music count', value: facebookProfile?.musicCount });
-      userProfile.extra.push({ field: 'athleast count', value: facebookProfile?.athletesCount });
-      userProfile.extra.push({ field: 'favourite team count', value: facebookProfile?.favTeamCount });
-      // profile attestation
-      // const existingUser = await AppDataSource.getRepository(User).findOne({
-      //   where: {
-      //     id: req?.user?.id
-      //   },
-      // });
-      // const attestation = await attestProfile(req?.user?.id, userProfile, existingUser?.address || "");
-      // userProfile.setAttestation(attestation)
-
-      if (!memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
-        const smartProfile = new SmartProfile(userProfile);
-        smartProfile.connected_profiles = [
-          { platformName: FACEBOOK_APP, userPlatformId: '', username: facebookProfile?.name },
-        ];
-        memoryStoreProfile.set(req?.user?.uniqueSessionId, smartProfile);
-        memoryStoreToken.delete(req?.accessTokenID);
-        Logger.info(`${FACEBOOK_APP}: User information has been delivered successfully`);
-        return res.status(200).json({ app: FACEBOOK_APP, message: 'success', individualProfile: userProfile });
-      } else {
-        Logger.error(`${FACEBOOK_APP}: A profile already exists`);
-        return res.status(500).json({ app: FACEBOOK_APP, error: 'Unauthorized', message: INTERNAL_SERVER_ERROR });
-      }
+      const counts = {
+        friendsCount: facebookProfile?.friendsCount,
+        likesCount: facebookProfile?.likesCount,
+        musicCount: facebookProfile?.musicCount,
+        athleastCount: facebookProfile?.athletesCount,
+        favouriteTeamCount: facebookProfile?.favTeamCount,
+      };
+      smartProfile.privateData.extendedPrivateData[FACEBOOK_APP] = counts;
+      smartProfile.privateData.attestedPlatformIds.connectedProfiles = [
+        { platformType: FACEBOOK_APP, userPlatformId: '', username: facebookProfile?.name },
+      ];
+      // storing time to avoid deadlock
+      const time = new Date().getTime(); // Current time in milliseconds
+      memoryStoreProfile.set(req?.user?.uniqueSessionId, { smartProfile, time });
+      memoryStoreToken.delete(req?.accessTokenID);
+      Logger.info(`${FACEBOOK_APP}: User information has been delivered successfully`);
+      return res.status(200).json({ app: FACEBOOK_APP, message: 'success' });
     } else {
       Logger.error(`${FACEBOOK_APP}: Token has been expired.`);
       return res.status(500).json({ app: FACEBOOK_APP, error: 'Unauthorized', message: INTERNAL_SERVER_ERROR });

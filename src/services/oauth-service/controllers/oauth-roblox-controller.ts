@@ -10,7 +10,7 @@ import {
   isProfileMapEmpty,
 } from '../middlewares/oauth-middleware';
 import Logger from '../../../lib/logger';
-import { memoryStoreToken, memoryStoreSSE, memoryStoreProfile, ScoreTypes } from '../../../utils/global';
+import { memoryStoreToken, memoryStoreSSE, memoryStoreProfile } from '../../../utils/global';
 import { INTERNAL_SERVER_ERROR, ROBLOX_APP, TIMEOUT_ERROR } from '../utils/constants';
 import OAuthRobloxStrategy from '../strategies/OAuthRobloxStrategy';
 import { RobloxProfile } from '../entity/roblox';
@@ -18,8 +18,7 @@ import { analyze } from '../utils/groq';
 import { calculateReputation, scrapRoblox } from '../utils/roblox';
 import { createPrompt, ROBLOX_FETCH_INTEREST_PROMPT } from '../utils/ai-prompts';
 import { v4 as uuidv4 } from 'uuid';
-import { UserProfile } from '../entity/user-profile';
-import { SmartProfile } from '../../user-service/entity/smart-profile';
+import { SmartProfile, ScoreTypes } from '@plurality-network/smart-profile-utils';
 
 dotenv.config();
 
@@ -107,8 +106,8 @@ robloxRouter.post(
 robloxRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfileMapEmpty, async (req, res) => {
   // #swagger.tags = ['OAuth']
   /* #swagger.security = [{
-          "bearerAuth": []
-  }] */
+            "bearerAuth": []
+    }] */
   try {
     Logger.info(`${ROBLOX_APP}: Request for information has been received successfully with id ${req.accessTokenID}`);
     const accessToken = memoryStoreToken.get(req.accessTokenID);
@@ -221,44 +220,30 @@ robloxRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfileM
 
       robloxProfile.reputationScore += calculateReputation(robloxProfile);
       // Create user profile object
-      const userProfile = new UserProfile();
-      userProfile.username = robloxProfile?.name;
-      userProfile.interests = robloxProfile?.interests;
-      userProfile.avatar = robloxProfile?.avatar;
-      userProfile.bio = robloxProfile?.about;
-      userProfile.scores.push({
+      const smartProfile = new SmartProfile();
+      smartProfile.privateData.attestedCred.interests = robloxProfile?.interests;
+      smartProfile.scores.push({
         scoreType: ScoreTypes.reputationScore,
         scoreValue: robloxProfile?.reputationScore,
       });
-      userProfile.reputationTags = robloxProfile?.introTags;
-      userProfile.collections = robloxProfile?.assests;
-      userProfile.extra.push({ field: 'places visit', value: robloxProfile?.placesVisit });
-      userProfile.extra.push({ field: 'friends', value: robloxProfile?.friends });
-      userProfile.extra.push({ field: 'followers', value: robloxProfile?.followers });
-      userProfile.extra.push({ field: 'following', value: robloxProfile?.following });
-
-      // profile attestation
-      // const existingUser = await AppDataSource.getRepository(User).findOne({
-      //   where: {
-      //     id: req?.user?.id
-      //   },
-      // });
-      // const attestation = await attestProfile(req?.user?.id, userProfile, existingUser?.address || "");
-      // userProfile.setAttestation(attestation)
-
-      if (!memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
-        const smartProfile = new SmartProfile(userProfile);
-        smartProfile.connectedProfiles = [
-          { platformName: ROBLOX_APP, userPlatformId: '', username: robloxProfile?.name },
-        ];
-        memoryStoreProfile.set(req?.user?.uniqueSessionId, smartProfile);
-        memoryStoreToken.delete(req?.accessTokenID);
-        Logger.info(`${ROBLOX_APP}: User information has been delivered successfully`);
-        return res.status(200).json({ app: ROBLOX_APP, message: 'success', individualProfile: userProfile });
-      } else {
-        Logger.error(`${ROBLOX_APP}: A profile already exists`);
-        return res.status(500).json({ app: ROBLOX_APP, error: 'Unauthorized', message: INTERNAL_SERVER_ERROR });
-      }
+      smartProfile.privateData.attestedCred.reputationTags = robloxProfile?.introTags;
+      smartProfile.privateData.attestedCred.collections = robloxProfile?.assests;
+      const counts = {
+        placesVisit: robloxProfile?.placesVisit,
+        friends: robloxProfile?.friends,
+        followers: robloxProfile?.followers,
+        following: robloxProfile?.following,
+      };
+      smartProfile.privateData.extendedPrivateData[ROBLOX_APP] = counts;
+      smartProfile.privateData.attestedPlatformIds.connectedProfiles = [
+        { platformType: ROBLOX_APP, userPlatformId: '', username: robloxProfile?.name },
+      ];
+      // storing time to avoid deadlock
+      const time = new Date().getTime(); // Current time in milliseconds
+      memoryStoreProfile.set(req?.user?.uniqueSessionId, { smartProfile, time });
+      memoryStoreToken.delete(req?.accessTokenID);
+      Logger.info(`${ROBLOX_APP}: User information has been delivered successfully`);
+      return res.status(200).json({ app: ROBLOX_APP, message: 'success' });
     } else {
       Logger.error(`${ROBLOX_APP}: Token has been expired.`);
       return res.status(500).json({ app: ROBLOX_APP, message: INTERNAL_SERVER_ERROR });

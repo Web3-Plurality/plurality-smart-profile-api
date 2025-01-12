@@ -16,11 +16,8 @@ import OAuthFortniteStrategy from '../strategies/OAuthFortniteStrategy';
 import jwt from 'jsonwebtoken';
 import { FortniteProfile } from '../entity/fortnite';
 import { v4 as uuidv4 } from 'uuid';
-import { UserProfile } from '../entity/user-profile';
-import { SmartProfile } from '../../user-service/entity/smart-profile';
-// import { attestProfile } from '../utils/eas';
-// import { AppDataSource } from '../../../data-source';
-// import { User } from '../../user-service/entity/user';
+import { SmartProfile } from '@plurality-network/smart-profile-utils';
+
 dotenv.config();
 
 export const fortniteRouter = express.Router();
@@ -137,34 +134,20 @@ fortniteRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfil
       const fortniteProfile = new FortniteProfile(userFortnite?.data[0]);
 
       // Create user profile object
-      const userProfile = new UserProfile();
-      userProfile.username = fortniteProfile?.displayName;
-      // profile attestation
-      // const existingUser = await AppDataSource.getRepository(User).findOne({
-      //   where: {
-      //     id: req?.user?.id
-      //   },
-      // });
-      // const attestation = await attestProfile(req?.user?.id, userProfile, existingUser?.address || "");
-      // userProfile.setAttestation(attestation)
-
-      if (!memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
-        const smartProfile = new SmartProfile(userProfile);
-        smartProfile.connectedProfiles = [
-          {
-            platformName: FORTNITE_APP,
-            userPlatformId: fortniteProfile?.accountId,
-            username: fortniteProfile?.displayName,
-          },
-        ];
-        memoryStoreProfile.set(req?.user?.uniqueSessionId, smartProfile);
-        memoryStoreToken.delete(req?.accessTokenID);
-        Logger.info(`${FORTNITE_APP}: User information has been delivered successfully`);
-        return res.status(200).json({ app: FORTNITE_APP, message: 'success', individualProfile: userProfile });
-      } else {
-        Logger.error(`${FORTNITE_APP}: A profile already exists`);
-        return res.status(500).json({ app: FORTNITE_APP, error: 'Unauthorized', message: INTERNAL_SERVER_ERROR });
-      }
+      const smartProfile = new SmartProfile();
+      smartProfile.privateData.attestedPlatformIds.connectedProfiles = [
+        {
+          platformType: FORTNITE_APP,
+          userPlatformId: fortniteProfile?.accountId,
+          username: fortniteProfile?.displayName,
+        },
+      ];
+      // storing time to avoid deadlock
+      const time = new Date().getTime(); // Current time in milliseconds
+      memoryStoreProfile.set(req?.user?.uniqueSessionId, { smartProfile, time });
+      memoryStoreToken.delete(req?.accessTokenID);
+      Logger.info(`${FORTNITE_APP}: User information has been delivered successfully`);
+      return res.status(200).json({ app: FORTNITE_APP, message: 'success' });
     } else {
       Logger.error(`${FORTNITE_APP}: Token has been expired.`);
       return res.status(500).json({ app: FORTNITE_APP, error: 'Unauthorized', message: INTERNAL_SERVER_ERROR });

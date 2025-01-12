@@ -13,14 +13,10 @@ import {
   isProfileMapEmpty,
 } from '../middlewares/oauth-middleware';
 import Logger from '../../../lib/logger';
-import { memoryStoreProfile, memoryStoreSSE, memoryStoreToken, ScoreTypes } from '../../../utils/global';
+import { memoryStoreProfile, memoryStoreSSE, memoryStoreToken } from '../../../utils/global';
 import { INTERNAL_SERVER_ERROR, TIMEOUT_ERROR, TWITTER_APP } from '../utils/constants';
 import { v4 as uuidv4 } from 'uuid';
-import { UserProfile } from '../entity/user-profile';
-import { SmartProfile } from '../../user-service/entity/smart-profile';
-// import { AppDataSource } from '../../../data-source';
-// import { User } from '../../user-service/entity/user';
-// import { attestProfile } from '../utils/eas';
+import { SmartProfile, ScoreTypes } from '@plurality-network/smart-profile-utils';
 
 dotenv.config();
 
@@ -108,8 +104,8 @@ twitterRouter.post(
 twitterRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfileMapEmpty, async (req, res) => {
   // #swagger.tags = ['OAuth']
   /* #swagger.security = [{
-          "bearerAuth": []
-  }] */
+            "bearerAuth": []
+    }] */
   try {
     Logger.info(`${TWITTER_APP}: Request for information has been received successfully with id ${req.accessTokenID}`);
     const accessToken = memoryStoreToken.get(req.accessTokenID);
@@ -245,43 +241,33 @@ twitterRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfile
       twitterProfile.reputationScore = reputationScore;
 
       // Create User Profile Objects
-      const userProfile = new UserProfile();
-      userProfile.username = twitterProfile?.username;
-      userProfile.avatar = twitterProfile?.profileImageUrl;
-      userProfile.interests = twitterProfile?.interests;
-      userProfile.reputationTags = twitterProfile?.introTags;
-      userProfile.scores.push({
+      const smartProfile = new SmartProfile();
+      smartProfile.privateData.attestedCred.interests = twitterProfile?.interests;
+      smartProfile.privateData.attestedCred.reputationTags = twitterProfile?.introTags;
+      smartProfile.scores.push({
         scoreType: ScoreTypes.reputationScore,
         scoreValue: twitterProfile?.reputationScore,
       });
-      userProfile.extra.push({ field: 'tweet count', value: twitterProfile?.tweetCount });
-      userProfile.extra.push({ field: 'like count', value: twitterProfile?.likeCount });
-      userProfile.extra.push({ field: 'listed count', value: twitterProfile?.listedCount });
-      userProfile.extra.push({ field: 'followers count', value: twitterProfile?.followersCount });
-      userProfile.extra.push({ field: 'following count', value: twitterProfile?.followingCount });
-      // profile attestation
-      // const existingUser = await AppDataSource.getRepository(User).findOne({
-      //   where: {
-      //     id: req?.user?.id
-      //   },
-      // });
-      // const attestation = await attestProfile(req?.user?.id, userProfile, existingUser?.address || "");
-      // userProfile.setAttestation(attestation)
+      const counts = {
+        tweetCount: twitterProfile?.tweetCount,
+        likeCount: twitterProfile?.likeCount,
+        listedCount: twitterProfile?.listedCount,
+        followersCount: twitterProfile?.followersCount,
+        followingCount: twitterProfile?.followingCount,
+      };
 
-      if (!memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
-        const smartProfile = new SmartProfile(userProfile);
-        smartProfile.connectedProfiles = [
-          { platformName: TWITTER_APP, userPlatformId: twitterProfile?.id, username: twitterProfile?.username },
-        ];
-        memoryStoreProfile.set(req?.user?.uniqueSessionId, smartProfile);
-        memoryStoreToken.delete(req?.accessTokenID);
-        Logger.info(`${TWITTER_APP}: Session destroyed successfully`);
-        Logger.info(`${TWITTER_APP}: User information has been delivered successfully`);
-        return res.status(200).json({ app: TWITTER_APP, message: 'success', individualProfile: userProfile });
-      } else {
-        Logger.error(`${TWITTER_APP}: A profile already exists`);
-        return res.status(500).json({ app: TWITTER_APP, error: 'Unauthorized', message: INTERNAL_SERVER_ERROR });
-      }
+      smartProfile.privateData.extendedPrivateData[TWITTER_APP] = counts;
+
+      smartProfile.privateData.attestedPlatformIds.connectedProfiles = [
+        { platformType: TWITTER_APP, userPlatformId: twitterProfile?.id, username: twitterProfile?.username },
+      ];
+      // storing time to avoid deadlock
+      const time = new Date().getTime(); // Current time in milliseconds
+      memoryStoreProfile.set(req?.user?.uniqueSessionId, { smartProfile, time });
+      memoryStoreToken.delete(req?.accessTokenID);
+      Logger.info(`${TWITTER_APP}: Session destroyed successfully`);
+      Logger.info(`${TWITTER_APP}: User information has been delivered successfully`);
+      return res.status(200).json({ app: TWITTER_APP, message: 'success' });
     } else {
       Logger.error(`${TWITTER_APP}: Token has been expired.`);
       return res.status(500).json({ app: TWITTER_APP, message: INTERNAL_SERVER_ERROR });
