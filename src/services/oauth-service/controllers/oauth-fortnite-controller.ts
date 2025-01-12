@@ -136,26 +136,19 @@ fortniteRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfil
 
       // Create user profile object
       const smartProfile = new SmartProfile();
-      smartProfile.username = fortniteProfile?.displayName;
-
-      // if (!memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
-        smartProfile.privateData.attestedPlatformIds.connectedProfiles = [
-          {
-            platformType: FORTNITE_APP,
-            userPlatformId: fortniteProfile?.accountId,
-            username: fortniteProfile?.displayName,
-          },
-        ];
-        // storing time to avoid deadlock
-        const time = new Date().getTime(); // Current time in milliseconds
-        memoryStoreProfile.set(req?.user?.uniqueSessionId, {smartProfile, time});
-        memoryStoreToken.delete(req?.accessTokenID);
-        Logger.info(`${FORTNITE_APP}: User information has been delivered successfully`);
-        return res.status(200).json({ app: FORTNITE_APP, message: 'success' });
-      // } else {
-      //   Logger.error(`${FORTNITE_APP}: A profile already exists`);
-      //   return res.status(500).json({ app: FORTNITE_APP, error: 'Unauthorized', message: INTERNAL_SERVER_ERROR });
-      // }
+      smartProfile.privateData.attestedPlatformIds.connectedProfiles = [
+        {
+          platformType: FORTNITE_APP,
+          userPlatformId: fortniteProfile?.accountId,
+          username: fortniteProfile?.displayName,
+        },
+      ];
+      // storing time to avoid deadlock
+      const time = new Date().getTime(); // Current time in milliseconds
+      memoryStoreProfile.set(req?.user?.uniqueSessionId, {smartProfile, time});
+      memoryStoreToken.delete(req?.accessTokenID);
+      Logger.info(`${FORTNITE_APP}: User information has been delivered successfully`);
+      return res.status(200).json({ app: FORTNITE_APP, message: 'success' });
     } else {
       Logger.error(`${FORTNITE_APP}: Token has been expired.`);
       return res.status(500).json({ app: FORTNITE_APP, error: 'Unauthorized', message: INTERNAL_SERVER_ERROR });

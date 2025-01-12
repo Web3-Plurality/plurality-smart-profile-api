@@ -206,8 +206,6 @@ tiktokRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated,
 
         // Create User Profile Objects
         const smartProfile = new SmartProfile();
-        smartProfile.username = tiktokProfile?.user.username;
-        smartProfile.avatar = tiktokProfile?.user.avatarUrl;
         smartProfile.privateData.attestedCred.interests = tiktokProfile?.interests;
         smartProfile.privateData.attestedCred.reputationTags = tiktokProfile?.introTags;
         smartProfile.scores.push({
@@ -221,9 +219,8 @@ tiktokRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated,
           likesCount: tiktokProfile?.user.likesCount
 
         }
-        smartProfile.privateData.extendedPrivateData["tikTokCounts"] = counts;
+        smartProfile.privateData.extendedPrivateData[TIKTOK_APP] = counts;
 
-        // if (!memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
         smartProfile.privateData.attestedPlatformIds.connectedProfiles = [
           { platformType: TIKTOK_APP, userPlatformId: '', username: tiktokProfile?.user?.username },
         ];
@@ -234,10 +231,6 @@ tiktokRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated,
         Logger.info(`${TIKTOK_APP}: Session destroyed successfully`);
         Logger.info(`${TIKTOK_APP}: User information has been delivered successfully`);
         return res.status(200).json({ app: TIKTOK_APP, message: 'success' });
-        // } else {
-        //   Logger.error(`${TIKTOK_APP}: A profile already exists`);
-        //   return res.status(500).json({ app: TIKTOK_APP, error: 'Unauthorized', message: INTERNAL_SERVER_ERROR });
-        // }
       } else {
         Logger.error(`${TIKTOK_APP}: Token has been expired.`);
         return res.status(500).json({ app: TIKTOK_APP, message: INTERNAL_SERVER_ERROR });

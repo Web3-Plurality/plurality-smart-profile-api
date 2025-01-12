@@ -139,7 +139,6 @@ snapchatRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated,
         smartProfile.username = snapChatProfile.displayName;
         smartProfile.avatar = snapChatProfile.bitmoji;
 
-        // if (!memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
         smartProfile.privateData.attestedPlatformIds.connectedProfiles = [
           {
             platformType: SNAPCHAT_APP,
@@ -157,10 +156,6 @@ snapchatRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated,
         Logger.error(`${SNAPCHAT_APP}: A profile already exists`);
         return res.status(500).json({ app: SNAPCHAT_APP, error: 'Unauthorized', message: INTERNAL_SERVER_ERROR });
       }
-      // } else {
-      //   Logger.error(`${SNAPCHAT_APP}: Token has been expired.`);
-      //   return res.status(500).json({ app: SNAPCHAT_APP, message: INTERNAL_SERVER_ERROR });
-      // }
     } catch (error: any) {
       if (error.code === 'ECONNABORTED') {
         Logger.error(`${SNAPCHAT_APP}: Request timeout error in fetching userinfo: ${error.message}`);

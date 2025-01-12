@@ -223,10 +223,7 @@ robloxRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated,
         robloxProfile.reputationScore += calculateReputation(robloxProfile);
         // Create user profile object
         const smartProfile = new SmartProfile();
-        smartProfile.username = robloxProfile?.name;
         smartProfile.privateData.attestedCred.interests = robloxProfile?.interests;
-        smartProfile.avatar = robloxProfile?.avatar;
-        smartProfile.bio = robloxProfile?.about;
         smartProfile.scores.push({
           scoreType: ScoreTypes.reputationScore,
           scoreValue: robloxProfile?.reputationScore,
@@ -239,8 +236,7 @@ robloxRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated,
           followers: robloxProfile?.followers,
           following: robloxProfile?.following,
         }
-        smartProfile.privateData.extendedPrivateData['robloxCounts'] = counts;
-        // if (!memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
+        smartProfile.privateData.extendedPrivateData[ROBLOX_APP] = counts;
         smartProfile.privateData.attestedPlatformIds.connectedProfiles = [
           { platformType: ROBLOX_APP, userPlatformId: '', username: robloxProfile?.name },
         ];
@@ -250,10 +246,6 @@ robloxRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated,
         memoryStoreToken.delete(req?.accessTokenID);
         Logger.info(`${ROBLOX_APP}: User information has been delivered successfully`);
         return res.status(200).json({ app: ROBLOX_APP, message: 'success' });
-        // } else {
-        //   Logger.error(`${ROBLOX_APP}: A profile already exists`);
-        //   return res.status(500).json({ app: ROBLOX_APP, error: 'Unauthorized', message: INTERNAL_SERVER_ERROR });
-        // }
       } else {
         Logger.error(`${ROBLOX_APP}: Token has been expired.`);
         return res.status(500).json({ app: ROBLOX_APP, message: INTERNAL_SERVER_ERROR });

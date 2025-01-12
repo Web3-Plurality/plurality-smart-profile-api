@@ -155,13 +155,9 @@ instagramRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfi
         const interests = await analyze(prompt);
         instaProfile.interests = interests?.Interests || [];
       }
-
       // Create user profile object
       const smartProfile = new SmartProfile();
-      smartProfile.username = instaProfile?.username;
       smartProfile.privateData.attestedCred.interests = instaProfile?.interests;
-
-      // if (!memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
       smartProfile.privateData.attestedPlatformIds.connectedProfiles = [
         { platformType: INSTAGRAM_APP, userPlatformId: instaProfile?.id, username: instaProfile?.username },
       ];
@@ -176,10 +172,6 @@ instagramRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfi
       Logger.error(`${INSTAGRAM_APP}: A profile already exists`);
       return res.status(500).json({ app: INSTAGRAM_APP, error: 'Unauthorized', message: INTERNAL_SERVER_ERROR });
     }
-    // } else {
-    //   Logger.error(`${INSTAGRAM_APP}: Token has been expired.`);
-    //   return res.status(500).json({ app: INSTAGRAM_APP, message: INTERNAL_SERVER_ERROR });
-    // }
   } catch (error: any) {
     if (error.code === 'ECONNABORTED') {
       Logger.error(`${INSTAGRAM_APP}: Request timeout error in fetching userinfo: ${error.message}`);

@@ -244,8 +244,6 @@ twitterRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated,
 
         // Create User Profile Objects
         const smartProfile = new SmartProfile();
-        smartProfile.username = twitterProfile?.username;
-        smartProfile.avatar = twitterProfile?.profileImageUrl;
         smartProfile.privateData.attestedCred.interests = twitterProfile?.interests;
         smartProfile.privateData.attestedCred.reputationTags = twitterProfile?.introTags;
         smartProfile.scores.push({
@@ -260,9 +258,8 @@ twitterRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated,
           followingCount: twitterProfile?.followingCount,
         }
 
-        smartProfile.privateData.extendedPrivateData["twitterCounts"] = counts;
+        smartProfile.privateData.extendedPrivateData[TWITTER_APP] = counts;
 
-        // if (!memoryStoreProfile.get(req?.user?.uniqueSessionId)) {
         smartProfile.privateData.attestedPlatformIds.connectedProfiles = [
           { platformType: TWITTER_APP, userPlatformId: twitterProfile?.id, username: twitterProfile?.username },
         ];
@@ -273,10 +270,6 @@ twitterRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated,
         Logger.info(`${TWITTER_APP}: Session destroyed successfully`);
         Logger.info(`${TWITTER_APP}: User information has been delivered successfully`);
         return res.status(200).json({ app: TWITTER_APP, message: 'success' });
-        // } else {
-        //   Logger.error(`${TWITTER_APP}: A profile already exists`);
-        //   return res.status(500).json({ app: TWITTER_APP, error: 'Unauthorized', message: INTERNAL_SERVER_ERROR });
-        // }
       } else {
         Logger.error(`${TWITTER_APP}: Token has been expired.`);
         return res.status(500).json({ app: TWITTER_APP, message: INTERNAL_SERVER_ERROR });
