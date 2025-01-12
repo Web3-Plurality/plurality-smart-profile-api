@@ -108,8 +108,7 @@ facebookRouter.post(
 );
 
 // Return User Object
-facebookRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfileMapEmpty,
-   async (req, res) => {
+facebookRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfileMapEmpty, async (req, res) => {
   // #swagger.tags = ['OAuth']
   /* #swagger.security = [{
           "bearerAuth": []
@@ -183,19 +182,19 @@ facebookRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfil
         scoreValue: facebookProfile?.reputationScore,
       });
       const counts = {
-        friendsCount: facebookProfile?.friendsCount ,
+        friendsCount: facebookProfile?.friendsCount,
         likesCount: facebookProfile?.likesCount,
-        musicCount: facebookProfile?.musicCount ,
+        musicCount: facebookProfile?.musicCount,
         athleastCount: facebookProfile?.athletesCount,
         favouriteTeamCount: facebookProfile?.favTeamCount,
-      }
+      };
       smartProfile.privateData.extendedPrivateData[FACEBOOK_APP] = counts;
       smartProfile.privateData.attestedPlatformIds.connectedProfiles = [
         { platformType: FACEBOOK_APP, userPlatformId: '', username: facebookProfile?.name },
       ];
       // storing time to avoid deadlock
       const time = new Date().getTime(); // Current time in milliseconds
-      memoryStoreProfile.set(req?.user?.uniqueSessionId, {smartProfile, time});
+      memoryStoreProfile.set(req?.user?.uniqueSessionId, { smartProfile, time });
       memoryStoreToken.delete(req?.accessTokenID);
       Logger.info(`${FACEBOOK_APP}: User information has been delivered successfully`);
       return res.status(200).json({ app: FACEBOOK_APP, message: 'success' });

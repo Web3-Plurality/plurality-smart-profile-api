@@ -75,7 +75,7 @@ export const isProfileMapEmpty = async (req, res, next) => {
   try {
     const profile = memoryStoreProfile.get(req?.user?.uniqueSessionId);
     const currentTime = new Date().getTime();
-    if (profile &&  (currentTime - profile?.time)/1000 < 60){
+    if (profile && (currentTime - profile?.time) / 1000 < 60) {
       Logger.error(`A profile is already stored in memory can not proceed to connect more profiles`);
       return res.status(400).send('A profile is already stored in memory');
     } else {

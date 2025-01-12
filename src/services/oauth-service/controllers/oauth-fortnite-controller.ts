@@ -104,8 +104,7 @@ fortniteRouter.post(
 );
 
 // Return User Object
-fortniteRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfileMapEmpty,
-   async (req, res) => {
+fortniteRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfileMapEmpty, async (req, res) => {
   // #swagger.tags = ['OAuth']
   /* #swagger.security = [{
           "bearerAuth": []
@@ -145,7 +144,7 @@ fortniteRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfil
       ];
       // storing time to avoid deadlock
       const time = new Date().getTime(); // Current time in milliseconds
-      memoryStoreProfile.set(req?.user?.uniqueSessionId, {smartProfile, time});
+      memoryStoreProfile.set(req?.user?.uniqueSessionId, { smartProfile, time });
       memoryStoreToken.delete(req?.accessTokenID);
       Logger.info(`${FORTNITE_APP}: User information has been delivered successfully`);
       return res.status(200).json({ app: FORTNITE_APP, message: 'success' });
