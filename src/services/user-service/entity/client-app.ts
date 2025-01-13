@@ -35,4 +35,9 @@ export class ClientApp {
     default: AppType.login,
   })
   appType: string;
+
+  @Column({default:""}) // update it to not null letter
+  clientSecret: string;
+  
+
 }

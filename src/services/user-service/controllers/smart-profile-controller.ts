@@ -11,7 +11,6 @@ import { calculateSocialScore } from '../utils/score';
 import { plainToInstance } from 'class-transformer';
 import { SmartProfileMap } from '../entity/smart-profile-map';
 import { EarlyUser } from '../entity/early-user';
-import { ClientApp } from '../../crm-service/entity/client-app';
 import { isValidAttestation } from '../middlewares/auth-middleware';
 import { User } from '../entity/user';
 import {
@@ -20,6 +19,7 @@ import {
   SmartProfile,
   ScoreTypes,
 } from '@plurality-network/smart-profile-utils';
+import { ClientApp } from '../entity/client-app';
 
 export const smartProfileRouter = express.Router();
 dotenv.config();
