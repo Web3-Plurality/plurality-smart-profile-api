@@ -3,11 +3,12 @@ import * as dotenv from 'dotenv';
 import { AppDataSource } from '../../../data-source';
 import Logger from '../../../lib/logger';
 import { v2 as cloudinary } from 'cloudinary';
-import { AppType, ClientApp, IncentiveType } from '../../user-service/entity/client-app';
-import { isClientAuthenticated, isUserAuthenticated } from '../middlewares/auth-middleware';
-import { UserClientMap } from '../../user-service/entity/user-client-map';
+import { AppType, ClientApp, IncentiveType } from '../entity/client-app';
+import { isClientAuthenticated } from '../middlewares/auth-middleware';
+import { UserClientMap } from '../../auth-service/entity/user-client-map';
 import { User } from '../../user-service/entity/user';
 import crypto from "crypto"
+import { isAuthenticated } from '../../user-service/middlewares/auth-middleware';
 
 export const clientRouter = express.Router();
 dotenv.config();
@@ -136,7 +137,7 @@ clientRouter.get('/', async (req: Request, res: Response) => {
 });
 
 
-clientRouter.get('/validate',isUserAuthenticated, isClientAuthenticated, async (req: Request, res: Response) => {
+clientRouter.get('/validate', isAuthenticated, isClientAuthenticated, async (req: Request, res: Response) => {
   // #swagger.tags = ['Client App']
   try {
 

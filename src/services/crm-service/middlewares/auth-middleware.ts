@@ -2,7 +2,7 @@ import jwt from 'jsonwebtoken';
 import crypto from "crypto"
 import { AppDataSource } from '../../../data-source';
 import * as dotenv from 'dotenv';
-import { ClientApp } from '../../user-service/entity/client-app';
+import { ClientApp } from '../entity/client-app';
 
 dotenv.config();
 const clientAppRepository = AppDataSource.getRepository(ClientApp);
@@ -32,22 +32,4 @@ export const isClientAuthenticated = async (req, res, next) => {
 
     req.client = client;
     next();
-};
-
-
-// Middleware to authenticate JWT
-export const isUserAuthenticated = (req, res, next) => {
-    const token = req.headers.authorization && req.headers.authorization.split(' ')[1];
-
-    if (!token) {
-        return res.status(401).send('Token is missing');
-    }
-
-    jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
-        if (err) {
-            return res.status(403).send('Invalid token');
-        }
-        req.user = user;
-        next();
-    });
 };

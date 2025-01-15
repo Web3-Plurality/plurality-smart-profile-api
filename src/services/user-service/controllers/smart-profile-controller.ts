@@ -5,13 +5,12 @@ import { AppDataSource } from '../../../data-source';
 import Logger from '../../../lib/logger';
 import { v2 as cloudinary } from 'cloudinary';
 import { faker } from '@faker-js/faker';
-import { isAuthenticated } from '../../oauth-service/middlewares/oauth-middleware';
 import { memoryStoreProfile } from '../../../utils/global';
 import { calculateSocialScore } from '../utils/score';
 import { plainToInstance } from 'class-transformer';
 import { SmartProfileMap } from '../entity/smart-profile-map';
 import { EarlyUser } from '../entity/early-user';
-import { isValidAttestation } from '../middlewares/auth-middleware';
+import { isAuthenticated, isValidAttestation } from '../middlewares/auth-middleware';
 import { User } from '../entity/user';
 import {
   normalizeSmartProfile,
@@ -19,13 +18,11 @@ import {
   SmartProfile,
   ScoreTypes,
 } from '@plurality-network/smart-profile-utils';
-import { ClientApp } from '../entity/client-app';
 
 export const smartProfileRouter = express.Router();
 dotenv.config();
 const smartProfileMapRepository = AppDataSource.getRepository(SmartProfileMap);
 const earlyUserRepository = AppDataSource.getRepository(EarlyUser);
-const clientAppRepository = AppDataSource.getRepository(ClientApp);
 const userRepository = AppDataSource.getRepository(User);
 
 /* eslint-disable */
@@ -89,11 +86,6 @@ smartProfileRouter.put(
       // load this dynamically from headers
       // add a check if this profileTypeStreamId exists in client app table
       const profileTypeStreamId = req.headers['x-profile-type-stream-id'];
-      const existingClient = await clientAppRepository.findOne({ where: { streamId: profileTypeStreamId } });
-      if (!existingClient) {
-        Logger.error(`Client id not found`);
-        return res.status(400).json({ error: 'Client id not found' });
-      }
       const userUpdateReqData = JSON.parse(JSON.stringify(req.body.data));
       const smartProfile = normalizeSmartProfile(req?.body?.smartProfile);
       const id = req?.user?.id;
@@ -189,11 +181,6 @@ smartProfileRouter.post(
       if (!profileTypeStreamId) {
         Logger.error(`Fatal error due to missing profile type stream id`);
         return res.status(400).json({ errors: 'profile type stream id is missing' });
-      }
-      const existingClient = await clientAppRepository.findOne({ where: { streamId: profileTypeStreamId } });
-      if (!existingClient) {
-        Logger.error(`Client id not found`);
-        return res.status(400).json({ error: 'Client id not found' });
       }
       const id = req?.user?.uniqueSessionId;
       const memorySmartProfile = memoryStoreProfile.get(id)?.smartProfile;

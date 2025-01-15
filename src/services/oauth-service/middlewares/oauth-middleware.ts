@@ -1,7 +1,6 @@
 import { Request, Response } from 'express';
 import { memoryStoreToken, memoryStoreSSE, memoryStoreProfile } from '../../../utils/global';
 import Logger from '../../../lib/logger';
-import jwt from 'jsonwebtoken';
 import * as dotenv from 'dotenv';
 import { ethers } from 'ethers';
 
@@ -54,22 +53,6 @@ export function hasValidEventParam(req: Request, res: Response, next) {
   req.sseID = sseID;
   return next();
 }
-// Middleware to authenticate JWT
-export const isAuthenticated = (req, res, next) => {
-  const token = req.headers.authorization && req.headers.authorization.split(' ')[1];
-
-  if (!token) {
-    return res.status(401).send('Token is missing');
-  }
-
-  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
-    if (err) {
-      return res.status(403).send('Invalid token');
-    }
-    req.user = user;
-    next();
-  });
-};
 
 export const isProfileMapEmpty = async (req, res, next) => {
   try {

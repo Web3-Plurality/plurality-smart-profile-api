@@ -7,7 +7,7 @@ import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
 import { LoginType, User } from '../../user-service/entity/user';
 import { AppDataSource } from '../../../data-source';
-import { AddUserClientMap } from '../../user-service/utils/user';
+import { AddUserClientMap } from '../utils/user';
 import * as dotenv from 'dotenv';
 
 dotenv.config();

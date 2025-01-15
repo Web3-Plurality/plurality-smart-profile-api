@@ -9,7 +9,6 @@ import {
   hasValidAccessTokenHeader,
   hasValidEventHeader,
   hasValidEventParam,
-  isAuthenticated,
   isProfileMapEmpty,
 } from '../middlewares/oauth-middleware';
 import Logger from '../../../lib/logger';
@@ -17,6 +16,7 @@ import { memoryStoreProfile, memoryStoreSSE, memoryStoreToken } from '../../../u
 import { INTERNAL_SERVER_ERROR, TIMEOUT_ERROR, TWITTER_APP } from '../utils/constants';
 import { v4 as uuidv4 } from 'uuid';
 import { SmartProfile, ScoreTypes } from '@plurality-network/smart-profile-utils';
+import { isAuthenticated } from '../../user-service/middlewares/auth-middleware';
 
 dotenv.config();
 

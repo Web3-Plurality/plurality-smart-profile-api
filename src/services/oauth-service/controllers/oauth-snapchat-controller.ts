@@ -6,7 +6,6 @@ import {
   hasValidAccessTokenHeader,
   hasValidEventHeader,
   hasValidEventParam,
-  isAuthenticated,
   isProfileMapEmpty,
 } from '../middlewares/oauth-middleware';
 import Logger from '../../../lib/logger';
@@ -16,6 +15,7 @@ import OAuthSnapChatStrategy from '../strategies/OAuthSnapChatStrategy';
 import { SnapChatProfile } from '../entity/snapchat';
 import { v4 as uuidv4 } from 'uuid';
 import { SmartProfile } from '@plurality-network/smart-profile-utils';
+import { isAuthenticated } from '../../user-service/middlewares/auth-middleware';
 
 dotenv.config();
 

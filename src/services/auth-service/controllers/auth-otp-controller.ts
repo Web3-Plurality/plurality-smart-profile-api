@@ -5,7 +5,7 @@ import { AppDataSource } from '../../../data-source';
 import { LoginType, User } from '../../user-service/entity/user';
 import { v4 as uuidv4 } from 'uuid';
 import jwt from 'jsonwebtoken';
-import { AddUserClientMap } from '../../user-service/utils/user';
+import { AddUserClientMap } from '../utils/user';
 import * as dotenv from 'dotenv';
 
 dotenv.config();
@@ -88,7 +88,6 @@ authOTPRouter.post('/authenticate', async function (req, res) {
         email: email,
       },
     });
-
     if (existingUser) {
       Logger.info(`This user already exists!`);
       token = jwt.sign({ id: existingUser?.id, uniqueSessionId }, process.env.JWT_SECRET, { expiresIn: '1d' });

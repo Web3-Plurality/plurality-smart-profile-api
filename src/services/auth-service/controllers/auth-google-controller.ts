@@ -15,7 +15,7 @@ import {
   hasValidEventParam,
 } from '../../oauth-service/middlewares/oauth-middleware';
 import { GOOGLE_APP } from '../../oauth-service/utils/constants';
-import { AddUserClientMap } from '../../user-service/utils/user';
+import { AddUserClientMap } from '../utils/user';
 import stytch, { OTPsEmailLoginOrCreateRequest } from 'stytch';
 
 dotenv.config();

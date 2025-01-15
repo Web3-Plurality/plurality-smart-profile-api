@@ -5,9 +5,10 @@ import { User } from '../entity/user';
 import Logger from '../../../lib/logger';
 import { v2 as cloudinary } from 'cloudinary';
 import { ethers } from 'ethers';
-import { isAuthenticated, isValidAddress } from '../../oauth-service/middlewares/oauth-middleware';
+import { isValidAddress } from '../../oauth-service/middlewares/oauth-middleware';
 import { app } from '../../..';
 import axios from 'axios';
+import { isAuthenticated } from '../middlewares/auth-middleware';
 
 export const capacityRouter = express.Router();
 dotenv.config();

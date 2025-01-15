@@ -1,6 +1,6 @@
 import { AppDataSource } from '../../../data-source';
 import Logger from '../../../lib/logger';
-import { ClientApp } from '../entity/client-app';
+import { ClientApp } from '../../crm-service/entity/client-app';
 import { UserClientMap } from '../entity/user-client-map';
 
 const userClientMapRepository = AppDataSource.getRepository(UserClientMap);
