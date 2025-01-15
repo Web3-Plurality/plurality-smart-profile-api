@@ -7,7 +7,7 @@ import { AppType, ClientApp, IncentiveType } from '../entity/client-app';
 import { isClientAuthenticated } from '../middlewares/auth-middleware';
 import { UserClientMap } from '../../auth-service/entity/user-client-map';
 import { User } from '../../user-service/entity/user';
-import crypto from "crypto"
+import crypto from 'crypto';
 import { isAuthenticated } from '../../user-service/middlewares/auth-middleware';
 
 export const clientRouter = express.Router();
@@ -39,7 +39,6 @@ clientRouter.post('/', async (req: Request, res: Response) => {
     const clientSecret = crypto.randomBytes(32).toString('hex');
     const hashedSecret = crypto.createHash('sha256').update(clientSecret).digest('hex');
 
-
     // Insert into clientApp
     const newClientApp = await clientAppRepository.create({
       streamId: streamId,
@@ -48,13 +47,13 @@ clientRouter.post('/', async (req: Request, res: Response) => {
       domains: JSON.stringify(domains),
       appType: appType.toLowerCase() == 'RSM' ? AppType.rsm : AppType.login,
       incentiveType: incentiveType.toLowerCase() == 'STARS' ? IncentiveType.stars : IncentiveType.points,
-      clientSecret: hashedSecret
+      clientSecret: hashedSecret,
     });
     await clientAppRepository.save(newClientApp);
     Logger.info(`clientApp created: ${newClientApp.id}`);
     return res.status(200).json({
       message: 'clientApp created',
-      data: {...newClientApp,clientSecret:clientSecret},
+      data: { ...newClientApp, clientSecret: clientSecret },
     });
   } catch (error) {
     Logger.error(`Fatal error due to unknown reason: ${JSON.stringify(error)}`);
@@ -136,30 +135,28 @@ clientRouter.get('/', async (req: Request, res: Response) => {
   }
 });
 
-
 clientRouter.get('/validate', isAuthenticated, isClientAuthenticated, async (req: Request, res: Response) => {
   // #swagger.tags = ['Client App']
   try {
-
-    const userId = req?.user?.id
-    const client = req?.client
+    const userId = req?.user?.id;
+    const client = req?.client;
 
     const userClientMap = await userClientMapRepository.findOne({
       where: {
-          id: userId,
+        id: userId,
       },
-  });
-  if (userClientMap?.clientId !== client?.id ) {
-    return res.status(401).json({ error: 'user does not belong to the given client' });
-  }
+    });
+    if (userClientMap?.clientId !== client?.id) {
+      return res.status(401).json({ error: 'user does not belong to the given client' });
+    }
 
-  const user = await userRepository?.findOne({
-    where: {
-      id: userId,
-  },
-  })
+    const user = await userRepository?.findOne({
+      where: {
+        id: userId,
+      },
+    });
 
-    res.status(200).json({user})
+    res.status(200).json({ user });
   } catch (error) {
     Logger.error(`Fatal error due to unknown reason: ${JSON.stringify(error)}`);
     return res.status(500).json({ error: 'An error occurred while processing your request' });

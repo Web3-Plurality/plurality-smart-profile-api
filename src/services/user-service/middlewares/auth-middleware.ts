@@ -52,7 +52,7 @@ export const isValidAttestation = async (req, res, next) => {
       smartProfile,
       existingUser?.pkpAddress,
     );
-    if (isVerifiedSmartProfileAttestaion) { 
+    if (isVerifiedSmartProfileAttestaion) {
       Logger.info('Attestation Checked');
       //req.smartProfile=smartProfile;
       return next();
