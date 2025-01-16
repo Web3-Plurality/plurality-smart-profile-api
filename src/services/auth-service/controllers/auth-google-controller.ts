@@ -98,9 +98,11 @@ authGoogleRouter.get('/callback', passport.authenticate('google', { session: fal
       Logger.info(`new user created successfully with id ${addedUser?.id}`);
     }
 
-    
     Logger.info(`jwt token generated for user id ${existingUser?.id ? existingUser?.id : addedUser?.id}`);
-    memoryStoreToken.set(accessTokenId, { googleJwtToken: req?.user?.googleJwtToken, userId: existingUser?.id ? existingUser?.id : addedUser?.id });
+    memoryStoreToken.set(accessTokenId, {
+      googleJwtToken: req?.user?.googleJwtToken,
+      userId: existingUser?.id ? existingUser?.id : addedUser?.id,
+    });
     const url = `${process.env.WIDGET_UI_URL}?token_id=${accessTokenId}&redirect=${false}`;
 
     Logger.info(`Redirecting to ${url}`);

@@ -33,20 +33,21 @@ const userRegisterViaWallet = async (address: string, clientId: string) => {
     });
     Logger.info(`new user created with address: ${address}`);
     addedUser = await userRepository.save(newUser);
-    
   }
   //if client id exist then add in user client map
   if (clientId) {
-    const uniqueSessionId =  await AddUserClientMap(existingUser?.id ? existingUser?.id : addedUser?.id, clientId);
-    const token = jwt.sign({ id: existingUser?.id ? existingUser?.id : addedUser?.id, uniqueSessionId }, process.env.JWT_SECRET, { expiresIn: '1d' });
+    const uniqueSessionId = await AddUserClientMap(existingUser?.id ? existingUser?.id : addedUser?.id, clientId);
+    const token = jwt.sign(
+      { id: existingUser?.id ? existingUser?.id : addedUser?.id, uniqueSessionId },
+      process.env.JWT_SECRET,
+      { expiresIn: '1d' },
+    );
     Logger.info(`jwt token generated for user id ${existingUser?.id ? existingUser?.id : addedUser?.id}`);
     return { token, user: existingUser?.id ? existingUser : addedUser };
-    
   } else {
     Logger.error(`Client id not found`);
     throw new Error('Client id not found');
   }
-
 };
 
 //generate random string to take user signature

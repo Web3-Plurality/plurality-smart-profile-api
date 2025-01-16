@@ -103,7 +103,11 @@ authOTPRouter.post('/authenticate', async function (req, res) {
     if (clientId) {
       const uniqueSessionId = await AddUserClientMap(existingUser?.id ? existingUser?.id : addedUser?.id, clientId);
       Logger.info(`jwt token generated for user id ${existingUser?.id ? existingUser?.id : addedUser?.id}`);
-      const token = jwt.sign({ id: existingUser?.id ? existingUser?.id : addedUser?.id, uniqueSessionId }, process.env.JWT_SECRET, { expiresIn: '1d' });
+      const token = jwt.sign(
+        { id: existingUser?.id ? existingUser?.id : addedUser?.id, uniqueSessionId },
+        process.env.JWT_SECRET,
+        { expiresIn: '1d' },
+      );
       return res.status(200).json({
         success: true,
         token: token,
@@ -111,13 +115,10 @@ authOTPRouter.post('/authenticate', async function (req, res) {
         user: existingUser?.id ? existingUser : addedUser,
         userId: resp?.user_id,
       });
-
     } else {
       Logger.error(`Client id not found`);
       throw new Error('Client id not found');
     }
-
-
   } catch (err) {
     console.error(err);
     res.status(401).send('Authentication failed');

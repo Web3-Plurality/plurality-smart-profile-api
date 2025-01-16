@@ -36,6 +36,6 @@ export class ClientApp {
   })
   appType: string;
 
-  @Column({ nullable: false ,default:""})
+  @Column({ nullable: false, default: '' })
   clientSecret: string;
 }

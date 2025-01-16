@@ -109,7 +109,6 @@ clientRouter.put('/:id', async (req: Request, res: Response) => {
   }
 });
 
-
 clientRouter.put('/rotate-secret/:id', async (req: Request, res: Response) => {
   // #swagger.tags = ['Client App']
   try {
@@ -122,8 +121,8 @@ clientRouter.put('/rotate-secret/:id', async (req: Request, res: Response) => {
     });
 
     if (!client) {
-      Logger.error("client not found")
-      res.status(400).json({error:"client does not exist."})
+      Logger.error('client not found');
+      res.status(400).json({ error: 'client does not exist.' });
     }
     // Generate credentials
     const clientSecret = crypto.randomBytes(32).toString('hex');
@@ -136,7 +135,7 @@ clientRouter.put('/rotate-secret/:id', async (req: Request, res: Response) => {
     Logger.info(`clientApp secret updated: ${clientId}`);
     return res.status(200).json({
       message: 'clientApp updated',
-      clientSecret
+      clientSecret,
     });
   } catch (error) {
     Logger.error(`Fatal error due to unknown reason: ${JSON.stringify(error)}`);
