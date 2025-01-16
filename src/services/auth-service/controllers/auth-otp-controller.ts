@@ -65,9 +65,7 @@ authOTPRouter.post('/login', async function (req, res) {
 authOTPRouter.post('/authenticate', async function (req, res) {
   // #swagger.tags = ['Auth']
   try {
-    let token = '';
     let addedUser = {};
-    const uniqueSessionId = uuidv4();
     /* eslint-disable */
     const { code, email_id, subscribe, clientId } = req.body;
     const params: OTPsAuthenticateRequest = {
@@ -81,7 +79,6 @@ authOTPRouter.post('/authenticate', async function (req, res) {
     const resp = await stytchClient.otps.authenticate(params);
     Logger.info('stytch Authenticated successfully');
     // Check if the user with the given email already exists
-    console.log(resp);
     const email = resp?.user?.emails[0]?.email;
     const existingUser = await userRepository.findOne({
       where: {
@@ -90,7 +87,6 @@ authOTPRouter.post('/authenticate', async function (req, res) {
     });
     if (existingUser) {
       Logger.info(`This user already exists!`);
-      token = jwt.sign({ id: existingUser?.id, uniqueSessionId }, process.env.JWT_SECRET, { expiresIn: '1d' });
     } else {
       // If the user doesn't exist, insert a new row
       Logger.info(`The user with this email was not found`);
@@ -101,25 +97,27 @@ authOTPRouter.post('/authenticate', async function (req, res) {
       });
       addedUser = await userRepository.save(newUser);
       Logger.info(`new user created successfully with id ${addedUser?.id}`);
-      token = jwt.sign({ id: addedUser?.id, uniqueSessionId }, process.env.JWT_SECRET, { expiresIn: '1d' });
     }
 
     //if client id exist then add in user client map
     if (clientId) {
-      await AddUserClientMap(existingUser?.id ? existingUser?.id : addedUser?.id, clientId);
+      const uniqueSessionId = await AddUserClientMap(existingUser?.id ? existingUser?.id : addedUser?.id, clientId);
+      Logger.info(`jwt token generated for user id ${existingUser?.id ? existingUser?.id : addedUser?.id}`);
+      const token = jwt.sign({ id: existingUser?.id ? existingUser?.id : addedUser?.id, uniqueSessionId }, process.env.JWT_SECRET, { expiresIn: '1d' });
+      return res.status(200).json({
+        success: true,
+        token: token,
+        stytchToken: resp?.session_jwt,
+        user: existingUser?.id ? existingUser : addedUser,
+        userId: resp?.user_id,
+      });
+
     } else {
       Logger.error(`Client id not found`);
       throw new Error('Client id not found');
     }
 
-    Logger.info(`jwt token generated for user id ${existingUser?.id ? existingUser?.id : addedUser?.id}`);
-    return res.status(200).json({
-      success: true,
-      token: token,
-      stytchToken: resp?.session_jwt,
-      user: existingUser?.id ? existingUser : addedUser,
-      userId: resp?.user_id,
-    });
+
   } catch (err) {
     console.error(err);
     res.status(401).send('Authentication failed');

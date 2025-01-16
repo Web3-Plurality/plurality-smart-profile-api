@@ -14,11 +14,11 @@ export const AddUserClientMap = async (userId: string, clientId: string) => {
       Logger.error(`Client with id ${clientId} not found`);
       throw new Error('Client not found');
     }
-
     // Create a new mapping
     const newUserClientMap = userClientMapRepository.create({ userId, clientId });
     await userClientMapRepository.save(newUserClientMap);
     Logger.info(`UserClientMap created: ${newUserClientMap.id}`);
+    return newUserClientMap.id
   } catch (error) {
     Logger.error(`Error in AddUserClientMap: ${error.message || JSON.stringify(error)}`);
     throw error;

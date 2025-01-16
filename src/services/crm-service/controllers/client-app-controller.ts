@@ -53,7 +53,7 @@ clientRouter.post('/', async (req: Request, res: Response) => {
     Logger.info(`clientApp created: ${newClientApp.id}`);
     return res.status(200).json({
       message: 'clientApp created',
-      data: { ...newClientApp, clientSecret: clientSecret },
+      data: { clientId: newClientApp?.id, clientSecret: clientSecret },
     });
   } catch (error) {
     Logger.error(`Fatal error due to unknown reason: ${JSON.stringify(error)}`);
@@ -109,6 +109,41 @@ clientRouter.put('/:id', async (req: Request, res: Response) => {
   }
 });
 
+
+clientRouter.put('/rotate-secret/:id', async (req: Request, res: Response) => {
+  // #swagger.tags = ['Client App']
+  try {
+    const clientId = req.params.id;
+    // check customer exist already
+    const client = await clientAppRepository.findOne({
+      where: {
+        id: clientId,
+      },
+    });
+
+    if (!client) {
+      Logger.error("client not found")
+      res.status(400).json({error:"client does not exist."})
+    }
+    // Generate credentials
+    const clientSecret = crypto.randomBytes(32).toString('hex');
+    const hashedSecret = crypto.createHash('sha256').update(clientSecret).digest('hex');
+    // updated data
+    const updateData = {
+      clientSecret: hashedSecret,
+    };
+    await clientAppRepository.update({ id: clientId }, updateData);
+    Logger.info(`clientApp secret updated: ${clientId}`);
+    return res.status(200).json({
+      message: 'clientApp updated',
+      clientSecret
+    });
+  } catch (error) {
+    Logger.error(`Fatal error due to unknown reason: ${JSON.stringify(error)}`);
+    return res.status(500).json({ error: 'An error occurred while processing your request' });
+  }
+});
+
 clientRouter.get('/', async (req: Request, res: Response) => {
   // #swagger.tags = ['Client App']
   try {
@@ -138,12 +173,11 @@ clientRouter.get('/', async (req: Request, res: Response) => {
 clientRouter.get('/validate', isAuthenticated, isClientAuthenticated, async (req: Request, res: Response) => {
   // #swagger.tags = ['Client App']
   try {
-    const userId = req?.user?.id;
     const client = req?.client;
 
     const userClientMap = await userClientMapRepository.findOne({
       where: {
-        id: userId,
+        id: req?.user?.uniqueSessionId,
       },
     });
     if (userClientMap?.clientId !== client?.id) {
@@ -152,7 +186,7 @@ clientRouter.get('/validate', isAuthenticated, isClientAuthenticated, async (req
 
     const user = await userRepository?.findOne({
       where: {
-        id: userId,
+        id: req?.user?.id,
       },
     });
 

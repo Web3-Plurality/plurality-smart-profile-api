@@ -15,6 +15,8 @@ export const AppDataSource = new DataSource({
     'src/services/crm-service/entity/*.ts',
     'src/services/oauth-service/entity/*.ts',
     'src/services/user-service/entity/*.ts',
+    'src/services/auth-service/entity/*.ts',
+
   ],
   synchronize: true,
   ssl: {

@@ -4,7 +4,6 @@ import { memoryStoreNonce } from '../../../utils/global';
 import { generateNonce, SiweMessage } from 'siwe';
 import { ethers } from 'ethers';
 import jwt from 'jsonwebtoken';
-import { v4 as uuidv4 } from 'uuid';
 import { LoginType, User } from '../../user-service/entity/user';
 import { AppDataSource } from '../../../data-source';
 import { AddUserClientMap } from '../utils/user';
@@ -16,8 +15,6 @@ export const authSiweRouter = express.Router();
 const userRepository = AppDataSource.getRepository(User);
 
 const userRegisterViaWallet = async (address: string, clientId: string) => {
-  const uniqueSessionId = uuidv4();
-  let token = '';
   let addedUser = {};
   // Check if the user with the given address already exists
   const existingUser = await userRepository.findOne({
@@ -27,7 +24,6 @@ const userRegisterViaWallet = async (address: string, clientId: string) => {
   });
   if (existingUser) {
     Logger.info(`This user already exists!`);
-    token = jwt.sign({ id: existingUser?.id, uniqueSessionId }, process.env.JWT_SECRET, { expiresIn: '1d' });
   } else {
     // If the user doesn't exist, insert a new row
     const newUser = await userRepository.create({
@@ -37,17 +33,20 @@ const userRegisterViaWallet = async (address: string, clientId: string) => {
     });
     Logger.info(`new user created with address: ${address}`);
     addedUser = await userRepository.save(newUser);
-    token = jwt.sign({ id: addedUser?.id, uniqueSessionId }, process.env.JWT_SECRET, { expiresIn: '1d' });
+    
   }
   //if client id exist then add in user client map
   if (clientId) {
-    await AddUserClientMap(existingUser?.id ? existingUser?.id : addedUser?.id, clientId);
+    const uniqueSessionId =  await AddUserClientMap(existingUser?.id ? existingUser?.id : addedUser?.id, clientId);
+    const token = jwt.sign({ id: existingUser?.id ? existingUser?.id : addedUser?.id, uniqueSessionId }, process.env.JWT_SECRET, { expiresIn: '1d' });
+    Logger.info(`jwt token generated for user id ${existingUser?.id ? existingUser?.id : addedUser?.id}`);
+    return { token, user: existingUser?.id ? existingUser : addedUser };
+    
   } else {
     Logger.error(`Client id not found`);
     throw new Error('Client id not found');
   }
-  Logger.info(`jwt token generated for user id ${existingUser?.id ? existingUser?.id : addedUser?.id}`);
-  return { token, user: existingUser?.id ? existingUser : addedUser };
+
 };
 
 //generate random string to take user signature

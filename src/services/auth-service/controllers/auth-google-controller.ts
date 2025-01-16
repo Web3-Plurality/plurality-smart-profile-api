@@ -56,10 +56,8 @@ authGoogleRouter.get('/callback', passport.authenticate('google', { session: fal
  #swagger.ignore = true
 */
   try {
-    let token = '';
     let addedUser = {};
     const accessTokenId = uuidv4();
-    const uniqueSessionId = uuidv4();
     const email = req?.user?.email;
     const existingUser = await userRepository.findOne({
       where: {
@@ -69,7 +67,6 @@ authGoogleRouter.get('/callback', passport.authenticate('google', { session: fal
 
     if (existingUser) {
       Logger.info(`This user already exists!`);
-      token = jwt.sign({ id: existingUser?.id, uniqueSessionId }, process.env.JWT_SECRET, { expiresIn: '1d' });
       if (!existingUser.loginType) {
         Logger.info(`user ${existingUser.id} does not have login type, updating login type to google`);
         await userRepository.update(existingUser.id, { loginType: LoginType.google });
@@ -99,11 +96,11 @@ authGoogleRouter.get('/callback', passport.authenticate('google', { session: fal
       });
       addedUser = await userRepository.save(newUser);
       Logger.info(`new user created successfully with id ${addedUser?.id}`);
-      token = jwt.sign({ id: addedUser?.id, uniqueSessionId }, process.env.JWT_SECRET, { expiresIn: '1d' });
     }
 
+    
     Logger.info(`jwt token generated for user id ${existingUser?.id ? existingUser?.id : addedUser?.id}`);
-    memoryStoreToken.set(accessTokenId, { googleJwtToken: req?.user?.googleJwtToken, token: token });
+    memoryStoreToken.set(accessTokenId, { googleJwtToken: req?.user?.googleJwtToken, userId: existingUser?.id ? existingUser?.id : addedUser?.id });
     const url = `${process.env.WIDGET_UI_URL}?token_id=${accessTokenId}&redirect=${false}`;
 
     Logger.info(`Redirecting to ${url}`);
@@ -121,6 +118,7 @@ authGoogleRouter.post('/event', hasValidEventHeader, hasValidAccessTokenHeader, 
     Logger.info(`Request body sseUUID ${req?.sseID}`);
     const { redirect, clientId } = req.body;
     const serverSentEventResponse = memoryStoreSSE.get(req?.sseID);
+
     if (redirect) {
       const emailId = memoryStoreToken.get(req?.accessTokenID);
       serverSentEventResponse.write(`data: {"message":"received", "app":"google", "emailId":"${emailId}"}\n\n`);
@@ -129,22 +127,24 @@ authGoogleRouter.post('/event', hasValidEventHeader, hasValidAccessTokenHeader, 
       memoryStoreSSE.delete(req?.accessTokenID);
       return res.status(200).json({ message: 'success' });
     }
+
     const tokenObj = memoryStoreToken.get(req?.accessTokenID);
-    serverSentEventResponse.write(
-      `data: {"message":"received", "app":"google", "googleJwtToken":"${tokenObj?.googleJwtToken}", "token": "${tokenObj?.token}"}\n\n`,
-    );
-    Logger.info(` Server Side Event has been sent successfully`);
-    memoryStoreSSE.delete(req?.sseID);
-    memoryStoreSSE.delete(req?.accessTokenID);
     //if client id exist then add in user client map
     if (clientId) {
       console.log('clientId', clientId);
-      await AddUserClientMap(jwt.decode(tokenObj?.token)?.id, clientId);
+      const uniqueSessionId = await AddUserClientMap(tokenObj?.userId, clientId);
+      const token = jwt.sign({ id: tokenObj?.userId, uniqueSessionId }, process.env.JWT_SECRET, { expiresIn: '1d' });
+      serverSentEventResponse.write(
+        `data: {"message":"received", "app":"google", "googleJwtToken":"${tokenObj?.googleJwtToken}", "token": "${token}"}\n\n`,
+      );
+      Logger.info(` Server Side Event has been sent successfully`);
+      memoryStoreSSE.delete(req?.sseID);
+      memoryStoreSSE.delete(req?.accessTokenID);
+      return res.status(200).json({ message: 'success' });
     } else {
       Logger.error(`Client id not found`);
       throw new Error('Client id not found');
     }
-    return res.status(200).json({ message: 'success' });
   } catch (error) {
     Logger.info(`Error in sending SSE ${error.message}`);
     return res.status(500).json({ message: 'Internal Server error' });
