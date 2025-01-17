@@ -4,7 +4,7 @@ FROM node:20
 WORKDIR /app
 
 # Copy package.json and package-lock.json files
-COPY package.json package-lock.json ./
+COPY package.json ./
 
 # Install system dependencies
 RUN apt-get update \
