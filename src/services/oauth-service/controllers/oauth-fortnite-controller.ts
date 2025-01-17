@@ -1,5 +1,5 @@
-import express, { Request, Response } from 'express';
-import passport from 'passport';
+import express, { NextFunction, Request, Response } from 'express';
+import passport, { DoneCallback } from 'passport';
 import * as dotenv from 'dotenv';
 import axios from 'axios';
 import {
@@ -23,10 +23,10 @@ dotenv.config();
 export const fortniteRouter = express.Router();
 
 // Serialization and deserialization
-passport.serializeUser(function (user, done) {
+passport.serializeUser(function (user, done: DoneCallback) {
   done(null, user);
 });
-passport.deserializeUser(function (obj: any, done) {
+passport.deserializeUser(function (obj: any, done: DoneCallback) {
   done(null, obj);
 });
 
@@ -45,14 +45,14 @@ passport.use(
       pkce: true,
     },
     // Verify callback
-    (accessToken: any, refreshToken: any, profile: any, done: any) => {
+    (accessToken: any, refreshToken: any, profile: any, done: DoneCallback) => {
       return done(null, { accessToken, refreshToken, accountId: jwt.decode(accessToken)?.sub });
     },
   ),
 );
 
 // Start authentication flow
-fortniteRouter.get('/', hasValidEventParam, isProfileMapEmpty, async (req: Request, res: Response, next) => {
+fortniteRouter.get('/', hasValidEventParam, isProfileMapEmpty, async (req: Request, res: Response, next: NextFunction) => {
   // #swagger.tags = ['OAuth']
   // #swagger.ignore = true
   Logger.info(`${FORTNITE_APP}: Request for Oauth has been received successfully on sse Id ${req.sseID}`);
@@ -60,14 +60,14 @@ fortniteRouter.get('/', hasValidEventParam, isProfileMapEmpty, async (req: Reque
 });
 
 // Callback handler
-fortniteRouter.get('/callback', passport.authenticate('fortnite', { session: false }), async (req, res) => {
+fortniteRouter.get('/callback', passport.authenticate('fortnite', { session: false }), async (req: Request, res: Response) => {
   // #swagger.tags = ['OAuth']
   // #swagger.ignore = true
   try {
     const accessTokenId = uuidv4();
     memoryStoreToken.set(accessTokenId, {
-      accessToken: req.user.accessToken,
-      accountId: req.user.accountId,
+      accessToken: req?.user?.accessToken,
+      accountId: req?.user?.accountId,
     });
     const url = `${process.env.WIDGET_UI_URL}?token_id=${accessTokenId}&app=${FORTNITE_APP}`;
     Logger.info(`${FORTNITE_APP}: Redirecting to ${url}`);
@@ -96,7 +96,7 @@ fortniteRouter.post(
       Logger.info(`${FORTNITE_APP}: Server Side Event has been sent successfully`);
       memoryStoreSSE.delete(req?.sseID);
       return res.status(200).json({ app: FORTNITE_APP, message: 'success' });
-    } catch (error) {
+    } catch (error: any) {
       Logger.info(`${FORTNITE_APP}: Error in sending SSE ${error.message}`);
       return res.status(500).json({ app: FORTNITE_APP, message: 'Internal Server error' });
     }
@@ -104,7 +104,7 @@ fortniteRouter.post(
 );
 
 // Return User Object
-fortniteRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfileMapEmpty, async (req, res) => {
+fortniteRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfileMapEmpty, async (req: Request, res: Response) => {
   // #swagger.tags = ['OAuth']
   /* #swagger.security = [{
           "bearerAuth": []
@@ -112,7 +112,7 @@ fortniteRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfil
   try {
     Logger.info(`${FORTNITE_APP}: Request for information has been received successfully with id ${req.accessTokenID}`);
     const { accessToken, accountId }: any = memoryStoreToken.get(req.accessTokenID);
-    let userFortnite = { data: {} };
+    let userFortnite: any = {};
 
     if (accessToken) {
       try {
@@ -123,7 +123,7 @@ fortniteRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfil
           },
           timeout: 20000,
         });
-      } catch (error) {
+      } catch (error: any) {
         if (error.code === 'ECONNABORTED') {
           Logger.error(`${FORTNITE_APP}: Request timeout error in fetching userinfo: ${error.message}`);
         } else {

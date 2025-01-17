@@ -13,7 +13,8 @@
     "skipLibCheck": true /* Skip type checking all .d.ts files. */,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
+    "strictPropertyInitialization": false,
   },
-  "include": ["src"],
-  "exclude": ["node_modules"]
+  "include": ["global.d.ts", "src"],
+  "exclude": ["node_modules","./swagger.json"]
 }

@@ -1,6 +1,6 @@
 export function createPrompt(prompt: any, content: any) {
   if (typeof content === 'object') {
-    const concatenatedCaptions = content.map((item) => item.caption).join(' ');
+    const concatenatedCaptions = content.map((item: any) => item.caption).join(' ');
     prompt[1].content += '\n' + concatenatedCaptions;
     return prompt;
   } else {

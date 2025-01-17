@@ -1,5 +1,5 @@
-import express, { Request, Response } from 'express';
-import passport from 'passport';
+import express, { NextFunction, Request, Response } from 'express';
+import passport, { DoneCallback } from 'passport';
 import * as dotenv from 'dotenv';
 import axios from 'axios';
 import {
@@ -25,10 +25,10 @@ dotenv.config();
 export const robloxRouter = express.Router();
 
 // Serialization and deserialization
-passport.serializeUser(function (user, done) {
+passport.serializeUser(function (user, done: DoneCallback) {
   done(null, user);
 });
-passport.deserializeUser(function (obj: any, done) {
+passport.deserializeUser(function (obj: any, done: DoneCallback) {
   done(null, obj);
 });
 
@@ -47,14 +47,14 @@ passport.use(
       pkce: true,
     },
     // Verify callback
-    (accessToken: any, refreshToken: any, profile: any, done: any) => {
+    (accessToken: string, refreshToken: string, profile: any, done: DoneCallback) => {
       return done(null, { accessToken, refreshToken, profile });
     },
   ),
 );
 
 // Start authentication flow
-robloxRouter.get('/', hasValidEventParam, isProfileMapEmpty, async (req: Request, res: Response, next) => {
+robloxRouter.get('/', hasValidEventParam, isProfileMapEmpty, async (req: Request, res: Response, next: NextFunction) => {
   // #swagger.tags = ['OAuth']
   // #swagger.ignore = true
   Logger.info(`${ROBLOX_APP}: Request for Oauth has been received successfully on sse Id ${req.sseID}`);
@@ -62,12 +62,12 @@ robloxRouter.get('/', hasValidEventParam, isProfileMapEmpty, async (req: Request
 });
 
 // Callback handler
-robloxRouter.get('/callback', passport.authenticate('roblox', { session: false }), async (req, res) => {
+robloxRouter.get('/callback', passport.authenticate('roblox', { session: false }), async (req: Request, res: Response) => {
   // #swagger.tags = ['OAuth']
   // #swagger.ignore = true
   try {
     const accessTokenId = uuidv4();
-    memoryStoreToken.set(accessTokenId, req.user.accessToken);
+    memoryStoreToken.set(accessTokenId, req?.user?.accessToken);
     const url = `${process.env.WIDGET_UI_URL}?token_id=${accessTokenId}&app=${ROBLOX_APP}`;
     Logger.info(`${ROBLOX_APP}: Redirecting to ${url}`);
     res.redirect(url);
@@ -95,7 +95,7 @@ robloxRouter.post(
       Logger.info(`${ROBLOX_APP}: Server Side Event has been sent successfully`);
       memoryStoreSSE.delete(req?.sseID);
       return res.status(200).json({ app: ROBLOX_APP, message: 'success' });
-    } catch (error) {
+    } catch (error: any) {
       Logger.info(`${ROBLOX_APP}: Error in sending SSE ${error.message}`);
       return res.status(500).json({ app: ROBLOX_APP, message: 'Internal Server error' });
     }
@@ -103,7 +103,7 @@ robloxRouter.post(
 );
 
 // Return User Object
-robloxRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfileMapEmpty, async (req, res) => {
+robloxRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfileMapEmpty, async (req: Request, res: Response) => {
   // #swagger.tags = ['OAuth']
   /* #swagger.security = [{
             "bearerAuth": []
@@ -111,8 +111,8 @@ robloxRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfileM
   try {
     Logger.info(`${ROBLOX_APP}: Request for information has been received successfully with id ${req.accessTokenID}`);
     const accessToken = memoryStoreToken.get(req.accessTokenID);
-    let userRoblox = { data: {} };
-    let inventoryData = [];
+    let userRoblox: any;
+    let inventoryData: any = [];
 
     if (accessToken) {
       try {
@@ -123,7 +123,7 @@ robloxRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfileM
           },
           timeout: 20000,
         });
-      } catch (error) {
+      } catch (error: any) {
         if (error.code === 'ECONNABORTED') {
           Logger.error(`${ROBLOX_APP}: Request timeout error in fetching userinfo: ${error.message}`);
         } else {
@@ -151,7 +151,7 @@ robloxRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfileM
           robloxProfile.premium = userData?.data?.premium;
           robloxProfile.about = userData?.data?.about;
         }
-      } catch (error) {
+      } catch (error: any) {
         if (error.code === 'ECONNABORTED') {
           Logger.error(`${ROBLOX_APP}: Request timeout error in fetching userinfo: ${error.message}`);
         } else {
@@ -171,7 +171,7 @@ robloxRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfileM
           },
         );
         robloxProfile.assests = inventoryData?.data?.inventoryItems;
-      } catch (error) {
+      } catch (error: any) {
         if (error.code === 'ECONNABORTED') {
           Logger.error(`${ROBLOX_APP}: Request timeout error in fetching userinfo: ${error.message}`);
         } else {
@@ -204,13 +204,13 @@ robloxRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfileM
 
       try {
         const robloxInsights = await scrapRoblox(robloxProfile?.profile);
-        robloxProfile.joinDate = robloxInsights?.joinDate;
-        robloxProfile.placesVisit = robloxInsights?.placesVisit;
-        robloxProfile.friends = robloxInsights?.friends;
-        robloxProfile.followers = robloxInsights?.followers;
-        robloxProfile.following = robloxInsights?.following;
-        robloxProfile.avatar = robloxInsights?.avatar;
-      } catch (error) {
+        robloxProfile.joinDate = robloxInsights?.joinDate || '';
+        robloxProfile.placesVisit = Number(robloxInsights?.placesVisit);
+        robloxProfile.friends = Number(robloxInsights?.friends);
+        robloxProfile.followers = Number(robloxInsights?.followers);
+        robloxProfile.following = Number(robloxInsights?.following);
+        robloxProfile.avatar = robloxInsights?.avatar || '';
+      } catch (error: any) {
         if (error.code === 'ECONNABORTED') {
           Logger.error(`${ROBLOX_APP}: Request timeout error in fetching userinfo: ${error.message}`);
         } else {

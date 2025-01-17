@@ -55,7 +55,7 @@ clientRouter.post('/', async (req: Request, res: Response) => {
       message: 'clientApp created',
       data: { clientId: newClientApp?.id, clientSecret: clientSecret },
     });
-  } catch (error) {
+  } catch (error: any) {
     Logger.error(`Fatal error due to unknown reason: ${JSON.stringify(error)}`);
     return res.status(500).json({ error: 'An error occurred while processing your request' });
   }
@@ -103,7 +103,7 @@ clientRouter.put('/:id', async (req: Request, res: Response) => {
     return res.status(200).json({
       message: 'clientApp updated',
     });
-  } catch (error) {
+  } catch (error: any) {
     Logger.error(`Fatal error due to unknown reason: ${JSON.stringify(error)}`);
     return res.status(500).json({ error: 'An error occurred while processing your request' });
   }
@@ -137,7 +137,7 @@ clientRouter.put('/rotate-secret/:id', async (req: Request, res: Response) => {
       message: 'clientApp updated',
       clientSecret,
     });
-  } catch (error) {
+  } catch (error: any) {
     Logger.error(`Fatal error due to unknown reason: ${JSON.stringify(error)}`);
     return res.status(500).json({ error: 'An error occurred while processing your request' });
   }
@@ -148,7 +148,7 @@ clientRouter.get('/', async (req: Request, res: Response) => {
   try {
     const origin = req.headers['x-domain'];
     const id: any = req.query.uuid;
-    const data = await clientAppRepository.findOne({
+    const data: any = await clientAppRepository.findOne({
       where: {
         id: id,
       },
@@ -163,7 +163,7 @@ clientRouter.get('/', async (req: Request, res: Response) => {
 
     Logger.error(`Invalid domain: ${origin}`);
     return res.status(400).json({ error: 'Invalid domain' });
-  } catch (error) {
+  } catch (error: any) {
     Logger.error(`Fatal error due to unknown reason: ${JSON.stringify(error)}`);
     return res.status(500).json({ error: 'An error occurred while processing your request' });
   }
@@ -190,7 +190,7 @@ clientRouter.get('/validate', isAuthenticated, isClientAuthenticated, async (req
     });
 
     res.status(200).json({ user });
-  } catch (error) {
+  } catch (error: any) {
     Logger.error(`Fatal error due to unknown reason: ${JSON.stringify(error)}`);
     return res.status(500).json({ error: 'An error occurred while processing your request' });
   }

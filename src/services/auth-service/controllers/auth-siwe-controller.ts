@@ -15,7 +15,7 @@ export const authSiweRouter = express.Router();
 const userRepository = AppDataSource.getRepository(User);
 
 const userRegisterViaWallet = async (address: string, clientId: string) => {
-  let addedUser = {};
+  let addedUser: any = {};
   // Check if the user with the given address already exists
   const existingUser = await userRepository.findOne({
     where: {
@@ -39,7 +39,7 @@ const userRegisterViaWallet = async (address: string, clientId: string) => {
     const uniqueSessionId = await AddUserClientMap(existingUser?.id ? existingUser?.id : addedUser?.id, clientId);
     const token = jwt.sign(
       { id: existingUser?.id ? existingUser?.id : addedUser?.id, uniqueSessionId },
-      process.env.JWT_SECRET,
+      process.env.JWT_SECRET || "",
       { expiresIn: '1d' },
     );
     Logger.info(`jwt token generated for user id ${existingUser?.id ? existingUser?.id : addedUser?.id}`);
@@ -51,7 +51,7 @@ const userRegisterViaWallet = async (address: string, clientId: string) => {
 };
 
 //generate random string to take user signature
-authSiweRouter.post('/login', (req, res) => {
+authSiweRouter.post('/login', (req: Request, res: Response) => {
   // #swagger.tags = ['Auth']
   try {
     const walletAddress: string = req.body.address;
@@ -64,17 +64,17 @@ authSiweRouter.post('/login', (req, res) => {
       Logger.info(`Nonce generated for address ${walletAddress}: ${nonce}`);
       return res.status(200).json({ message: 'success', nonce });
     }
-  } catch (error) {
+  } catch (error: any) {
     Logger.error(`Fatal error due to unknown reason: ${JSON.stringify(error)}`);
     return res.status(500).json({ error: 'An error occurred while processing your request' });
   }
 });
 // address, clientId, subscribe
-authSiweRouter.post('/authenticate', async function (req, res) {
+authSiweRouter.post('/authenticate', async function (req: Request, res: Response) {
   // #swagger.tags = ['Auth']
   try {
     const { address, clientId }: { address: string; clientId: string } = req.body;
-    const siweObj = req.headers['x-siwe'] ? JSON.parse(req.headers['x-siwe']) : '';
+    const siweObj = req.headers['x-siwe'] ? JSON.parse(Array.isArray(req.headers['x-siwe'])?req.headers['x-siwe'][0]: req.headers['x-siwe']) : '';
     const siweToken = siweObj?.siwe;
     const message = decodeURIComponent(siweObj?.message);
     const nonce = memoryStoreNonce.get(address);
@@ -86,7 +86,7 @@ authSiweRouter.post('/authenticate', async function (req, res) {
       return res.status(400).send('Invalid nonce');
     }
     // delete nonce with the address
-    delete memoryStoreNonce[address];
+    memoryStoreNonce.delete(address);
     // check signature
     if (!siweResponse.success) {
       Logger.error(`Invalid siwe token`);

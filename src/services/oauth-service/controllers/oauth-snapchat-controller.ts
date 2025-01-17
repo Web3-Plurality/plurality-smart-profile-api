@@ -1,4 +1,4 @@
-import express, { Request, Response } from 'express';
+import express, { NextFunction, Request, Response } from 'express';
 import passport from 'passport';
 import * as dotenv from 'dotenv';
 import axios from 'axios';
@@ -52,7 +52,7 @@ passport.use(
 );
 
 // Start authentication flow
-snapchatRouter.get('/', hasValidEventParam, isProfileMapEmpty, async (req: Request, res: Response, next) => {
+snapchatRouter.get('/', hasValidEventParam, isProfileMapEmpty, async (req: Request, res: Response, next: NextFunction) => {
   // #swagger.tags = ['OAuth']
   // #swagger.ignore = true
   Logger.info(`${SNAPCHAT_APP}: Request for Oauth has been received successfully on sse Id ${req.sseID}`);
@@ -60,12 +60,12 @@ snapchatRouter.get('/', hasValidEventParam, isProfileMapEmpty, async (req: Reque
 });
 
 // Callback handler
-snapchatRouter.get('/callback', passport.authenticate('snapchat', { session: false }), async (req, res) => {
+snapchatRouter.get('/callback', passport.authenticate('snapchat', { session: false }), async (req: Request, res: Response) => {
   // #swagger.tags = ['OAuth']
   // #swagger.ignore = true
   try {
     const accessTokenId = uuidv4();
-    memoryStoreToken.set(accessTokenId, req.user.accessToken);
+    memoryStoreToken.set(accessTokenId, req?.user?.accessToken);
     const url = `${process.env.WIDGET_UI_URL}?token_id=${accessTokenId}&app=${SNAPCHAT_APP}`;
     Logger.info(`${SNAPCHAT_APP}: Redirecting to ${url}`);
     res.redirect(url);
@@ -93,7 +93,7 @@ snapchatRouter.post(
       Logger.info(`${SNAPCHAT_APP}: Server Side Event has been sent successfully`);
       memoryStoreSSE.delete(req?.sseID);
       return res.status(200).json({ app: SNAPCHAT_APP, message: 'success' });
-    } catch (error) {
+    } catch (error: any) {
       Logger.info(`${SNAPCHAT_APP}: Error in sending event ${error.message}`);
       return res.status(500).json({ app: SNAPCHAT_APP, message: 'Internal Server error' });
     }
@@ -101,7 +101,7 @@ snapchatRouter.post(
 );
 
 // Return User Object
-snapchatRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfileMapEmpty, async (req, res) => {
+snapchatRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfileMapEmpty, async (req: Request, res: Response) => {
   // #swagger.tags = ['OAuth']
   /* #swagger.security = [{
             "bearerAuth": []
@@ -124,7 +124,7 @@ snapchatRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfil
             timeout: 20000,
           },
         );
-      } catch (error) {
+      } catch (error: any) {
         if (error.code === 'ECONNABORTED') {
           Logger.error(`${SNAPCHAT_APP}: Request timeout error in fetching userinfo: ${error.message}`);
         } else {

@@ -1,9 +1,8 @@
 import stytch, { OTPsAuthenticateRequest, OTPsEmailLoginOrCreateRequest } from 'stytch';
-import express from 'express';
+import express,{Request, Response} from 'express';
 import Logger from '../../../lib/logger';
 import { AppDataSource } from '../../../data-source';
 import { LoginType, User } from '../../user-service/entity/user';
-import { v4 as uuidv4 } from 'uuid';
 import jwt from 'jsonwebtoken';
 import { AddUserClientMap } from '../utils/user';
 import * as dotenv from 'dotenv';
@@ -20,7 +19,7 @@ const stytchClient = new stytch.Client({
 /* eslint-enable */
 
 // Start the authentication flow
-authOTPRouter.post('/login', async function (req, res) {
+authOTPRouter.post('/login', async function (req: Request, res: Response) {
   // #swagger.tags = ['Auth']
   try {
     const email: string = req.body.email;
@@ -62,10 +61,10 @@ authOTPRouter.post('/login', async function (req, res) {
 
 // Complete the authentication flow which mints the session
 // parameters : code, email_id, address, subscribe, clientId
-authOTPRouter.post('/authenticate', async function (req, res) {
+authOTPRouter.post('/authenticate', async function (req: Request, res: Response) {
   // #swagger.tags = ['Auth']
   try {
-    let addedUser = {};
+    let addedUser: User = new User();
     /* eslint-disable */
     const { code, email_id, subscribe, clientId } = req.body;
     const params: OTPsAuthenticateRequest = {
@@ -105,7 +104,7 @@ authOTPRouter.post('/authenticate', async function (req, res) {
       Logger.info(`jwt token generated for user id ${existingUser?.id ? existingUser?.id : addedUser?.id}`);
       const token = jwt.sign(
         { id: existingUser?.id ? existingUser?.id : addedUser?.id, uniqueSessionId },
-        process.env.JWT_SECRET,
+        process.env.JWT_SECRET || "",
         { expiresIn: '1d' },
       );
       return res.status(200).json({

@@ -1,4 +1,4 @@
-import express, { Request, Response } from 'express';
+import express, { NextFunction, Request, Response } from 'express';
 import * as dotenv from 'dotenv';
 import TikTokOAuth2Strategy from '../strategies/OAuthTikTokStrategy';
 import passport from 'passport';
@@ -52,7 +52,7 @@ passport.use(
 );
 
 // Start authentication flow
-tiktokRouter.get('/', hasValidEventParam, isProfileMapEmpty, async (req: Request, res: Response, next) => {
+tiktokRouter.get('/', hasValidEventParam, isProfileMapEmpty, async (req: Request, res: Response, next: NextFunction) => {
   // #swagger.tags = ['OAuth']
   // #swagger.ignore = true
   Logger.info(`${TIKTOK_APP}: Request for Tiktok Oauth has been received successfully on sse Id ${req.sseID}`);
@@ -61,12 +61,12 @@ tiktokRouter.get('/', hasValidEventParam, isProfileMapEmpty, async (req: Request
 });
 
 // Callback handler
-tiktokRouter.get('/callback', passport.authenticate('tiktok', { session: false }), async (req, res) => {
+tiktokRouter.get('/callback', passport.authenticate('tiktok', { session: false }), async (req: Request, res: Response) => {
   // #swagger.tags = ['OAuth']
   // #swagger.ignore = true
   try {
     const accessTokenId = uuidv4();
-    memoryStoreToken.set(accessTokenId, req.user.accessToken);
+    memoryStoreToken.set(accessTokenId, req?.user?.accessToken);
     const url = `${process.env.WIDGET_UI_URL}?token_id=${accessTokenId}&app=${TIKTOK_APP}`;
     Logger.info(`${TIKTOK_APP}: Redirecting to ${url}`);
     res.redirect(url);
@@ -95,7 +95,7 @@ tiktokRouter.post(
       Logger.info(`${TIKTOK_APP}: Server Side Event has been sent successfully`);
       memoryStoreSSE.delete(req?.sseID);
       return res.status(200).json({ app: TIKTOK_APP, message: 'success' });
-    } catch (error) {
+    } catch (error: any) {
       Logger.info(`${TIKTOK_APP}: Error in sending event ${error.message}`);
       return res.status(500).json({ app: TIKTOK_APP, message: 'Internal Server error' });
     }
@@ -103,7 +103,7 @@ tiktokRouter.post(
 );
 
 // Return User Object
-tiktokRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfileMapEmpty, async (req, res) => {
+tiktokRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfileMapEmpty, async (req: Request, res: Response) => {
   // #swagger.tags = ['OAuth']
   /* #swagger.security = [{
             "bearerAuth": []
@@ -156,7 +156,7 @@ tiktokRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfileM
           },
           timeout: 20000,
         });
-      } catch (error) {
+      } catch (error: any) {
         if (error.code === 'ECONNABORTED') {
           Logger.error(`${TIKTOK_APP}: Request timeout error in fetching userinfo: ${error.message}`);
         } else {
@@ -179,7 +179,7 @@ tiktokRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfileM
             timeout: 20000,
           },
         );
-      } catch (error) {
+      } catch (error: any) {
         if (error.code === 'ECONNABORTED') {
           Logger.error(`${TIKTOK_APP}: Request timeout error: ${error.message}`);
         } else {

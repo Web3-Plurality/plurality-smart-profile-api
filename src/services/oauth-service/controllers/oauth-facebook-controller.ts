@@ -1,5 +1,5 @@
-import express, { Request, Response } from 'express';
-import passport from 'passport';
+import express, { NextFunction, Request, Response } from 'express';
+import passport, { DoneCallback } from 'passport';
 import * as dotenv from 'dotenv';
 import axios from 'axios';
 import {
@@ -30,10 +30,10 @@ dotenv.config();
 export const facebookRouter = express.Router();
 
 // Serialization and deserialization
-passport.serializeUser(function (user, done) {
+passport.serializeUser(function (user, done: DoneCallback) {
   done(null, user);
 });
-passport.deserializeUser(function (obj: any, done) {
+passport.deserializeUser(function (obj: any, done: DoneCallback) {
   done(null, obj);
 });
 
@@ -52,14 +52,14 @@ passport.use(
       pkce: true,
     },
     // Verify callback
-    (accessToken: any, refreshToken: any, profile: any, done: any) => {
+    (accessToken: string, refreshToken: string, profile: any, done: DoneCallback) => {
       return done(null, { accessToken, refreshToken, profile });
     },
   ),
 );
 
 // Start authentication flow
-facebookRouter.get('/', hasValidEventParam, isProfileMapEmpty, async (req: Request, res: Response, next) => {
+facebookRouter.get('/', hasValidEventParam, isProfileMapEmpty, async (req: Request, res: Response, next: NextFunction) => {
   // #swagger.tags = ['OAuth']
   // #swagger.ignore = true
   Logger.info(`${FACEBOOK_APP}: Request for Oauth has been received successfully on sse Id ${req.sseID}`);
@@ -67,12 +67,12 @@ facebookRouter.get('/', hasValidEventParam, isProfileMapEmpty, async (req: Reque
 });
 
 // Callback handler
-facebookRouter.get('/callback', passport.authenticate('facebook', { session: false }), async (req, res) => {
+facebookRouter.get('/callback', passport.authenticate('facebook', { session: false }), async (req: Request, res: Response) => {
   // #swagger.tags = ['OAuth']
   // #swagger.ignore = true
   try {
     const accessTokenId = uuidv4();
-    memoryStoreToken.set(accessTokenId, req.user.accessToken);
+    memoryStoreToken.set(accessTokenId, req?.user?.accessToken);
     const url = `${process.env.WIDGET_UI_URL}?token_id=${accessTokenId}&app=${FACEBOOK_APP}`;
     Logger.info(`${FACEBOOK_APP}: Redirecting to ${url}`);
     res.redirect(url);
@@ -100,7 +100,7 @@ facebookRouter.post(
       Logger.info(`${FACEBOOK_APP}: Server Side Event has been sent successfully`);
       memoryStoreSSE.delete(req?.sseID);
       return res.status(200).json({ app: FACEBOOK_APP, message: 'success' });
-    } catch (error) {
+    } catch (error: any) {
       Logger.info(`${FACEBOOK_APP}: Error in sending SSE ${error.message}`);
       return res.status(500).json({ app: FACEBOOK_APP, message: 'Internal Server error' });
     }
@@ -108,7 +108,7 @@ facebookRouter.post(
 );
 
 // Return User Object
-facebookRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfileMapEmpty, async (req, res) => {
+facebookRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfileMapEmpty, async (req: Request, res: Response) => {
   // #swagger.tags = ['OAuth']
   /* #swagger.security = [{
           "bearerAuth": []
@@ -116,7 +116,7 @@ facebookRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfil
   try {
     Logger.info(`${FACEBOOK_APP}: Request for information has been received successfully with id ${req.accessTokenID}`);
     const accessToken = memoryStoreToken.get(req.accessTokenID);
-    let fbUser = { data: { data: {} } };
+    let fbUser: any = {};
     if (accessToken) {
       try {
         fbUser = await axios.get(
@@ -128,7 +128,7 @@ facebookRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfil
             timeout: 20000,
           },
         );
-      } catch (error) {
+      } catch (error: any) {
         if (error.code === 'ECONNABORTED') {
           Logger.error(`${FACEBOOK_APP}: Request timeout error in fetching userinfo: ${error.message}`);
         } else {

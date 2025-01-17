@@ -1,4 +1,4 @@
-import express, { Request, Response } from 'express';
+import express, { NextFunction, Request, Response } from 'express';
 import passport from 'passport';
 import OAuthTwitterStrategy from '../strategies/OAuthTwitterStrategy';
 import * as dotenv from 'dotenv';
@@ -52,7 +52,7 @@ passport.use(
 );
 
 // Start authentication flow
-twitterRouter.get('/', hasValidEventParam, isProfileMapEmpty, async (req: Request, res: Response, next) => {
+twitterRouter.get('/', hasValidEventParam, isProfileMapEmpty, async (req: Request, res: Response, next: NextFunction) => {
   // #swagger.tags = ['OAuth']
   // #swagger.ignore = true
   Logger.info(`${TWITTER_APP}: Request for Twitter Oauth has been received successfully on sse Id ${req.sseID}`);
@@ -60,12 +60,12 @@ twitterRouter.get('/', hasValidEventParam, isProfileMapEmpty, async (req: Reques
 });
 
 // Callback handler
-twitterRouter.get('/callback', passport.authenticate('twitter', { session: false }), async (req, res) => {
+twitterRouter.get('/callback', passport.authenticate('twitter', { session: false }), async (req: Request, res: Response) => {
   // #swagger.tags = ['OAuth']
   // #swagger.ignore = true
   try {
     const accessTokenId = uuidv4();
-    memoryStoreToken.set(accessTokenId, req.user.accessToken);
+    memoryStoreToken.set(accessTokenId, req?.user?.accessToken);
     const url = `${process.env.WIDGET_UI_URL}?token_id=${accessTokenId}&app=${TWITTER_APP}`;
     Logger.info(`${TWITTER_APP}: Redirecting to ${url}`);
     res.redirect(url);
@@ -93,7 +93,7 @@ twitterRouter.post(
       Logger.info(`${TWITTER_APP}: Server Side Event has been sent successfully`);
       memoryStoreSSE.delete(req?.sseID);
       return res.status(200).json({ app: TWITTER_APP, message: 'success' });
-    } catch (error) {
+    } catch (error: any) {
       Logger.info(`${TWITTER_APP}: Error in sending event ${error.message}`);
       return res.status(500).json({ app: TWITTER_APP, message: 'Internal Server error' });
     }
@@ -101,7 +101,7 @@ twitterRouter.post(
 );
 
 // Return User Object
-twitterRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfileMapEmpty, async (req, res) => {
+twitterRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfileMapEmpty, async (req: Request, res: Response) => {
   // #swagger.tags = ['OAuth']
   /* #swagger.security = [{
             "bearerAuth": []
@@ -167,7 +167,7 @@ twitterRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfile
             timeout: 20000,
           },
         );
-      } catch (error) {
+      } catch (error: any) {
         if (error.code === 'ECONNABORTED') {
           Logger.error(`${TWITTER_APP}: Request timeout error in fetching userinfo: ${error.message}`);
         } else {

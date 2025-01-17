@@ -85,6 +85,11 @@ smartProfileRouter.put(
       }
       // load this dynamically from headers
       // add a check if this profileTypeStreamId exists in client app table
+      if (!req.headers['x-profile-type-stream-id'] || typeof req.headers['x-profile-type-stream-id'] !== 'string' ) {
+        Logger.error(`Fatal error due to missing profile type stream id`);
+        return res.status(400).json({ errors: 'profile type stream id is missing' });
+      }
+
       const profileTypeStreamId = req.headers['x-profile-type-stream-id'];
       const userUpdateReqData = JSON.parse(JSON.stringify(req.body.data));
       const smartProfile = normalizeSmartProfile(req?.body?.smartProfile);
@@ -98,7 +103,7 @@ smartProfileRouter.put(
       });
 
       if (existingUser) {
-        Logger.info(`This user exists in database! email: ${existingUser.email}`);
+        Logger.info(`This user exists in smartProfileMap! id: ${existingUser?.id}`);
         // Upload an image
         let uploadResult;
         if (userUpdateReqData.profileImg) {
@@ -128,11 +133,11 @@ smartProfileRouter.put(
             },
           });
           const attestedSmartProfile = await pluralityAttestation.attestSmartProfile(
-            user?.id,
+            user?.id || "",
             smartProfile,
-            user?.pkpAddress,
-            process.env.PUBLIC_SCHEMA_UID,
-            process.env.PRIVATE_SCHEMA_UID,
+            user?.pkpAddress || "",
+            process.env.PUBLIC_SCHEMA_UID || "",
+            process.env.PRIVATE_SCHEMA_UID || "",
           );
           return res.status(200).json({ success: true, smartProfile: attestedSmartProfile });
         } else {
@@ -176,12 +181,13 @@ smartProfileRouter.post(
     try {
       // load dynamically from header
       // add a check if this profileTypeStreamId exists in client app table
-      const profileTypeStreamId = req.headers['x-profile-type-stream-id'];
       const { smartProfile: reqSmartProfile } = req.body;
-      if (!profileTypeStreamId) {
+      if (!req.headers['x-profile-type-stream-id'] || typeof req.headers['x-profile-type-stream-id'] !== 'string' ) {
         Logger.error(`Fatal error due to missing profile type stream id`);
         return res.status(400).json({ errors: 'profile type stream id is missing' });
       }
+
+      const profileTypeStreamId = req.headers['x-profile-type-stream-id'];
       const id = req?.user?.uniqueSessionId;
       const memorySmartProfile = memoryStoreProfile.get(id)?.smartProfile;
       // profile exchange workflow - profiles are present in both request and memory
@@ -264,7 +270,7 @@ smartProfileRouter.post(
           },
         });
         const attestedSmartProfile = await pluralityAttestation.attestSmartProfile(
-          req?.user?.id,
+          req?.user?.id || '',
           smartProfile,
           existingUser?.pkpAddress || '',
           process.env.PUBLIC_SCHEMA_UID || '',
@@ -321,7 +327,7 @@ smartProfileRouter.post(
             },
           });
           const attestedSmartProfile = await pluralityAttestation.attestSmartProfile(
-            req?.user?.id,
+            req?.user?.id || '',
             newProfile,
             existingUser?.pkpAddress || '',
             process.env.PUBLIC_SCHEMA_UID || '',
@@ -369,7 +375,7 @@ smartProfileRouter.post(
           });
 
           const attestedSmartProfile = await pluralityAttestation.attestSmartProfile(
-            req?.user?.id,
+            req?.user?.id || '', 
             oldProfile,
             existingUser?.pkpAddress || '',
             process.env.PUBLIC_SCHEMA_UID || '',
@@ -383,7 +389,7 @@ smartProfileRouter.post(
         );
         return res.status(400).json({ error: 'Bad request' });
       }
-    } catch (error) {
+    } catch (error: any) {
       Logger.error(`Fatal error due to unknown reason: ${JSON.stringify(error)}`);
       return res.status(500).json({ error: 'An error occurred while processing your request' });
     }

@@ -51,11 +51,11 @@ export function calculateReputation(data: FacebookProfile): number {
 // remove ids from objects
 export function sanitizeObject(data: any) {
   return data
-    .map((obj) => {
+    .map((obj: any) => {
       const { id, ...rest } = obj;
       return rest;
     })
-    .filter((obj) => obj.description || obj.message || obj.name || obj.about || obj.category);
+    .filter((obj: any) => obj.description || obj.message || obj.name || obj.about || obj.category);
 }
 
 export function extractContent(data: any) {
@@ -84,7 +84,7 @@ export function extractContent(data: any) {
 }
 
 export const getPagingData = async (nextUrl: string) => {
-  let data = [];
+  let data: any = [];
   let url = nextUrl;
   for (let index = 0; index < 3; index++) {
     if (url) {
@@ -98,7 +98,7 @@ export const getPagingData = async (nextUrl: string) => {
 
         data = data?.concat(moreFeed.data?.data);
         url = moreFeed.data?.paging?.next || '';
-      } catch (error) {
+      } catch (error: any) {
         if (error.code === 'ECONNABORTED') {
           Logger.error(`${FACEBOOK_APP}: Request timeout error in fetching userinfo: ${error.message}`);
         } else {
