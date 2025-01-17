@@ -16,12 +16,12 @@ function generateDescription(platformName) {
   
   2. **Register the Event**  <br><br>
      Navigate to the following URL to register the event:  <br>
-     [Register Event](https://${process.env.PLURALITY_DOMAIN}/register-event/)  <br>
+     [Register Event](https://${process.env.PLURALITY_BACKEND}/register-event/)  <br>
      Copy the **sseId** from the response. This will be used in subsequent steps.<br>
   
   3. **Obtain the Access Token ID**  <br><br>
      Open a new browser tab and use the **sseId** obtained in Step 2 with the following endpoint:  <br>
-     [Obtain Access Token](https://${process.env.PLURALITY_DOMAIN}/oauth-${platformName.toLowerCase()}?sse_id=<your_sseId>)  <br>
+     [Obtain Access Token](https://${process.env.PLURALITY_BACKEND}/oauth-${platformName.toLowerCase()}?sse_id=<your_sseId>)  <br>
      This will return the **accessTokenId**, which is required for the next step.<br>
   
   4. **Set Headers and call the event endpoint**  <br><br>
@@ -43,12 +43,12 @@ function generateDescription(platformName) {
  
 1. **Register the Event**  
    Navigate to the following URL in your browser to register the event:  
-     [Register Event](https://${process.env.PLURALITY_DOMAIN}/register-event/)  
+     [Register Event](https://${process.env.PLURALITY_BACKEND}/register-event/)  
    Copy the **sseId** from the response. This will be used in subsequent steps.
 
 2. **Obtain the Access Token ID**  
    Open a new browser tab and use the **sseId** obtained in step 1 with the following endpoint:  
-     [Obtain Access Token](https://${process.env.PLURALITY_DOMAIN}/auth/google/login?sse_id=<your_sseId>)  
+     [Obtain Access Token](https://${process.env.PLURALITY_BACKEND}/auth/google/login?sse_id=<your_sseId>)  
    This will return the **accessTokenId**, which is required for the next step.
 
 3. **Set Headers and Call the Event Endpoint**  
@@ -102,7 +102,7 @@ const doc = {
     ],
     servers: [
         {
-          url: `https://${process.env.PLURALITY_DOMAIN}`,
+          url: `https://${process.env.PLURALITY_BACKEND}`,
           description: ''
         },
        
