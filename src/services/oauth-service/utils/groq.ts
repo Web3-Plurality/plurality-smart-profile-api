@@ -14,7 +14,7 @@ export async function analyze(prompt: any) {
     // Parse the JSON
     const jsonData = JSON.parse(text);
     return jsonData;
-  } catch (error : any) {
+  } catch (error: any) {
     console.error('Error parsing JSON:', error.message);
     Logger.error('Error parsing JSON:', error.message);
     return {};

@@ -95,7 +95,7 @@ export async function scrape(url: string) {
         }
         return {
           ...obj,
-          tweetText: tweetElement ? (tweetElement as HTMLElement)?.innerText  : null,
+          tweetText: tweetElement ? (tweetElement as HTMLElement)?.innerText : null,
         };
       } else {
         return { interests: [], introTags: [] };

@@ -85,7 +85,7 @@ smartProfileRouter.put(
       }
       // load this dynamically from headers
       // add a check if this profileTypeStreamId exists in client app table
-      if (!req.headers['x-profile-type-stream-id'] || typeof req.headers['x-profile-type-stream-id'] !== 'string' ) {
+      if (!req.headers['x-profile-type-stream-id'] || typeof req.headers['x-profile-type-stream-id'] !== 'string') {
         Logger.error(`Fatal error due to missing profile type stream id`);
         return res.status(400).json({ errors: 'profile type stream id is missing' });
       }
@@ -133,11 +133,11 @@ smartProfileRouter.put(
             },
           });
           const attestedSmartProfile = await pluralityAttestation.attestSmartProfile(
-            user?.id || "",
+            user?.id || '',
             smartProfile,
-            user?.pkpAddress || "",
-            process.env.PUBLIC_SCHEMA_UID || "",
-            process.env.PRIVATE_SCHEMA_UID || "",
+            user?.pkpAddress || '',
+            process.env.PUBLIC_SCHEMA_UID || '',
+            process.env.PRIVATE_SCHEMA_UID || '',
           );
           return res.status(200).json({ success: true, smartProfile: attestedSmartProfile });
         } else {
@@ -182,7 +182,7 @@ smartProfileRouter.post(
       // load dynamically from header
       // add a check if this profileTypeStreamId exists in client app table
       const { smartProfile: reqSmartProfile } = req.body;
-      if (!req.headers['x-profile-type-stream-id'] || typeof req.headers['x-profile-type-stream-id'] !== 'string' ) {
+      if (!req.headers['x-profile-type-stream-id'] || typeof req.headers['x-profile-type-stream-id'] !== 'string') {
         Logger.error(`Fatal error due to missing profile type stream id`);
         return res.status(400).json({ errors: 'profile type stream id is missing' });
       }
@@ -375,7 +375,7 @@ smartProfileRouter.post(
           });
 
           const attestedSmartProfile = await pluralityAttestation.attestSmartProfile(
-            req?.user?.id || '', 
+            req?.user?.id || '',
             oldProfile,
             existingUser?.pkpAddress || '',
             process.env.PUBLIC_SCHEMA_UID || '',

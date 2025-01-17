@@ -7,7 +7,7 @@ import { ethers } from 'ethers';
 dotenv.config();
 
 export function hasValidAccessTokenHeader(req: Request, res: Response, next: NextFunction) {
-  const accessTokenID = req.headers['x-token-id'] as string | undefined;;
+  const accessTokenID = req.headers['x-token-id'] as string | undefined;
   if (accessTokenID) {
     const accessToken = memoryStoreToken.get(accessTokenID);
     if (!accessToken) {

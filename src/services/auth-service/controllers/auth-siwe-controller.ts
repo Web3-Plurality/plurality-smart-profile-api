@@ -39,7 +39,7 @@ const userRegisterViaWallet = async (address: string, clientId: string) => {
     const uniqueSessionId = await AddUserClientMap(existingUser?.id ? existingUser?.id : addedUser?.id, clientId);
     const token = jwt.sign(
       { id: existingUser?.id ? existingUser?.id : addedUser?.id, uniqueSessionId },
-      process.env.JWT_SECRET || "",
+      process.env.JWT_SECRET || '',
       { expiresIn: '1d' },
     );
     Logger.info(`jwt token generated for user id ${existingUser?.id ? existingUser?.id : addedUser?.id}`);
@@ -74,7 +74,9 @@ authSiweRouter.post('/authenticate', async function (req: Request, res: Response
   // #swagger.tags = ['Auth']
   try {
     const { address, clientId }: { address: string; clientId: string } = req.body;
-    const siweObj = req.headers['x-siwe'] ? JSON.parse(Array.isArray(req.headers['x-siwe'])?req.headers['x-siwe'][0]: req.headers['x-siwe']) : '';
+    const siweObj = req.headers['x-siwe']
+      ? JSON.parse(Array.isArray(req.headers['x-siwe']) ? req.headers['x-siwe'][0] : req.headers['x-siwe'])
+      : '';
     const siweToken = siweObj?.siwe;
     const message = decodeURIComponent(siweObj?.message);
     const nonce = memoryStoreNonce.get(address);

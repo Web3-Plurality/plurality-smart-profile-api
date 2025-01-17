@@ -52,28 +52,37 @@ passport.use(
 );
 
 // Start authentication flow
-snapchatRouter.get('/', hasValidEventParam, isProfileMapEmpty, async (req: Request, res: Response, next: NextFunction) => {
-  // #swagger.tags = ['OAuth']
-  // #swagger.ignore = true
-  Logger.info(`${SNAPCHAT_APP}: Request for Oauth has been received successfully on sse Id ${req.sseID}`);
-  passport.authenticate('snapchat')(req, res, next);
-});
+snapchatRouter.get(
+  '/',
+  hasValidEventParam,
+  isProfileMapEmpty,
+  async (req: Request, res: Response, next: NextFunction) => {
+    // #swagger.tags = ['OAuth']
+    // #swagger.ignore = true
+    Logger.info(`${SNAPCHAT_APP}: Request for Oauth has been received successfully on sse Id ${req.sseID}`);
+    passport.authenticate('snapchat')(req, res, next);
+  },
+);
 
 // Callback handler
-snapchatRouter.get('/callback', passport.authenticate('snapchat', { session: false }), async (req: Request, res: Response) => {
-  // #swagger.tags = ['OAuth']
-  // #swagger.ignore = true
-  try {
-    const accessTokenId = uuidv4();
-    memoryStoreToken.set(accessTokenId, req?.user?.accessToken);
-    const url = `${process.env.WIDGET_UI_URL}?token_id=${accessTokenId}&app=${SNAPCHAT_APP}`;
-    Logger.info(`${SNAPCHAT_APP}: Redirecting to ${url}`);
-    res.redirect(url);
-  } catch (error: any) {
-    Logger.error(`${SNAPCHAT_APP}: Error during callback: ${error.message}`);
-    res.status(500).json({ app: SNAPCHAT_APP, message: 'Error during callback' });
-  }
-});
+snapchatRouter.get(
+  '/callback',
+  passport.authenticate('snapchat', { session: false }),
+  async (req: Request, res: Response) => {
+    // #swagger.tags = ['OAuth']
+    // #swagger.ignore = true
+    try {
+      const accessTokenId = uuidv4();
+      memoryStoreToken.set(accessTokenId, req?.user?.accessToken);
+      const url = `${process.env.WIDGET_UI_URL}?token_id=${accessTokenId}&app=${SNAPCHAT_APP}`;
+      Logger.info(`${SNAPCHAT_APP}: Redirecting to ${url}`);
+      res.redirect(url);
+    } catch (error: any) {
+      Logger.error(`${SNAPCHAT_APP}: Error during callback: ${error.message}`);
+      res.status(500).json({ app: SNAPCHAT_APP, message: 'Error during callback' });
+    }
+  },
+);
 
 // Send Event to Iframe
 snapchatRouter.post(
@@ -101,66 +110,74 @@ snapchatRouter.post(
 );
 
 // Return User Object
-snapchatRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfileMapEmpty, async (req: Request, res: Response) => {
-  // #swagger.tags = ['OAuth']
-  /* #swagger.security = [{
+snapchatRouter.get(
+  '/info',
+  hasValidAccessTokenHeader,
+  isAuthenticated,
+  isProfileMapEmpty,
+  async (req: Request, res: Response) => {
+    // #swagger.tags = ['OAuth']
+    /* #swagger.security = [{
             "bearerAuth": []
     }] */
-  try {
-    Logger.info(`${SNAPCHAT_APP}: Request for information has been received successfully with id ${req.accessTokenID}`);
-    const accessToken = memoryStoreToken.get(req.accessTokenID);
-    let snapUser = { data: { data: {} } };
+    try {
+      Logger.info(
+        `${SNAPCHAT_APP}: Request for information has been received successfully with id ${req.accessTokenID}`,
+      );
+      const accessToken = memoryStoreToken.get(req.accessTokenID);
+      let snapUser = { data: { data: {} } };
 
-    if (accessToken) {
-      try {
-        snapUser = await axios.post(
-          'https://kit.snapchat.com/v1/me',
-          { query: '{me{displayName bitmoji{avatar} externalId}}' },
-          {
-            headers: {
-              Authorization: `Bearer ${accessToken}`, // eslint-disable-line
-              'Content-Type': 'application/json', // eslint-disable-line
+      if (accessToken) {
+        try {
+          snapUser = await axios.post(
+            'https://kit.snapchat.com/v1/me',
+            { query: '{me{displayName bitmoji{avatar} externalId}}' },
+            {
+              headers: {
+                Authorization: `Bearer ${accessToken}`, // eslint-disable-line
+                'Content-Type': 'application/json', // eslint-disable-line
+              },
+              timeout: 20000,
             },
-            timeout: 20000,
-          },
-        );
-      } catch (error: any) {
-        if (error.code === 'ECONNABORTED') {
-          Logger.error(`${SNAPCHAT_APP}: Request timeout error in fetching userinfo: ${error.message}`);
-        } else {
-          Logger.error(`${SNAPCHAT_APP}: An error occurred: ${error.message}`);
+          );
+        } catch (error: any) {
+          if (error.code === 'ECONNABORTED') {
+            Logger.error(`${SNAPCHAT_APP}: Request timeout error in fetching userinfo: ${error.message}`);
+          } else {
+            Logger.error(`${SNAPCHAT_APP}: An error occurred: ${error.message}`);
+          }
         }
-      }
-      const snapChatProfile = new SnapChatProfile(snapUser?.data?.data);
-      // Create user profile object
-      const smartProfile = new SmartProfile();
-      smartProfile.username = snapChatProfile.displayName;
-      smartProfile.avatar = snapChatProfile.bitmoji;
+        const snapChatProfile = new SnapChatProfile(snapUser?.data?.data);
+        // Create user profile object
+        const smartProfile = new SmartProfile();
+        smartProfile.username = snapChatProfile.displayName;
+        smartProfile.avatar = snapChatProfile.bitmoji;
 
-      smartProfile.privateData.attestedPlatformIds.connectedProfiles = [
-        {
-          platformType: SNAPCHAT_APP,
-          userPlatformId: snapChatProfile?.externalId,
-          username: snapChatProfile?.displayName,
-        },
-      ];
-      // storing time to avoid deadlock
-      const time = new Date().getTime(); // Current time in milliseconds
-      memoryStoreProfile.set(req?.user?.uniqueSessionId, { smartProfile, time });
-      memoryStoreToken.delete(req?.accessTokenID);
-      Logger.info(`${SNAPCHAT_APP}: User information has been delivered successfully`);
-      return res.status(200).json({ app: SNAPCHAT_APP, message: 'success' });
-    } else {
-      Logger.error(`${SNAPCHAT_APP}: A profile already exists`);
-      return res.status(500).json({ app: SNAPCHAT_APP, error: 'Unauthorized', message: INTERNAL_SERVER_ERROR });
+        smartProfile.privateData.attestedPlatformIds.connectedProfiles = [
+          {
+            platformType: SNAPCHAT_APP,
+            userPlatformId: snapChatProfile?.externalId,
+            username: snapChatProfile?.displayName,
+          },
+        ];
+        // storing time to avoid deadlock
+        const time = new Date().getTime(); // Current time in milliseconds
+        memoryStoreProfile.set(req?.user?.uniqueSessionId, { smartProfile, time });
+        memoryStoreToken.delete(req?.accessTokenID);
+        Logger.info(`${SNAPCHAT_APP}: User information has been delivered successfully`);
+        return res.status(200).json({ app: SNAPCHAT_APP, message: 'success' });
+      } else {
+        Logger.error(`${SNAPCHAT_APP}: A profile already exists`);
+        return res.status(500).json({ app: SNAPCHAT_APP, error: 'Unauthorized', message: INTERNAL_SERVER_ERROR });
+      }
+    } catch (error: any) {
+      if (error.code === 'ECONNABORTED') {
+        Logger.error(`${SNAPCHAT_APP}: Request timeout error in fetching userinfo: ${error.message}`);
+        return res.status(408).json({ app: SNAPCHAT_APP, message: TIMEOUT_ERROR });
+      } else {
+        Logger.error(`${SNAPCHAT_APP}: Error occurred in fetching user informantion: ${error.message}`);
+        return res.status(500).json({ app: SNAPCHAT_APP, message: INTERNAL_SERVER_ERROR });
+      }
     }
-  } catch (error: any) {
-    if (error.code === 'ECONNABORTED') {
-      Logger.error(`${SNAPCHAT_APP}: Request timeout error in fetching userinfo: ${error.message}`);
-      return res.status(408).json({ app: SNAPCHAT_APP, message: TIMEOUT_ERROR });
-    } else {
-      Logger.error(`${SNAPCHAT_APP}: Error occurred in fetching user informantion: ${error.message}`);
-      return res.status(500).json({ app: SNAPCHAT_APP, message: INTERNAL_SERVER_ERROR });
-    }
-  }
-});
+  },
+);

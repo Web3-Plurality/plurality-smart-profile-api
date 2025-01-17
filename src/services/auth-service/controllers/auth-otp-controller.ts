@@ -1,5 +1,5 @@
 import stytch, { OTPsAuthenticateRequest, OTPsEmailLoginOrCreateRequest } from 'stytch';
-import express,{Request, Response} from 'express';
+import express, { Request, Response } from 'express';
 import Logger from '../../../lib/logger';
 import { AppDataSource } from '../../../data-source';
 import { LoginType, User } from '../../user-service/entity/user';
@@ -104,7 +104,7 @@ authOTPRouter.post('/authenticate', async function (req: Request, res: Response)
       Logger.info(`jwt token generated for user id ${existingUser?.id ? existingUser?.id : addedUser?.id}`);
       const token = jwt.sign(
         { id: existingUser?.id ? existingUser?.id : addedUser?.id, uniqueSessionId },
-        process.env.JWT_SECRET || "",
+        process.env.JWT_SECRET || '',
         { expiresIn: '1d' },
       );
       return res.status(200).json({

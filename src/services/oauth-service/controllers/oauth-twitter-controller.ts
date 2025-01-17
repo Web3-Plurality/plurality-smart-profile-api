@@ -52,28 +52,37 @@ passport.use(
 );
 
 // Start authentication flow
-twitterRouter.get('/', hasValidEventParam, isProfileMapEmpty, async (req: Request, res: Response, next: NextFunction) => {
-  // #swagger.tags = ['OAuth']
-  // #swagger.ignore = true
-  Logger.info(`${TWITTER_APP}: Request for Twitter Oauth has been received successfully on sse Id ${req.sseID}`);
-  passport.authenticate('twitter')(req, res, next);
-});
+twitterRouter.get(
+  '/',
+  hasValidEventParam,
+  isProfileMapEmpty,
+  async (req: Request, res: Response, next: NextFunction) => {
+    // #swagger.tags = ['OAuth']
+    // #swagger.ignore = true
+    Logger.info(`${TWITTER_APP}: Request for Twitter Oauth has been received successfully on sse Id ${req.sseID}`);
+    passport.authenticate('twitter')(req, res, next);
+  },
+);
 
 // Callback handler
-twitterRouter.get('/callback', passport.authenticate('twitter', { session: false }), async (req: Request, res: Response) => {
-  // #swagger.tags = ['OAuth']
-  // #swagger.ignore = true
-  try {
-    const accessTokenId = uuidv4();
-    memoryStoreToken.set(accessTokenId, req?.user?.accessToken);
-    const url = `${process.env.WIDGET_UI_URL}?token_id=${accessTokenId}&app=${TWITTER_APP}`;
-    Logger.info(`${TWITTER_APP}: Redirecting to ${url}`);
-    res.redirect(url);
-  } catch (error: any) {
-    Logger.error(`${TWITTER_APP}: Error during callback: ${error.message}`);
-    res.status(500).json({ app: TWITTER_APP, message: 'Error during callback' });
-  }
-});
+twitterRouter.get(
+  '/callback',
+  passport.authenticate('twitter', { session: false }),
+  async (req: Request, res: Response) => {
+    // #swagger.tags = ['OAuth']
+    // #swagger.ignore = true
+    try {
+      const accessTokenId = uuidv4();
+      memoryStoreToken.set(accessTokenId, req?.user?.accessToken);
+      const url = `${process.env.WIDGET_UI_URL}?token_id=${accessTokenId}&app=${TWITTER_APP}`;
+      Logger.info(`${TWITTER_APP}: Redirecting to ${url}`);
+      res.redirect(url);
+    } catch (error: any) {
+      Logger.error(`${TWITTER_APP}: Error during callback: ${error.message}`);
+      res.status(500).json({ app: TWITTER_APP, message: 'Error during callback' });
+    }
+  },
+);
 
 // Send Event to Iframe
 twitterRouter.post(
@@ -101,184 +110,196 @@ twitterRouter.post(
 );
 
 // Return User Object
-twitterRouter.get('/info', hasValidAccessTokenHeader, isAuthenticated, isProfileMapEmpty, async (req: Request, res: Response) => {
-  // #swagger.tags = ['OAuth']
-  /* #swagger.security = [{
+twitterRouter.get(
+  '/info',
+  hasValidAccessTokenHeader,
+  isAuthenticated,
+  isProfileMapEmpty,
+  async (req: Request, res: Response) => {
+    // #swagger.tags = ['OAuth']
+    /* #swagger.security = [{
             "bearerAuth": []
     }] */
-  try {
-    Logger.info(`${TWITTER_APP}: Request for information has been received successfully with id ${req.accessTokenID}`);
-    const accessToken = memoryStoreToken.get(req.accessTokenID);
-    let userTweet = { data: { data: {} } };
-
-    if (accessToken) {
-      const tweetFields = [
-        'attachments',
-        'author_id',
-        'context_annotations',
-        'conversation_id',
-        'created_at',
-        'edit_controls',
-        'entities',
-        'geo',
-        'id',
-        'in_reply_to_user_id',
-        'lang',
-        'non_public_metrics',
-        'public_metrics',
-        'organic_metrics',
-        'promoted_metrics',
-        'possibly_sensitive',
-        'referenced_tweets',
-        'reply_settings',
-        'source',
-        'text',
-        'withheld',
-      ];
-      const userFields = [
-        'created_at',
-        'description',
-        'entities',
-        'id',
-        'location',
-        'most_recent_tweet_id',
-        'name',
-        'pinned_tweet_id',
-        'profile_image_url',
-        'protected',
-        'public_metrics',
-        'url',
-        'username',
-        'verified',
-        'verified_type',
-        'withheld',
-      ];
-
-      try {
-        userTweet = await axios.get(
-          `https://api.twitter.com/2/users/me?expansions=pinned_tweet_id&tweet.fields=${tweetFields.join(
-            ',',
-          )}&user.fields=${userFields.join(',')}`,
-          {
-            headers: {
-              Authorization: `Bearer ${accessToken}`, // eslint-disable-line
-              'Content-Type': 'application/json', // eslint-disable-line
-            },
-            timeout: 20000,
-          },
-        );
-      } catch (error: any) {
-        if (error.code === 'ECONNABORTED') {
-          Logger.error(`${TWITTER_APP}: Request timeout error in fetching userinfo: ${error.message}`);
-        } else {
-          Logger.error(`${TWITTER_APP}: An error occurred: ${error.message}`);
-        }
-      }
-
-      const data: any = {
-        ...userTweet?.data?.data,
-      };
-      const publicMetrics = data?.public_metrics;
-      delete data?.public_metrics;
-      let tweetUrl1 = '';
-      let tweetUrl2 = '';
-      let pinnedTweet1: any;
-      let pinnedTweet2: any;
-      let interests: [] = [];
-      let introTags: [] = [];
-
-      if (data?.pinned_tweet_id !== data?.most_recent_tweet_id && data?.pinned_tweet_id && data?.most_recent_tweet_id) {
-        tweetUrl1 = `https://twitter.com/${data['username']}/status/${data['pinned_tweet_id']}`;
-        tweetUrl2 = `https://twitter.com/${data['username']}/status/${data['most_recent_tweet_id']}`;
-        pinnedTweet1 = await scrape(tweetUrl1);
-        pinnedTweet2 = await scrape(tweetUrl2);
-        interests = pinnedTweet1?.interests.concat(pinnedTweet2?.interests);
-        introTags = pinnedTweet1?.introTags.concat(pinnedTweet2?.introTags);
-      } else if (
-        data?.pinned_tweet_id === data?.most_recent_tweet_id &&
-        data?.pinned_tweet_id &&
-        data?.most_recent_tweet_id
-      ) {
-        tweetUrl2 = `https://twitter.com/${data['username']}/status/${data['most_recent_tweet_id']}`;
-        pinnedTweet2 = await scrape(tweetUrl2);
-        interests = pinnedTweet2?.interests;
-        introTags = pinnedTweet2?.introTags;
-      } else if (data?.pinned_tweet_id) {
-        tweetUrl1 = `https://twitter.com/${data['username']}/status/${data['pinned_tweet_id']}`;
-        pinnedTweet1 = await scrape(tweetUrl1);
-        interests = pinnedTweet1?.interests;
-        introTags = pinnedTweet1?.introTags;
-      } else if (data?.most_recent_tweet_id) {
-        tweetUrl2 = `https://twitter.com/${data['username']}/status/${data['most_recent_tweet_id']}`;
-        pinnedTweet2 = await scrape(tweetUrl2);
-        interests = pinnedTweet2?.interests;
-        introTags = pinnedTweet2?.introTags;
-      }
-
-      const twitterProfile = new TwitterProfile(
-        data?.id,
-        publicMetrics?.followers_count,
-        publicMetrics?.following_count,
-        publicMetrics?.tweet_count,
-        publicMetrics?.listed_count,
-        publicMetrics?.like_count,
-        data?.pinned_tweet_id,
-        data?.verified_type,
-        data?.protected,
-        data?.username,
-        data?.most_recent_tweet_id,
-        data?.verified,
-        data?.description,
-        data?.created_at,
-        data?.name,
-        data?.profile_image_url,
-        interests,
-        0,
-        introTags,
+    try {
+      Logger.info(
+        `${TWITTER_APP}: Request for information has been received successfully with id ${req.accessTokenID}`,
       );
-      // Calculate reputation score
-      const reputationScore = calculateReputation(twitterProfile);
-      twitterProfile.reputationScore = reputationScore;
+      const accessToken = memoryStoreToken.get(req.accessTokenID);
+      let userTweet = { data: { data: {} } };
 
-      // Create User Profile Objects
-      const smartProfile = new SmartProfile();
-      smartProfile.privateData.attestedCred.interests = twitterProfile?.interests;
-      smartProfile.privateData.attestedCred.reputationTags = twitterProfile?.introTags;
-      smartProfile.scores.push({
-        scoreType: ScoreTypes.reputationScore,
-        scoreValue: twitterProfile?.reputationScore,
-      });
-      const counts = {
-        tweetCount: twitterProfile?.tweetCount,
-        likeCount: twitterProfile?.likeCount,
-        listedCount: twitterProfile?.listedCount,
-        followersCount: twitterProfile?.followersCount,
-        followingCount: twitterProfile?.followingCount,
-      };
+      if (accessToken) {
+        const tweetFields = [
+          'attachments',
+          'author_id',
+          'context_annotations',
+          'conversation_id',
+          'created_at',
+          'edit_controls',
+          'entities',
+          'geo',
+          'id',
+          'in_reply_to_user_id',
+          'lang',
+          'non_public_metrics',
+          'public_metrics',
+          'organic_metrics',
+          'promoted_metrics',
+          'possibly_sensitive',
+          'referenced_tweets',
+          'reply_settings',
+          'source',
+          'text',
+          'withheld',
+        ];
+        const userFields = [
+          'created_at',
+          'description',
+          'entities',
+          'id',
+          'location',
+          'most_recent_tweet_id',
+          'name',
+          'pinned_tweet_id',
+          'profile_image_url',
+          'protected',
+          'public_metrics',
+          'url',
+          'username',
+          'verified',
+          'verified_type',
+          'withheld',
+        ];
 
-      smartProfile.privateData.extendedPrivateData[TWITTER_APP] = counts;
+        try {
+          userTweet = await axios.get(
+            `https://api.twitter.com/2/users/me?expansions=pinned_tweet_id&tweet.fields=${tweetFields.join(
+              ',',
+            )}&user.fields=${userFields.join(',')}`,
+            {
+              headers: {
+                Authorization: `Bearer ${accessToken}`, // eslint-disable-line
+                'Content-Type': 'application/json', // eslint-disable-line
+              },
+              timeout: 20000,
+            },
+          );
+        } catch (error: any) {
+          if (error.code === 'ECONNABORTED') {
+            Logger.error(`${TWITTER_APP}: Request timeout error in fetching userinfo: ${error.message}`);
+          } else {
+            Logger.error(`${TWITTER_APP}: An error occurred: ${error.message}`);
+          }
+        }
 
-      smartProfile.privateData.attestedPlatformIds.connectedProfiles = [
-        { platformType: TWITTER_APP, userPlatformId: twitterProfile?.id, username: twitterProfile?.username },
-      ];
-      // storing time to avoid deadlock
-      const time = new Date().getTime(); // Current time in milliseconds
-      memoryStoreProfile.set(req?.user?.uniqueSessionId, { smartProfile, time });
-      memoryStoreToken.delete(req?.accessTokenID);
-      Logger.info(`${TWITTER_APP}: Session destroyed successfully`);
-      Logger.info(`${TWITTER_APP}: User information has been delivered successfully`);
-      return res.status(200).json({ app: TWITTER_APP, message: 'success' });
-    } else {
-      Logger.error(`${TWITTER_APP}: Token has been expired.`);
-      return res.status(500).json({ app: TWITTER_APP, message: INTERNAL_SERVER_ERROR });
+        const data: any = {
+          ...userTweet?.data?.data,
+        };
+        const publicMetrics = data?.public_metrics;
+        delete data?.public_metrics;
+        let tweetUrl1 = '';
+        let tweetUrl2 = '';
+        let pinnedTweet1: any;
+        let pinnedTweet2: any;
+        let interests: [] = [];
+        let introTags: [] = [];
+
+        if (
+          data?.pinned_tweet_id !== data?.most_recent_tweet_id &&
+          data?.pinned_tweet_id &&
+          data?.most_recent_tweet_id
+        ) {
+          tweetUrl1 = `https://twitter.com/${data['username']}/status/${data['pinned_tweet_id']}`;
+          tweetUrl2 = `https://twitter.com/${data['username']}/status/${data['most_recent_tweet_id']}`;
+          pinnedTweet1 = await scrape(tweetUrl1);
+          pinnedTweet2 = await scrape(tweetUrl2);
+          interests = pinnedTweet1?.interests.concat(pinnedTweet2?.interests);
+          introTags = pinnedTweet1?.introTags.concat(pinnedTweet2?.introTags);
+        } else if (
+          data?.pinned_tweet_id === data?.most_recent_tweet_id &&
+          data?.pinned_tweet_id &&
+          data?.most_recent_tweet_id
+        ) {
+          tweetUrl2 = `https://twitter.com/${data['username']}/status/${data['most_recent_tweet_id']}`;
+          pinnedTweet2 = await scrape(tweetUrl2);
+          interests = pinnedTweet2?.interests;
+          introTags = pinnedTweet2?.introTags;
+        } else if (data?.pinned_tweet_id) {
+          tweetUrl1 = `https://twitter.com/${data['username']}/status/${data['pinned_tweet_id']}`;
+          pinnedTweet1 = await scrape(tweetUrl1);
+          interests = pinnedTweet1?.interests;
+          introTags = pinnedTweet1?.introTags;
+        } else if (data?.most_recent_tweet_id) {
+          tweetUrl2 = `https://twitter.com/${data['username']}/status/${data['most_recent_tweet_id']}`;
+          pinnedTweet2 = await scrape(tweetUrl2);
+          interests = pinnedTweet2?.interests;
+          introTags = pinnedTweet2?.introTags;
+        }
+
+        const twitterProfile = new TwitterProfile(
+          data?.id,
+          publicMetrics?.followers_count,
+          publicMetrics?.following_count,
+          publicMetrics?.tweet_count,
+          publicMetrics?.listed_count,
+          publicMetrics?.like_count,
+          data?.pinned_tweet_id,
+          data?.verified_type,
+          data?.protected,
+          data?.username,
+          data?.most_recent_tweet_id,
+          data?.verified,
+          data?.description,
+          data?.created_at,
+          data?.name,
+          data?.profile_image_url,
+          interests,
+          0,
+          introTags,
+        );
+        // Calculate reputation score
+        const reputationScore = calculateReputation(twitterProfile);
+        twitterProfile.reputationScore = reputationScore;
+
+        // Create User Profile Objects
+        const smartProfile = new SmartProfile();
+        smartProfile.privateData.attestedCred.interests = twitterProfile?.interests;
+        smartProfile.privateData.attestedCred.reputationTags = twitterProfile?.introTags;
+        smartProfile.scores.push({
+          scoreType: ScoreTypes.reputationScore,
+          scoreValue: twitterProfile?.reputationScore,
+        });
+        const counts = {
+          tweetCount: twitterProfile?.tweetCount,
+          likeCount: twitterProfile?.likeCount,
+          listedCount: twitterProfile?.listedCount,
+          followersCount: twitterProfile?.followersCount,
+          followingCount: twitterProfile?.followingCount,
+        };
+
+        smartProfile.privateData.extendedPrivateData[TWITTER_APP] = counts;
+
+        smartProfile.privateData.attestedPlatformIds.connectedProfiles = [
+          { platformType: TWITTER_APP, userPlatformId: twitterProfile?.id, username: twitterProfile?.username },
+        ];
+        // storing time to avoid deadlock
+        const time = new Date().getTime(); // Current time in milliseconds
+        memoryStoreProfile.set(req?.user?.uniqueSessionId, { smartProfile, time });
+        memoryStoreToken.delete(req?.accessTokenID);
+        Logger.info(`${TWITTER_APP}: Session destroyed successfully`);
+        Logger.info(`${TWITTER_APP}: User information has been delivered successfully`);
+        return res.status(200).json({ app: TWITTER_APP, message: 'success' });
+      } else {
+        Logger.error(`${TWITTER_APP}: Token has been expired.`);
+        return res.status(500).json({ app: TWITTER_APP, message: INTERNAL_SERVER_ERROR });
+      }
+    } catch (error: any) {
+      if (error.code === 'ECONNABORTED') {
+        Logger.error(`${TWITTER_APP}: Request timeout error in fetching userinfo: ${error.message}`);
+        return res.status(408).json({ app: TWITTER_APP, message: TIMEOUT_ERROR });
+      } else {
+        Logger.error(`${TWITTER_APP}: Error occurred in fetching user informantion: ${error.message}`);
+        return res.status(500).json({ app: TWITTER_APP, message: INTERNAL_SERVER_ERROR });
+      }
     }
-  } catch (error: any) {
-    if (error.code === 'ECONNABORTED') {
-      Logger.error(`${TWITTER_APP}: Request timeout error in fetching userinfo: ${error.message}`);
-      return res.status(408).json({ app: TWITTER_APP, message: TIMEOUT_ERROR });
-    } else {
-      Logger.error(`${TWITTER_APP}: Error occurred in fetching user informantion: ${error.message}`);
-      return res.status(500).json({ app: TWITTER_APP, message: INTERNAL_SERVER_ERROR });
-    }
-  }
-});
+  },
+);

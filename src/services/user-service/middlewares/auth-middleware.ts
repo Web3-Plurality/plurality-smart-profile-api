@@ -9,8 +9,6 @@ import { Request, Response, NextFunction } from 'express';
 
 dotenv.config();
 
-
-
 // Middleware to authenticate JWT
 export const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
   const token = req.headers.authorization && req.headers.authorization.split(' ')[1];
@@ -19,7 +17,7 @@ export const isAuthenticated = (req: Request, res: Response, next: NextFunction)
     return res.status(401).send('Token is missing');
   }
 
-  jwt.verify(token, process.env.JWT_SECRET || "", (err, user: any) => {
+  jwt.verify(token, process.env.JWT_SECRET || '', (err, user: any) => {
     if (err) {
       return res.status(403).send('Invalid token');
     }
@@ -48,7 +46,7 @@ export const isValidAttestation = async (req: Request, res: Response, next: Next
     });
     const isVerifiedSmartProfileAttestaion = await pluralityAttestation.verifySmartProfileAttestation(
       smartProfile,
-      existingUser?.pkpAddress || "",
+      existingUser?.pkpAddress || '',
     );
     if (isVerifiedSmartProfileAttestaion) {
       Logger.info('Attestation Checked');

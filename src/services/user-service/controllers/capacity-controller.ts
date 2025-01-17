@@ -1,4 +1,4 @@
-import express,{Request, Response} from 'express';
+import express, { Request, Response } from 'express';
 import * as dotenv from 'dotenv';
 import { AppDataSource } from '../../../data-source';
 import { User } from '../entity/user';
@@ -30,7 +30,7 @@ export const capacityDelegation = async (walletAddress: string) => {
   const litResponse = await axios.get(
     `https://yellowstone-explorer.litprotocol.com/api/v2/addresses/${DAPP_OWNER_WALLET.address}/nft?type=ERC-721%2CERC-404%2CERC-1155`,
   );
-  let maxNft = { id: 0, metadata: {attributes: [{value:'0'}]}};
+  let maxNft = { id: 0, metadata: { attributes: [{ value: '0' }] } };
   for (let index = 0; index < litResponse?.data?.items.length; index++) {
     if (
       Number(litResponse?.data?.items[index].id) > Number(maxNft?.id) &&
