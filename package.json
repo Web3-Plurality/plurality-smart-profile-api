@@ -1,6 +1,6 @@
 {
   "name": "plurality-oauth-attestation-service",
-  "version": "1.19.2",
+  "version": "1.19.3",
   "private": true,
   "main": "index.js",
   "license": "MIT",
