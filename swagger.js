@@ -3,7 +3,7 @@ const dotenv = require('dotenv');
 const fs = require('fs');
 dotenv.config();
 
-const outputFile = './swagger.json'; // File to write Swagger JSON
+const outputFile = './src/swagger.json'; // File to write Swagger JSON
 const endpointsFiles = ['./src/index.ts']; // File(s) containing API routes
 
 

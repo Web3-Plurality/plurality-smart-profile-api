@@ -1,4 +1,4 @@
-import express, { Application, Request, Response } from 'express';
+import express, { Application } from 'express';
 import bodyParser from 'body-parser';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -6,7 +6,7 @@ import * as dotenv from 'dotenv';
 import session from 'express-session';
 import passport from 'passport';
 import swaggerUi from 'swagger-ui-express';
-import * as swaggerDocument from '../swagger.json';
+import * as swaggerDocument from './swagger.json';
 import https from 'https';
 import { AppDataSource } from './data-source';
 import fs from 'fs';
@@ -60,7 +60,7 @@ app.use('/oauth-roblox', robloxRouter);
 app.use('/oauth-facebook', facebookRouter);
 app.use('/oauth-instagram', instagramRouter);
 app.use('/oauth-fortnite', fortniteRouter);
-app.use('/oauth-tiktok', tiktokRouter);
+app.use('/oauth-tiktok',   tiktokRouter);
 app.use('/register-event', sseRouter);
 
 // crm service router
@@ -93,7 +93,6 @@ try {
   }
   // Only for production
   else {
-    console.log(process.env.VERIFIER_UI_URL);
     app.set('trust proxy', 1);
     AppDataSource.initialize()
       .then(async () => {
