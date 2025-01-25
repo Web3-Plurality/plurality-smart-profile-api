@@ -25,11 +25,12 @@ import { facebookRouter } from './services/oauth-service/controllers/oauth-faceb
 import { fortniteRouter } from './services/oauth-service/controllers/oauth-fortnite-controller';
 import { sseRouter } from './services/oauth-service/controllers/sse-controller';
 // crm service routers
-import { clientRouter } from './services/crm-service/controllers/client-app-controller';
+import { clientAppRouter } from './services/crm-service/controllers/client-app-controller';
 // Lit SDK
 import * as LitJsSdk from '@lit-protocol/lit-node-client';
 import { LitNetwork } from '@lit-protocol/constants';
 import { authGoogleRouter } from './services/auth-service/controllers/auth-google-controller';
+import { clientRouter } from './services/crm-service/controllers/client-controller';
 
 dotenv.config();
 
@@ -60,11 +61,13 @@ app.use('/oauth-roblox', robloxRouter);
 app.use('/oauth-facebook', facebookRouter);
 app.use('/oauth-instagram', instagramRouter);
 app.use('/oauth-fortnite', fortniteRouter);
-app.use('/oauth-tiktok',   tiktokRouter);
+app.use('/oauth-tiktok', tiktokRouter);
 app.use('/register-event', sseRouter);
 
 // crm service router
+app.use('/crm/client-app', clientAppRouter);
 app.use('/crm/client', clientRouter);
+
 
 // swagger router
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));

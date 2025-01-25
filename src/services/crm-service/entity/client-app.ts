@@ -31,11 +31,12 @@ export class ClientApp {
   @Column({ nullable: true, default: IncentiveType.points })
   incentiveType: string;
 
-  @Column({
-    default: AppType.login,
-  })
+  @Column({default: AppType.login,})
   appType: string;
 
   @Column({ nullable: false, default: '' })
   clientSecret: string;
+
+  // @Column({ nullable: false, default: '' })
+  // clientId: string;
 }

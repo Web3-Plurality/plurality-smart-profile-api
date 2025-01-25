@@ -10,7 +10,7 @@ import { User } from '../../user-service/entity/user';
 import crypto from 'crypto';
 import { isAuthenticated } from '../../user-service/middlewares/auth-middleware';
 
-export const clientRouter = express.Router();
+export const clientAppRouter = express.Router();
 dotenv.config();
 const clientAppRepository = AppDataSource.getRepository(ClientApp);
 const userClientMapRepository = AppDataSource.getRepository(UserClientMap);
@@ -24,10 +24,14 @@ cloudinary.config({
 });
 /* eslint-enable */
 
-clientRouter.post('/', async (req: Request, res: Response) => {
+clientAppRouter.post('/', async (req: Request, res: Response) => {
   // #swagger.tags = ['Client App']
   try {
-    const { img, streamId, links, domains, incentiveType, appType } = req.body;
+    const { img, streamId, domains } = req.body;
+
+    const incentiveType =  IncentiveType.stars;
+    const appType = AppType.login;
+    const links: any = [];
     // Upload an image
     let uploadResult;
     if (img) {
@@ -45,8 +49,8 @@ clientRouter.post('/', async (req: Request, res: Response) => {
       logo: uploadResult?.secure_url,
       links: JSON.stringify(links),
       domains: JSON.stringify(domains),
-      appType: appType.toLowerCase() == 'RSM' ? AppType.rsm : AppType.login,
-      incentiveType: incentiveType.toLowerCase() == 'STARS' ? IncentiveType.stars : IncentiveType.points,
+      appType: appType,
+      incentiveType: incentiveType,
       clientSecret: hashedSecret,
     });
     await clientAppRepository.save(newClientApp);
@@ -61,7 +65,7 @@ clientRouter.post('/', async (req: Request, res: Response) => {
   }
 });
 
-clientRouter.put('/:id', async (req: Request, res: Response) => {
+clientAppRouter.put('/:id', async (req: Request, res: Response) => {
   // #swagger.tags = ['Client App']
   try {
     const { img, streamId, links, domains, incentiveType, appType } = req.body;
@@ -109,7 +113,7 @@ clientRouter.put('/:id', async (req: Request, res: Response) => {
   }
 });
 
-clientRouter.put('/rotate-secret/:id', async (req: Request, res: Response) => {
+clientAppRouter.put('/rotate-secret/:id', async (req: Request, res: Response) => {
   // #swagger.tags = ['Client App']
   try {
     const clientId = req.params.id;
@@ -143,7 +147,7 @@ clientRouter.put('/rotate-secret/:id', async (req: Request, res: Response) => {
   }
 });
 
-clientRouter.get('/', async (req: Request, res: Response) => {
+clientAppRouter.get('/', async (req: Request, res: Response) => {
   // #swagger.tags = ['Client App']
   try {
     const origin = req.headers['x-domain'];
@@ -169,7 +173,7 @@ clientRouter.get('/', async (req: Request, res: Response) => {
   }
 });
 
-clientRouter.get('/validate', isAuthenticated, isClientAuthenticated, async (req: Request, res: Response) => {
+clientAppRouter.get('/validate', isAuthenticated, isClientAuthenticated, async (req: Request, res: Response) => {
   // #swagger.tags = ['Client App']
   try {
     const client = req?.client;

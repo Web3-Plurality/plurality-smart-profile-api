@@ -36,7 +36,14 @@ passport.use(
       callbackURL: process.env.GOOGLE_CALLBACK_URL || '',
       passReqToCallback: true,
     },
-    function ( req: Request, accessToken: string, refreshToken: string, params: any, profile: any, done: VerifyCallback) {
+    function (
+      req: Request,
+      accessToken: string,
+      refreshToken: string,
+      params: any,
+      profile: any,
+      done: VerifyCallback,
+    ) {
       return done(null, { email: profile?._json?.email, googleJwtToken: params?.id_token });
     },
   ),
