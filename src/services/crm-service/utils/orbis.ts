@@ -1,43 +1,109 @@
-// import { CeramicDocument, IEVMProvider, OrbisConnectResult, OrbisDB } from "@useorbis/db-sdk";
-// import { OrbisEVMAuth, OrbisKeyDidAuth } from "@useorbis/db-sdk/auth";
-// import { ethers } from "ethers";
-// // require = require("esm")(module);
-// // const dbSdk = require("@useorbis/db-sdk");
+import { ethers } from "ethers";
+import dotenv from "dotenv";
 
-// const orbisdb = new OrbisDB({
-//     ceramic: {
-//         gateway: process.env.CERAMIC_URL || ""
-//     },
-//     nodes: [
-//         {
-//             gateway: process.env.ORBIS_NODE_URL || "",
-//             env: process.env.ORBIS_ENV
-//         }
-//     ]
-// })
+dotenv.config(); // Load environment variables
 
+// Declare the variables for dynamically imported modules
+let orbisSDK: typeof import("@useorbis/db-sdk");
+let orbisSDKAuth: typeof import("@useorbis/db-sdk/auth");
 
+// Function to initialize the Orbis SDKs
+async function initializeOrbisSDKs() {
+    orbisSDK = await import("@useorbis/db-sdk");
+    orbisSDKAuth = await import("@useorbis/db-sdk/auth");
+}
 
-// export async function connectOrbisDidPkh() {
-//     // Orbis Authenticator, will use Ethereum or Solana auth
-//     const provider: any  = new ethers.Wallet(process.env.PUBLIC_DAPP_OWNER_WALLET_PRIVATE_KEY || "");
-    
+// OrbisDB instance, to be initialized after SDKs are loaded
+let orbisdb: InstanceType<typeof orbisSDK.OrbisDB>;
 
-//     const auth = new OrbisEVMAuth(provider);
+// Initialize the OrbisDB instance
+async function initializeOrbisDB() {
+    if (!orbisSDK) {
+        throw new Error("Orbis SDK is not initialized. Call initializeOrbisSDKs first.");
+    }
 
-//     // Authenticate the user and persist the session in localStorage
-//     try {
-//         // By default, sessions are persisted in localStorage and are valid for up to 3 months.
-//         // In order to bypass this behavior, pass { saveSession: false } to the connectUser method.
-//         const authResult: OrbisConnectResult = await orbisdb.connectUser({ auth }); 
-//         if(authResult?.user) {
-//             return authResult.user;
-//             //setUser(authResult.user);
-//         }
-//         console.log("authResult:", authResult);
-//         return "";
-//     } catch(e) {
-//         console.log("Error connecting user:", e);
-//         return "";
-//     }
-// }
+    orbisdb = new orbisSDK.OrbisDB({
+        ceramic: {
+            gateway: process.env.CERAMIC_URL || "",
+        },
+        nodes: [
+            {
+                gateway: process.env.ORBIS_NODE_URL || "",
+                env: process.env.ORBIS_ENV,
+            },
+        ],
+    });
+}
+
+// Shared data
+/* eslint-disable */
+const data = {
+    contexts: {
+        plurality: process.env.ORBIS_PLURALITY_CONTEXT,
+    },
+    models: {
+        profile_type_model: process.env.ORBIS_PROFILE_TYPE_MODEL,
+    },
+};
+/* eslint-enable */
+// Function to connect to Orbis using DID PKH
+export async function connectOrbisDidPkh() {
+    if (!orbisdb) {
+        throw new Error("OrbisDB is not initialized. Call initializeOrbisDB first.");
+    }
+
+    const provider = new ethers.Wallet(process.env.PUBLIC_DAPP_OWNER_WALLET_PRIVATE_KEY || "");
+    const auth = new orbisSDKAuth.OrbisEVMAuth(provider);
+
+    try {
+        const authResult = await orbisdb.connectUser({ auth });
+
+        if (authResult?.user) {
+            return authResult.user;
+        }
+        console.log("authResult:", authResult);
+        return "";
+    } catch (error) {
+        console.error("Error connecting user:", error);
+        return "";
+    }
+}
+
+// Function to insert a profile type
+export async function insertProfileType() {
+    if (!orbisdb) {
+        throw new Error("OrbisDB is not initialized. Call initializeOrbisDB first.");
+    }
+    /* eslint-disable */
+    const insertStatement = orbisdb
+        .insert(data.models.profile_type_model || "")
+        .value({
+            profile_name: "Marni Loyalty Rewards",
+            platforms:
+                '[{"platform":"Instagram","authentication":false},{"platform":"Meta","authentication":false},{"platform":"Twitter","authentication":true},{"platform":"TikTok","authentication":true},{"platform":"Roblox","authentication":true},{"platform":"Snapchat","authentication":true}]',
+            version: "1.0",
+            description: "Earn points by connecting your social profiles",
+        })
+        .context(process.env.ORBIS_PLURALITY_CONTEXT || "");
+     /* eslint-enable */
+    // Perform validation
+    const validation = await insertStatement.validate();
+    if (!validation.valid) {
+        throw new Error("Error during validation: " + validation.error);
+    }
+
+    try {
+        const result = await insertStatement.run();
+        console.log("Insert result:", result);
+    } catch (error) {
+        console.error("Error running insert statement:", error);
+    }
+
+    console.log("Insert statement runs:", insertStatement.runs);
+}
+
+// Call this function to initialize everything before running other functions
+export async function initializeOrbis() {
+    await initializeOrbisSDKs();
+    await initializeOrbisDB();
+}

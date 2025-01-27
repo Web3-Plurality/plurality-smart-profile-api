@@ -9,6 +9,7 @@ import { UserClientMap } from '../../auth-service/entity/user-client-map';
 import { User } from '../../user-service/entity/user';
 import crypto from 'crypto';
 import { isAuthenticated } from '../../user-service/middlewares/auth-middleware';
+import { connectOrbisDidPkh } from '../utils/orbis';
 
 export const clientAppRouter = express.Router();
 dotenv.config();
@@ -27,6 +28,7 @@ cloudinary.config({
 clientAppRouter.post('/', async (req: Request, res: Response) => {
   // #swagger.tags = ['Client App']
   try {
+    await connectOrbisDidPkh();
     const { img, streamId, domains } = req.body;
 
     const incentiveType =  IncentiveType.stars;
