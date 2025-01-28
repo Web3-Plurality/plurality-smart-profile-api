@@ -70,7 +70,7 @@ export async function connectOrbisDidPkh() {
 }
 
 // Function to insert a profile type
-export async function insertProfileType() {
+export async function insertProfileType(profileName: string, description: string) {
     if (!orbisdb) {
         throw new Error("OrbisDB is not initialized. Call initializeOrbisDB first.");
     }
@@ -78,11 +78,11 @@ export async function insertProfileType() {
     const insertStatement = orbisdb
         .insert(data.models.profile_type_model || "")
         .value({
-            profile_name: "Marni Loyalty Rewards",
+            profile_name: profileName,
             platforms:
                 '[{"platform":"Instagram","authentication":false},{"platform":"Meta","authentication":false},{"platform":"Twitter","authentication":true},{"platform":"TikTok","authentication":true},{"platform":"Roblox","authentication":true},{"platform":"Snapchat","authentication":true}]',
             version: "1.0",
-            description: "Earn points by connecting your social profiles",
+            description: description,
         })
         .context(process.env.ORBIS_PLURALITY_CONTEXT || "");
      /* eslint-enable */
@@ -95,6 +95,7 @@ export async function insertProfileType() {
     try {
         const result = await insertStatement.run();
         console.log("Insert result:", result);
+        return result
     } catch (error) {
         console.error("Error running insert statement:", error);
     }

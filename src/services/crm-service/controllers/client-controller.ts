@@ -2,19 +2,12 @@ import express, { Request, Response } from 'express';
 import * as dotenv from 'dotenv';
 import { AppDataSource } from '../../../data-source';
 import Logger from '../../../lib/logger';
-// import { v2 as cloudinary } from 'cloudinary';
-// import { AppType, ClientApp, IncentiveType } from '../entity/client-app';
-// import { isClientAuthenticated } from '../middlewares/auth-middleware';
-// import { UserClientMap } from '../../auth-service/entity/user-client-map';
-// import { LoginType, User } from '../../user-service/entity/user';
-// import crypto from 'crypto';
-// import { isAuthenticated } from '../../user-service/middlewares/auth-middleware';
 import stytch, { OTPsAuthenticateRequest, OTPsEmailLoginOrCreateRequest } from 'stytch';
-// import { connectOrbisDidPkh } from '../utils/orbis';
+import { Client } from '../entity/client';
 
 export const clientRouter = express.Router();
 
-// const userRepository = AppDataSource.getRepository(User);
+const clientRepository = AppDataSource.getRepository(Client);
 /* eslint-disable */
 const stytchClient = new stytch.Client({
   project_id: 'project-test-1b1bd75d-90d4-4c94-91b2-44f03f4a1d29',
@@ -34,25 +27,6 @@ clientRouter.post('/login', async function (req: Request, res: Response) {
       };
       /* eslint-enable */
   
-    //   const existingUser = await userRepository.findOne({
-    //     where: {
-    //       email: req.body.email,
-    //     },
-    //   });
-
-    //   if (existingUser) {
-    //     if (!existingUser?.loginType) {
-    //       Logger.info(`user ${existingUser.id} does not have login type, updating login type to stytch`);
-    //       await userRepository.update(existingUser.id, { loginType: LoginType.stytch });
-    //     } else if (existingUser.loginType !== LoginType.stytch && existingUser.loginType === LoginType.google) {
-    //       Logger.error(`user ${existingUser.id} is not authorized to login with stytch`);
-    //       return res.status(200).json({
-    //         redirectToGoogle: true,
-    //         message: `Redirecting you to Login with Google`,
-    //       });
-    //     }
-    //   }
-  
       const resp = await stytchClient.otps.email.loginOrCreate(options);
       Logger.info('OTP sent successfully');
       res.status(200).json({ success: true, message: 'OTP sent successfully', emailId: resp?.email_id });
@@ -68,11 +42,12 @@ clientRouter.post('/authenticate', async function (req: Request, res: Response) 
     try {
     //   let addedUser: User = new User();
       /* eslint-disable */
-      const { code, email_id} = req.body;
+      const { code, emailId, projectName, projectWebsite} = req.body;
+
       const params: OTPsAuthenticateRequest = {
         code: code,
         session_duration_minutes: 60,
-        method_id: email_id,
+        method_id: emailId,
       };
       /* eslint-enable */
   
@@ -81,55 +56,58 @@ clientRouter.post('/authenticate', async function (req: Request, res: Response) 
       Logger.info('stytch Authenticated successfully');
       // Check if the user with the given email already exists
       const email = resp?.user?.emails[0]?.email;
-    //   const user = await connectOrbisDidPkh();
-    //   console.log(user)
-      if (email) {
-        res.status(200).json({message:"user successfully login"});
-      }
-    //   const existingUser = await userRepository.findOne({
-    //     where: {
-    //       email: email,
-    //     },
-    //   });
-    //   if (existingUser) {
-    //     Logger.info(`This user already exists!`);
-    //   } else {
-    //     // If the user doesn't exist, insert a new row
-    //     Logger.info(`The user with this email was not found`);
-    //     const newUser = await userRepository.create({
-    //       email: email,
-    //       subscribe: req?.body?.subscribe,
-    //       loginType: LoginType.stytch,
-    //     });
-    //     addedUser = await userRepository.save(newUser);
-    //     Logger.info(`new user created successfully with id ${addedUser?.id}`);
-    //   }
-  
-    //   //if client id exist then add in user client map
-    //   if (clientId) {
-    //     const uniqueSessionId = await AddUserClientMap(existingUser?.id ? existingUser?.id : addedUser?.id, clientId);
-    //     Logger.info(`jwt token generated for user id ${existingUser?.id ? existingUser?.id : addedUser?.id}`);
-    //     const token = jwt.sign(
-    //       { id: existingUser?.id ? existingUser?.id : addedUser?.id, uniqueSessionId },
-    //       process.env.JWT_SECRET || '',
-    //       { expiresIn: '1d' },
-    //     );
-    //     return res.status(200).json({
-    //       success: true,
-    //       token: token,
-    //       stytchToken: resp?.session_jwt,
-    //       user: existingUser?.id ? existingUser : addedUser,
-    //       userId: resp?.user_id,
-    //     });
-    //   } else {
-    //     Logger.error(`Client id not found`);
-    //     throw new Error('Client id not found');
-    //   }
 
+      const existingClient = await clientRepository.findOne({
+        where: {
+          email: email,
+        },
+      });
+
+      if (existingClient) {
+        return res.status(200).json({
+          success: true,
+          stytchToken: resp?.session_jwt,
+          client: existingClient
+        });
+      }
+      const newClient = await clientRepository.create({
+        projectName,
+        email,
+        projectWebsite,
+      });
+      
+      await clientRepository.save(newClient);
+      
+      return res.status(200).json({
+        success: true,
+        stytchToken: resp?.session_jwt,
+        client: newClient
+      });
 
     } catch (err) {
       console.error(err);
       res.status(401).send('Authentication failed');
+    }
+  });
+  
+
+
+  clientRouter.get('/:id', async (req: Request, res: Response) => {
+    // #swagger.tags = ['Client App']
+    try {
+      const clientId = req.params.id;
+  
+      const data: any = await clientRepository.find({
+        where: {
+          id : clientId,
+        },
+        relations: ["apps"]
+      });
+  
+      return res.status(200).json({ apps: data[0]?.apps });
+    } catch (error: any) {
+      Logger.error(`Fatal error due to unknown reason: ${JSON.stringify(error)}`);
+      return res.status(500).json({ error: 'An error occurred while processing your request' });
     }
   });
   

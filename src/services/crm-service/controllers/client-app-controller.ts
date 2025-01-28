@@ -9,8 +9,7 @@ import { UserClientMap } from '../../auth-service/entity/user-client-map';
 import { User } from '../../user-service/entity/user';
 import crypto from 'crypto';
 import { isAuthenticated } from '../../user-service/middlewares/auth-middleware';
-import { connectOrbisDidPkh } from '../utils/orbis';
-
+import { connectOrbisDidPkh, initializeOrbis, insertProfileType } from '../utils/orbis';
 export const clientAppRouter = express.Router();
 dotenv.config();
 const clientAppRepository = AppDataSource.getRepository(ClientApp);
@@ -28,19 +27,35 @@ cloudinary.config({
 clientAppRouter.post('/', async (req: Request, res: Response) => {
   // #swagger.tags = ['Client App']
   try {
-    await connectOrbisDidPkh();
-    const { img, streamId, domains } = req.body;
+    const { profileName, profileDescription, img, domains,clientId } = req.body;
+
+    // Orbis
+    await initializeOrbis();
+    const isConnected = await connectOrbisDidPkh();
+    if (!isConnected) {
+      Logger.error("Something went wrong with the orbis");
+      res.status(500).send("Internal Server Error");
+    }
+    
+    const result = await insertProfileType(profileName, profileDescription);
+
 
     const incentiveType =  IncentiveType.stars;
     const appType = AppType.login;
     const links: any = [];
+    const streamId = result?.id;
     // Upload an image
     let uploadResult;
     if (img) {
+      // const buffer = Buffer.from(await img.arrayBuffer()); // Convert Blob/File to Buffer
+      // const base64 = `data:image/png;base64,${buffer.toString('base64')}`; // Convert to Base64
+  
       uploadResult = await cloudinary.uploader.upload(img).catch((error) => {
         console.log(error);
       });
     }
+
+
     // Generate credentials
     const clientSecret = crypto.randomBytes(32).toString('hex');
     const hashedSecret = crypto.createHash('sha256').update(clientSecret).digest('hex');
@@ -54,6 +69,7 @@ clientAppRouter.post('/', async (req: Request, res: Response) => {
       appType: appType,
       incentiveType: incentiveType,
       clientSecret: hashedSecret,
+      client: { id: clientId}
     });
     await clientAppRepository.save(newClientApp);
     Logger.info(`clientApp created: ${newClientApp.id}`);
@@ -174,6 +190,7 @@ clientAppRouter.get('/', async (req: Request, res: Response) => {
     return res.status(500).json({ error: 'An error occurred while processing your request' });
   }
 });
+
 
 clientAppRouter.get('/validate', isAuthenticated, isClientAuthenticated, async (req: Request, res: Response) => {
   // #swagger.tags = ['Client App']
