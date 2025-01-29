@@ -68,7 +68,6 @@ app.use('/register-event', sseRouter);
 app.use('/crm/client-app', clientAppRouter);
 app.use('/crm/client', clientRouter);
 
-
 // swagger router
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 

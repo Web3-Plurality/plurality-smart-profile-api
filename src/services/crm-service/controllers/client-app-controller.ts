@@ -4,15 +4,17 @@ import { AppDataSource } from '../../../data-source';
 import Logger from '../../../lib/logger';
 import { v2 as cloudinary } from 'cloudinary';
 import { AppType, ClientApp, IncentiveType } from '../entity/client-app';
-import { isClientAuthenticated } from '../middlewares/auth-middleware';
+import { isClientAppAuthenticated, verifyStytchJWT } from '../middlewares/auth-middleware';
 import { UserClientMap } from '../../auth-service/entity/user-client-map';
 import { User } from '../../user-service/entity/user';
 import crypto from 'crypto';
 import { isAuthenticated } from '../../user-service/middlewares/auth-middleware';
 import { connectOrbisDidPkh, initializeOrbis, insertProfileType } from '../utils/orbis';
+import { ClientAppDev } from '../entity/client_app_dev';
+
 export const clientAppRouter = express.Router();
 dotenv.config();
-const clientAppRepository = AppDataSource.getRepository(ClientApp);
+const clientAppRepository = AppDataSource.getRepository(ClientAppDev);
 const userClientMapRepository = AppDataSource.getRepository(UserClientMap);
 const userRepository = AppDataSource.getRepository(User);
 
@@ -24,23 +26,22 @@ cloudinary.config({
 });
 /* eslint-enable */
 
-clientAppRouter.post('/', async (req: Request, res: Response) => {
+clientAppRouter.post('/', verifyStytchJWT, async (req: Request, res: Response) => {
   // #swagger.tags = ['Client App']
   try {
-    const { profileName, profileDescription, img, domains,clientId } = req.body;
+    const { profileName, profileDescription, img, domains, clientId } = req.body;
 
     // Orbis
     await initializeOrbis();
     const isConnected = await connectOrbisDidPkh();
     if (!isConnected) {
-      Logger.error("Something went wrong with the orbis");
-      res.status(500).send("Internal Server Error");
+      Logger.error('Something went wrong with the orbis');
+      res.status(500).send('Internal Server Error');
     }
-    
+
     const result = await insertProfileType(profileName, profileDescription);
 
-
-    const incentiveType =  IncentiveType.stars;
+    const incentiveType = IncentiveType.stars;
     const appType = AppType.login;
     const links: any = [];
     const streamId = result?.id;
@@ -49,12 +50,11 @@ clientAppRouter.post('/', async (req: Request, res: Response) => {
     if (img) {
       // const buffer = Buffer.from(await img.arrayBuffer()); // Convert Blob/File to Buffer
       // const base64 = `data:image/png;base64,${buffer.toString('base64')}`; // Convert to Base64
-  
+
       uploadResult = await cloudinary.uploader.upload(img).catch((error) => {
         console.log(error);
       });
     }
-
 
     // Generate credentials
     const clientSecret = crypto.randomBytes(32).toString('hex');
@@ -69,13 +69,13 @@ clientAppRouter.post('/', async (req: Request, res: Response) => {
       appType: appType,
       incentiveType: incentiveType,
       clientSecret: hashedSecret,
-      client: { id: clientId}
+      client: { id: clientId },
     });
     await clientAppRepository.save(newClientApp);
     Logger.info(`clientApp created: ${newClientApp.id}`);
     return res.status(200).json({
       message: 'clientApp created',
-      data: { clientId: newClientApp?.id, clientSecret: clientSecret },
+      data: { clientAppId: newClientApp?.id, clientSecret: clientSecret },
     });
   } catch (error: any) {
     Logger.error(`Fatal error due to unknown reason: ${JSON.stringify(error)}`);
@@ -131,7 +131,7 @@ clientAppRouter.put('/:id', async (req: Request, res: Response) => {
   }
 });
 
-clientAppRouter.put('/rotate-secret/:id', async (req: Request, res: Response) => {
+clientAppRouter.put('/rotate-secret/:id',verifyStytchJWT, async (req: Request, res: Response) => {
   // #swagger.tags = ['Client App']
   try {
     const clientId = req.params.id;
@@ -191,8 +191,7 @@ clientAppRouter.get('/', async (req: Request, res: Response) => {
   }
 });
 
-
-clientAppRouter.get('/validate', isAuthenticated, isClientAuthenticated, async (req: Request, res: Response) => {
+clientAppRouter.get('/validate', isAuthenticated, isClientAppAuthenticated, async (req: Request, res: Response) => {
   // #swagger.tags = ['Client App']
   try {
     const client = req?.client;
