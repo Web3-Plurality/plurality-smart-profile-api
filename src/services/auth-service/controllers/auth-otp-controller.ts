@@ -60,13 +60,13 @@ authOTPRouter.post('/login', async function (req: Request, res: Response) {
 });
 
 // Complete the authentication flow which mints the session
-// parameters : code, email_id, address, subscribe, clientId
+// parameters : code, email_id, address, subscribe, clientAppId
 authOTPRouter.post('/authenticate', async function (req: Request, res: Response) {
   // #swagger.tags = ['Auth']
   try {
     let addedUser: User = new User();
     /* eslint-disable */
-    const { code, email_id, subscribe, clientId } = req.body;
+    const { code, email_id, subscribe, clientAppId } = req.body;
     const params: OTPsAuthenticateRequest = {
       code: code,
       session_duration_minutes: 60,
@@ -99,8 +99,8 @@ authOTPRouter.post('/authenticate', async function (req: Request, res: Response)
     }
 
     //if client id exist then add in user client map
-    if (clientId) {
-      const uniqueSessionId = await AddUserClientMap(existingUser?.id ? existingUser?.id : addedUser?.id, clientId);
+    if (clientAppId) {
+      const uniqueSessionId = await AddUserClientMap(existingUser?.id ? existingUser?.id : addedUser?.id, clientAppId);
       Logger.info(`jwt token generated for user id ${existingUser?.id ? existingUser?.id : addedUser?.id}`);
       const token = jwt.sign(
         { id: existingUser?.id ? existingUser?.id : addedUser?.id, uniqueSessionId },

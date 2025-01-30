@@ -5,17 +5,17 @@ import Logger from '../../../lib/logger';
 import { v2 as cloudinary } from 'cloudinary';
 import { AppType, ClientApp, IncentiveType } from '../entity/client-app';
 import { isClientAppAuthenticated, verifyStytchJWT } from '../middlewares/auth-middleware';
-import { UserClientMap } from '../../auth-service/entity/user-client-map';
 import { User } from '../../user-service/entity/user';
 import crypto from 'crypto';
 import { isAuthenticated } from '../../user-service/middlewares/auth-middleware';
 import { connectOrbisDidPkh, initializeOrbis, insertProfileType } from '../utils/orbis';
-import { ClientAppDev } from '../entity/client_app_dev';
+import { ClientAppDev } from '../entity/client-app-dev';
+import { UserClientAppMap } from '../../auth-service/entity/user-client-app-map';
 
 export const clientAppRouter = express.Router();
 dotenv.config();
 const clientAppRepository = AppDataSource.getRepository(ClientAppDev);
-const userClientMapRepository = AppDataSource.getRepository(UserClientMap);
+const userClientAppMapRepository = AppDataSource.getRepository(UserClientAppMap);
 const userRepository = AppDataSource.getRepository(User);
 
 /* eslint-disable */
@@ -83,7 +83,7 @@ clientAppRouter.post('/', verifyStytchJWT, async (req: Request, res: Response) =
   }
 });
 
-clientAppRouter.put('/:id', async (req: Request, res: Response) => {
+clientAppRouter.put('/:id',verifyStytchJWT, async (req: Request, res: Response) => {
   // #swagger.tags = ['Client App']
   try {
     const { img, streamId, links, domains, incentiveType, appType } = req.body;
@@ -131,20 +131,20 @@ clientAppRouter.put('/:id', async (req: Request, res: Response) => {
   }
 });
 
-clientAppRouter.put('/rotate-secret/:id',verifyStytchJWT, async (req: Request, res: Response) => {
+clientAppRouter.put('/rotate-secret/:id', verifyStytchJWT, async (req: Request, res: Response) => {
   // #swagger.tags = ['Client App']
   try {
-    const clientId = req.params.id;
+    const clientAppId = req.params.id;
     // check customer exist already
-    const client = await clientAppRepository.findOne({
+    const clientApp = await clientAppRepository.findOne({
       where: {
-        id: clientId,
+        id: clientAppId,
       },
     });
 
-    if (!client) {
-      Logger.error('client not found');
-      res.status(400).json({ error: 'client does not exist.' });
+    if (!clientApp) {
+      Logger.error('clientApp not found');
+      res.status(400).json({ error: 'clientApp does not exist.' });
     }
     // Generate credentials
     const clientSecret = crypto.randomBytes(32).toString('hex');
@@ -153,9 +153,10 @@ clientAppRouter.put('/rotate-secret/:id',verifyStytchJWT, async (req: Request, r
     const updateData = {
       clientSecret: hashedSecret,
     };
-    await clientAppRepository.update({ id: clientId }, updateData);
-    Logger.info(`clientApp secret updated: ${clientId}`);
+    await clientAppRepository.update({ id: clientAppId }, updateData);
+    Logger.info(`clientApp secret updated: ${clientAppId}`);
     return res.status(200).json({
+      success: true,
       message: 'clientApp updated',
       clientSecret,
     });
@@ -194,14 +195,14 @@ clientAppRouter.get('/', async (req: Request, res: Response) => {
 clientAppRouter.get('/validate', isAuthenticated, isClientAppAuthenticated, async (req: Request, res: Response) => {
   // #swagger.tags = ['Client App']
   try {
-    const client = req?.client;
+    const clientApp = req?.clientApp;
 
-    const userClientMap = await userClientMapRepository.findOne({
+    const userClientAppMap = await userClientAppMapRepository.findOne({
       where: {
         id: req?.user?.uniqueSessionId,
       },
     });
-    if (userClientMap?.clientId !== client?.id) {
+    if (userClientAppMap?.clientAppId !== clientApp?.id) {
       return res.status(401).json({ error: 'user does not belong to the given client' });
     }
 

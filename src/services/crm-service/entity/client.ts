@@ -1,5 +1,5 @@
 import { Entity, Column, PrimaryGeneratedColumn, OneToMany } from 'typeorm';
-import { ClientAppDev } from './client_app_dev';
+import { ClientAppDev } from './client-app-dev';
 
 @Entity({ name: 'client' })
 export class Client {
@@ -16,6 +16,6 @@ export class Client {
   @Column({ nullable: true })
   projectWebsite: string;
   // One-to-many relationship with ClientApp
-  @OneToMany(() => ClientAppDev, (ClientAppDev) => ClientAppDev.client)
+  @OneToMany(() => ClientAppDev, (clientAppDev) => clientAppDev.client)
   apps: ClientAppDev[];
 }

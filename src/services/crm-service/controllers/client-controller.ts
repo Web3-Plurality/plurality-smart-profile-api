@@ -89,7 +89,7 @@ clientRouter.post('/authenticate', async function (req: Request, res: Response) 
   }
 });
 
-clientRouter.get('/:id',verifyStytchJWT, async (req: Request, res: Response) => {
+clientRouter.get('/:id', verifyStytchJWT, async (req: Request, res: Response) => {
   // #swagger.tags = ['Client App']
   try {
     const clientId = req.params.id;

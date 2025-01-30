@@ -129,7 +129,7 @@ authGoogleRouter.post('/event', hasValidEventHeader, hasValidAccessTokenHeader, 
   try {
     Logger.info(`Request body tokenUUID ${req?.accessTokenID}`);
     Logger.info(`Request body sseUUID ${req?.sseID}`);
-    const { redirect, clientId } = req.body;
+    const { redirect, clientAppId } = req.body;
     const serverSentEventResponse = memoryStoreSSE.get(req?.sseID);
 
     if (redirect) {
@@ -143,9 +143,9 @@ authGoogleRouter.post('/event', hasValidEventHeader, hasValidAccessTokenHeader, 
 
     const tokenObj = memoryStoreToken.get(req?.accessTokenID);
     //if client id exist then add in user client map
-    if (clientId) {
-      console.log('clientId', clientId);
-      const uniqueSessionId = await AddUserClientMap(tokenObj?.userId, clientId);
+    if (clientAppId) {
+      console.log('clientAppId', clientAppId);
+      const uniqueSessionId = await AddUserClientMap(tokenObj?.userId, clientAppId);
       const token = jwt.sign({ id: tokenObj?.userId, uniqueSessionId }, process.env.JWT_SECRET || '', {
         expiresIn: '1d',
       });

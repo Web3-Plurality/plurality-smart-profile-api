@@ -3,7 +3,7 @@ declare namespace Express {
       user?: { id?: string; uniqueSessionId?: string, accessToken?: string, accountId?: string, email?: string, googleJwtToken?: string }; // Replace with IToken if you have an interface
       sseID?: string;
       accessTokenID?: string;
-      client?: any;
+      clientApp?: any;
     }
   }
   

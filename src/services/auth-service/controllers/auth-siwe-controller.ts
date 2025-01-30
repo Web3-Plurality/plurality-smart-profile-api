@@ -14,7 +14,7 @@ dotenv.config();
 export const authSiweRouter = express.Router();
 const userRepository = AppDataSource.getRepository(User);
 
-const userRegisterViaWallet = async (address: string, clientId: string) => {
+const userRegisterViaWallet = async (address: string, clientAppId: string) => {
   let addedUser: any = {};
   // Check if the user with the given address already exists
   const existingUser = await userRepository.findOne({
@@ -35,8 +35,8 @@ const userRegisterViaWallet = async (address: string, clientId: string) => {
     addedUser = await userRepository.save(newUser);
   }
   //if client id exist then add in user client map
-  if (clientId) {
-    const uniqueSessionId = await AddUserClientMap(existingUser?.id ? existingUser?.id : addedUser?.id, clientId);
+  if (clientAppId) {
+    const uniqueSessionId = await AddUserClientMap(existingUser?.id ? existingUser?.id : addedUser?.id, clientAppId);
     const token = jwt.sign(
       { id: existingUser?.id ? existingUser?.id : addedUser?.id, uniqueSessionId },
       process.env.JWT_SECRET || '',
@@ -69,11 +69,11 @@ authSiweRouter.post('/login', (req: Request, res: Response) => {
     return res.status(500).json({ error: 'An error occurred while processing your request' });
   }
 });
-// address, clientId, subscribe
+// address, clientAppId, subscribe
 authSiweRouter.post('/authenticate', async function (req: Request, res: Response) {
   // #swagger.tags = ['Auth']
   try {
-    const { address, clientId }: { address: string; clientId: string } = req.body;
+    const { address, clientAppId }: { address: string; clientAppId: string } = req.body;
     const siweObj = req.headers['x-siwe']
       ? JSON.parse(Array.isArray(req.headers['x-siwe']) ? req.headers['x-siwe'][0] : req.headers['x-siwe'])
       : '';
@@ -100,7 +100,7 @@ authSiweRouter.post('/authenticate', async function (req: Request, res: Response
     }
     // create jwt token
     Logger.info(`user authenticated successfully by address ${address}`);
-    const { token, user } = await userRegisterViaWallet(address, clientId);
+    const { token, user } = await userRegisterViaWallet(address, clientAppId);
     return res.status(200).json({ success: true, token, user });
   } catch (err) {
     Logger.error(`Error occurred: ${err}`);
