@@ -4,6 +4,7 @@ declare namespace Express {
       sseID?: string;
       accessTokenID?: string;
       clientApp?: any;
+      email: string;
     }
   }
   

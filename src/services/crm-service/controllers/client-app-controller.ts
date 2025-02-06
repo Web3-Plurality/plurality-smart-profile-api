@@ -11,12 +11,14 @@ import { isAuthenticated } from '../../user-service/middlewares/auth-middleware'
 import { connectOrbisDidPkh, initializeOrbis, insertProfileType } from '../utils/orbis';
 import { ClientAppDev } from '../entity/client-app-dev';
 import { UserClientAppMap } from '../../auth-service/entity/user-client-app-map';
+import { Client } from '../entity/client';
 
 export const clientAppRouter = express.Router();
 dotenv.config();
 const clientAppRepository = AppDataSource.getRepository(ClientAppDev);
 const userClientAppMapRepository = AppDataSource.getRepository(UserClientAppMap);
 const userRepository = AppDataSource.getRepository(User);
+const clientRepository = AppDataSource.getRepository(Client);
 
 /* eslint-disable */
 cloudinary.config({
@@ -48,8 +50,6 @@ clientAppRouter.post('/', verifyStytchJWT, async (req: Request, res: Response) =
     // Upload an image
     let uploadResult;
     if (img) {
-      // const buffer = Buffer.from(await img.arrayBuffer()); // Convert Blob/File to Buffer
-      // const base64 = `data:image/png;base64,${buffer.toString('base64')}`; // Convert to Base64
 
       uploadResult = await cloudinary.uploader.upload(img).catch((error) => {
         console.log(error);
@@ -102,7 +102,7 @@ clientAppRouter.put('/:id',verifyStytchJWT, async (req: Request, res: Response) 
         id: id,
       },
     });
-    console.log(data);
+
     // updated data
     const updateData = {
       streamId: streamId ? streamId : data?.streamId,
@@ -169,24 +169,42 @@ clientAppRouter.put('/rotate-secret/:id', verifyStytchJWT, async (req: Request, 
 //todo: add new route for client app
 //clientAppRouter.get('/' verifyStytchJWT -> need to verify the stytch jwt token and return all apps against the clientId 
 
-// todo: improve this route
+clientAppRouter.get('/', verifyStytchJWT, async (req: Request, res: Response) => {
+    // #swagger.tags = ['Client App']
+    try {
+      const email = req.email;
+      const data: any = await clientRepository.find({
+        where: {
+          email: email,
+        },
+        relations: ['apps'],
+      });
+  
+      return res.status(200).json({ apps: data[0]?.apps });
+
+    } catch (error) {
+      
+    }
+})
+
+// todo: improve this route => need to change this in widgetUI as well
 // clientAppRouter.get('/:id' -> dont need to verify this route as this is public
-clientAppRouter.get('/', async (req: Request, res: Response) => {
+clientAppRouter.get('/:id', async (req: Request, res: Response) => {
   // #swagger.tags = ['Client App']
   try {
     const origin = req.headers['x-domain'];
     // remove query and change it to param id
-    const id: any = req.query.uuid;
+    const clientAppId: any = req.params.id;
     const data: any = await clientAppRepository.findOne({
       where: {
-        id: id,
+        id: clientAppId,
       },
     });
 
     const domains = JSON.parse(data?.domains);
 
     if (domains?.includes(origin)) {
-      Logger.info(`clientApp fetched: ${id}`);
+      Logger.info(`clientApp fetched: ${clientAppId}`);
       return res.status(200).json({ data });
     }
 

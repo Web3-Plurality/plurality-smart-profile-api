@@ -60,13 +60,11 @@ export const verifyStytchJWT = async (req: Request, res: Response, next: NextFun
       session_jwt: token,
     });
     /* eslint-enable */
+    req.email = session?.authentication_factors[0]?.email_factor?.email_address || "";
     next();
     // Attach session and user to request object
     // req.session = session;
-    // req.user = {
-    //   user_id: session.user_id,
-    //   // Add other user properties as needed
-    // };
+    
   } catch (error: any) {
     Logger.error('Stytch authentication error:', error);
 

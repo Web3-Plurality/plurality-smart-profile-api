@@ -1,7 +1,7 @@
 import * as dotenv from 'dotenv';
 import express, { Request, Response } from 'express';
 import { Strategy as GoogleStrategy, VerifyCallback } from 'passport-google-oauth20';
-import passport, { DoneCallback } from 'passport';
+import passport from 'passport';
 import Logger from '../../../lib/logger';
 import { AppDataSource } from '../../../data-source';
 import { LoginType, User } from '../../user-service/entity/user';
@@ -108,7 +108,6 @@ authGoogleRouter.get(
         Logger.info(`new user created successfully with id ${addedUser?.id}`);
       }
 
-     // Logger.info(`jwt token generated for user id ${existingUser?.id ? existingUser?.id : addedUser?.id}`);
       memoryStoreToken.set(accessTokenId, {
         googleJwtToken: req?.user?.googleJwtToken,
         userId: existingUser?.id ? existingUser?.id : addedUser?.id,
