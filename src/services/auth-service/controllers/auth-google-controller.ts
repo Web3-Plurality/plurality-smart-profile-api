@@ -108,7 +108,7 @@ authGoogleRouter.get(
         Logger.info(`new user created successfully with id ${addedUser?.id}`);
       }
 
-      Logger.info(`jwt token generated for user id ${existingUser?.id ? existingUser?.id : addedUser?.id}`);
+     // Logger.info(`jwt token generated for user id ${existingUser?.id ? existingUser?.id : addedUser?.id}`);
       memoryStoreToken.set(accessTokenId, {
         googleJwtToken: req?.user?.googleJwtToken,
         userId: existingUser?.id ? existingUser?.id : addedUser?.id,
@@ -133,6 +133,7 @@ authGoogleRouter.post('/event', hasValidEventHeader, hasValidAccessTokenHeader, 
     const serverSentEventResponse = memoryStoreSSE.get(req?.sseID);
 
     if (redirect) {
+      // this is stytch workflow so we need to send a event to client to redirect via stytch
       const emailId = memoryStoreToken.get(req?.accessTokenID);
       serverSentEventResponse.write(`data: {"message":"received", "app":"google", "emailId":"${emailId}"}\n\n`);
       Logger.info(` Server Side Event has been sent successfully`);

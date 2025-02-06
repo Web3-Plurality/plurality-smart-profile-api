@@ -19,6 +19,7 @@ clientRouter.post('/login', async function (req: Request, res: Response) {
   // #swagger.tags = ['Auth']
   try {
     const email: string = req.body.email;
+    // add to .env file
     const templateId = 'sign_in_to_plurality_network';
     /* eslint-disable */
     const options: OTPsEmailLoginOrCreateRequest = {
@@ -88,7 +89,7 @@ clientRouter.post('/authenticate', async function (req: Request, res: Response) 
     res.status(401).send('Authentication failed');
   }
 });
-
+// get a client object by id -> remove this
 clientRouter.get('/:id', verifyStytchJWT, async (req: Request, res: Response) => {
   // #swagger.tags = ['Client App']
   try {

@@ -10,9 +10,11 @@ import * as swaggerDocument from './swagger.json';
 import https from 'https';
 import { AppDataSource } from './data-source';
 import fs from 'fs';
-// user service routers
+// auth service routers
 import { authOTPRouter } from './services/auth-service/controllers/auth-otp-controller';
 import { authSiweRouter } from './services/auth-service/controllers/auth-siwe-controller';
+import { authGoogleRouter } from './services/auth-service/controllers/auth-google-controller';
+// user service routers
 import { smartProfileRouter } from './services/user-service/controllers/smart-profile-controller';
 import { capacityRouter } from './services/user-service/controllers/capacity-controller';
 // oauth service routers
@@ -25,12 +27,11 @@ import { facebookRouter } from './services/oauth-service/controllers/oauth-faceb
 import { fortniteRouter } from './services/oauth-service/controllers/oauth-fortnite-controller';
 import { sseRouter } from './services/oauth-service/controllers/sse-controller';
 // crm service routers
+import { clientRouter } from './services/crm-service/controllers/client-controller';
 import { clientAppRouter } from './services/crm-service/controllers/client-app-controller';
 // Lit SDK
 import * as LitJsSdk from '@lit-protocol/lit-node-client';
 import { LitNetwork } from '@lit-protocol/constants';
-import { authGoogleRouter } from './services/auth-service/controllers/auth-google-controller';
-import { clientRouter } from './services/crm-service/controllers/client-controller';
 
 dotenv.config();
 

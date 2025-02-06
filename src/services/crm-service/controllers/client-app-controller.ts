@@ -166,10 +166,16 @@ clientAppRouter.put('/rotate-secret/:id', verifyStytchJWT, async (req: Request, 
   }
 });
 
+//todo: add new route for client app
+//clientAppRouter.get('/' verifyStytchJWT -> need to verify the stytch jwt token and return all apps against the clientId 
+
+// todo: improve this route
+// clientAppRouter.get('/:id' -> dont need to verify this route as this is public
 clientAppRouter.get('/', async (req: Request, res: Response) => {
   // #swagger.tags = ['Client App']
   try {
     const origin = req.headers['x-domain'];
+    // remove query and change it to param id
     const id: any = req.query.uuid;
     const data: any = await clientAppRepository.findOne({
       where: {
@@ -192,6 +198,8 @@ clientAppRouter.get('/', async (req: Request, res: Response) => {
   }
 });
 
+// we needed an endpoint for the client to validate the user session by providing clientAppId, clientAppSercret and user token
+// we should move it to user service
 clientAppRouter.get('/validate', isAuthenticated, isClientAppAuthenticated, async (req: Request, res: Response) => {
   // #swagger.tags = ['Client App']
   try {
