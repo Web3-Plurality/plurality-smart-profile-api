@@ -15,12 +15,12 @@ const stytchClient = new stytch.Client({
   secret: 'secret-test-FjWeo6SN_f6QcP-izJycjlBIIRQuVu53qBU=',
 });
 
+const templateId = process.env.CLIENT_OTP_TEMPLATE_ID || '';
+
 clientRouter.post('/login', async function (req: Request, res: Response) {
   // #swagger.tags = ['Auth']
   try {
     const email: string = req.body.email;
-    // add to .env file
-    const templateId = 'sign_in_to_plurality_network';
     /* eslint-disable */
     const options: OTPsEmailLoginOrCreateRequest = {
       email: email,

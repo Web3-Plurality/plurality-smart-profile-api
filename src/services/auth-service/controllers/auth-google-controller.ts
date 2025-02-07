@@ -22,6 +22,8 @@ export const authGoogleRouter = express.Router();
 
 const userRepository = AppDataSource.getRepository(User);
 
+const templateId = process.env.USER_OTP_TEMPLATE_ID || '';
+
 /* eslint-disable */
 const stytchClient = new stytch.Client({
   project_id: process.env.STYTCH_PROJECT_ID || '',
@@ -82,7 +84,6 @@ authGoogleRouter.get(
           await userRepository.update(existingUser.id, { loginType: LoginType.google });
         } else if (existingUser.loginType !== LoginType.google && existingUser.loginType === LoginType.stytch) {
           Logger.info(`user ${existingUser.id} is not authorized to login with google`);
-          const templateId = 'sign_in_to_plurality_network';
           /* eslint-disable */
           const options: OTPsEmailLoginOrCreateRequest = {
             email: existingUser?.email,

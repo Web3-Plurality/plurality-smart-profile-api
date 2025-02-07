@@ -18,12 +18,13 @@ const stytchClient = new stytch.Client({
 });
 /* eslint-enable */
 
+const templateId = process.env.USER_OTP_TEMPLATE_ID || '';
+
 // Start the authentication flow
 authOTPRouter.post('/login', async function (req: Request, res: Response) {
   // #swagger.tags = ['Auth']
   try {
     const email: string = req.body.email;
-    const templateId = process.env.TEMPLATE_ID || '';
     /* eslint-disable */
     const options: OTPsEmailLoginOrCreateRequest = {
       email: email,
