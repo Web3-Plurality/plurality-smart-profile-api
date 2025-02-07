@@ -32,6 +32,7 @@ import { clientAppRouter } from './services/crm-service/controllers/client-app-c
 // Lit SDK
 import * as LitJsSdk from '@lit-protocol/lit-node-client';
 import { LitNetwork } from '@lit-protocol/constants';
+import { userRouter } from './services/user-service/controllers/user-controller';
 
 dotenv.config();
 
@@ -54,7 +55,7 @@ app.use('/auth/google', authGoogleRouter);
 // user service routers
 app.use('/user/smart-profile', smartProfileRouter);
 app.use('/user/capacity', capacityRouter);
-
+app.use('/user', userRouter);
 // oauth service routers
 app.use('/oauth-twitter', twitterRouter);
 app.use('/oauth-snapchat', snapchatRouter);

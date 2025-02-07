@@ -4,20 +4,15 @@ import { AppDataSource } from '../../../data-source';
 import Logger from '../../../lib/logger';
 import { v2 as cloudinary } from 'cloudinary';
 import { AppType, ClientApp, IncentiveType } from '../entity/client-app';
-import { isClientAppAuthenticated, verifyStytchJWT } from '../middlewares/auth-middleware';
-import { User } from '../../user-service/entity/user';
+import { verifyStytchJWT } from '../middlewares/auth-middleware';
 import crypto from 'crypto';
-import { isAuthenticated } from '../../user-service/middlewares/auth-middleware';
 import { connectOrbisDidPkh, initializeOrbis, insertProfileType } from '../utils/orbis';
 import { ClientAppDev } from '../entity/client-app-dev';
-import { UserClientAppMap } from '../../auth-service/entity/user-client-app-map';
 import { Client } from '../entity/client';
 
 export const clientAppRouter = express.Router();
 dotenv.config();
 const clientAppRepository = AppDataSource.getRepository(ClientAppDev);
-const userClientAppMapRepository = AppDataSource.getRepository(UserClientAppMap);
-const userRepository = AppDataSource.getRepository(User);
 const clientRepository = AppDataSource.getRepository(Client);
 
 /* eslint-disable */
@@ -50,7 +45,6 @@ clientAppRouter.post('/', verifyStytchJWT, async (req: Request, res: Response) =
     // Upload an image
     let uploadResult;
     if (img) {
-
       uploadResult = await cloudinary.uploader.upload(img).catch((error) => {
         console.log(error);
       });
@@ -83,7 +77,7 @@ clientAppRouter.post('/', verifyStytchJWT, async (req: Request, res: Response) =
   }
 });
 
-clientAppRouter.put('/:id',verifyStytchJWT, async (req: Request, res: Response) => {
+clientAppRouter.put('/:id', verifyStytchJWT, async (req: Request, res: Response) => {
   // #swagger.tags = ['Client App']
   try {
     const { img, streamId, links, domains, incentiveType, appType } = req.body;
@@ -167,25 +161,22 @@ clientAppRouter.put('/rotate-secret/:id', verifyStytchJWT, async (req: Request, 
 });
 
 //todo: add new route for client app
-//clientAppRouter.get('/' verifyStytchJWT -> need to verify the stytch jwt token and return all apps against the clientId 
+//clientAppRouter.get('/' verifyStytchJWT -> need to verify the stytch jwt token and return all apps against the clientId
 
 clientAppRouter.get('/', verifyStytchJWT, async (req: Request, res: Response) => {
-    // #swagger.tags = ['Client App']
-    try {
-      const email = req.email;
-      const data: any = await clientRepository.find({
-        where: {
-          email: email,
-        },
-        relations: ['apps'],
-      });
-  
-      return res.status(200).json({ apps: data[0]?.apps });
+  // #swagger.tags = ['Client App']
+  try {
+    const email = req.email;
+    const data: any = await clientRepository.find({
+      where: {
+        email: email,
+      },
+      relations: ['apps'],
+    });
 
-    } catch (error) {
-      
-    }
-})
+    return res.status(200).json({ apps: data[0]?.apps });
+  } catch (error) {}
+});
 
 // todo: improve this route => need to change this in widgetUI as well
 // clientAppRouter.get('/:id' -> dont need to verify this route as this is public
@@ -210,35 +201,6 @@ clientAppRouter.get('/:id', async (req: Request, res: Response) => {
 
     Logger.error(`Invalid domain: ${origin}`);
     return res.status(400).json({ error: 'Invalid domain' });
-  } catch (error: any) {
-    Logger.error(`Fatal error due to unknown reason: ${JSON.stringify(error)}`);
-    return res.status(500).json({ error: 'An error occurred while processing your request' });
-  }
-});
-
-// we needed an endpoint for the client to validate the user session by providing clientAppId, clientAppSercret and user token
-// we should move it to user service
-clientAppRouter.get('/validate', isAuthenticated, isClientAppAuthenticated, async (req: Request, res: Response) => {
-  // #swagger.tags = ['Client App']
-  try {
-    const clientApp = req?.clientApp;
-
-    const userClientAppMap = await userClientAppMapRepository.findOne({
-      where: {
-        id: req?.user?.uniqueSessionId,
-      },
-    });
-    if (userClientAppMap?.clientAppId !== clientApp?.id) {
-      return res.status(401).json({ error: 'user does not belong to the given client' });
-    }
-
-    const user = await userRepository?.findOne({
-      where: {
-        id: req?.user?.id,
-      },
-    });
-
-    res.status(200).json({ user });
   } catch (error: any) {
     Logger.error(`Fatal error due to unknown reason: ${JSON.stringify(error)}`);
     return res.status(500).json({ error: 'An error occurred while processing your request' });
