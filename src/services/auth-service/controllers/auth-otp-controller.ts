@@ -23,7 +23,7 @@ authOTPRouter.post('/login', async function (req: Request, res: Response) {
   // #swagger.tags = ['Auth']
   try {
     const email: string = req.body.email;
-    const templateId = 'sign_in_to_plurality_network';
+    const templateId = process.env.TEMPLATE_ID || '';
     /* eslint-disable */
     const options: OTPsEmailLoginOrCreateRequest = {
       email: email,

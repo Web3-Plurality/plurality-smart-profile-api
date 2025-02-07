@@ -13,7 +13,6 @@ dotenv.config();
 
 const clientAppRepository = AppDataSource.getRepository(ClientAppDev);
 
-
 // Middleware to authenticate JWT
 export const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
   const token = req.headers.authorization && req.headers.authorization.split(' ')[1];
@@ -31,9 +30,8 @@ export const isAuthenticated = (req: Request, res: Response, next: NextFunction)
   });
 };
 
-
 export const isValidUserJwt = (req: Request, res: Response, next: NextFunction) => {
-  const token = req?.body?.token
+  const token = req?.body?.token;
 
   if (!token) {
     return res.status(401).send('Token is missing');
@@ -47,7 +45,6 @@ export const isValidUserJwt = (req: Request, res: Response, next: NextFunction) 
     next();
   });
 };
-
 
 export const isValidAddress = async (req: Request, res: Response, next: NextFunction) => {
   ethers.isAddress(req?.body?.data?.address) ? next() : res.status(400).send('Invalid address');
@@ -85,20 +82,18 @@ export const isValidAttestation = async (req: Request, res: Response, next: Next
   }
 };
 
-
 // Middleware to authenticate client secret
 export const isClientAppAuthenticated = async (req: Request, res: Response, next: NextFunction) => {
-
   const authHeader = req.headers.authorization;
-  console.log(authHeader)
-  if (!authHeader || !authHeader.startsWith("Basic ")) {
-      return res.status(401).json({ message: "Unauthorized" });
+  console.log(authHeader);
+  if (!authHeader || !authHeader.startsWith('Basic ')) {
+    return res.status(401).json({ message: 'Unauthorized' });
   }
-  const base64Credentials = authHeader.split(" ")[1]
-  const credentials = Buffer.from(base64Credentials, "base64").toString("utf-8");
-  const [clientAppId, clientSecret] = credentials.split(":");
-  console.log(clientAppId)
-  console.log(clientSecret)
+  const base64Credentials = authHeader.split(' ')[1];
+  const credentials = Buffer.from(base64Credentials, 'base64').toString('utf-8');
+  const [clientAppId, clientSecret] = credentials.split(':');
+  console.log(clientAppId);
+  console.log(clientSecret);
 
   // clientId and secret should not be empty
   if (!clientAppId || !clientSecret || typeof clientAppId !== 'string' || typeof clientSecret !== 'string') {
