@@ -32,8 +32,8 @@ export const isAuthenticated = (req: Request, res: Response, next: NextFunction)
 };
 
 
-export const isUserAuthenticated = (req: Request, res: Response, next: NextFunction) => {
-  const token = req?.body?.token && req?.body?.token.split(' ')[1];
+export const isValidUserJwt = (req: Request, res: Response, next: NextFunction) => {
+  const token = req?.body?.token
 
   if (!token) {
     return res.status(401).send('Token is missing');
@@ -94,8 +94,11 @@ export const isClientAppAuthenticated = async (req: Request, res: Response, next
   if (!authHeader || !authHeader.startsWith("Basic ")) {
       return res.status(401).json({ message: "Unauthorized" });
   }
-
-  const [clientAppId, clientSecret] = authHeader.split(" ")[1].split(":");
+  const base64Credentials = authHeader.split(" ")[1]
+  const credentials = Buffer.from(base64Credentials, "base64").toString("utf-8");
+  const [clientAppId, clientSecret] = credentials.split(":");
+  console.log(clientAppId)
+  console.log(clientSecret)
 
   // clientId and secret should not be empty
   if (!clientAppId || !clientSecret || typeof clientAppId !== 'string' || typeof clientSecret !== 'string') {
