@@ -4,7 +4,7 @@ import Logger from '../../../lib/logger';
 import { AppDataSource } from '../../../data-source';
 import { LoginType, User } from '../../user-service/entity/user';
 import jwt from 'jsonwebtoken';
-import { AddUserClientMap } from '../utils/user';
+import { AddUserSession } from '../utils/user';
 import * as dotenv from 'dotenv';
 
 dotenv.config();
@@ -101,7 +101,7 @@ authOTPRouter.post('/authenticate', async function (req: Request, res: Response)
 
     //if client id exist then add in user client map
     if (clientAppId) {
-      const uniqueSessionId = await AddUserClientMap(existingUser?.id ? existingUser?.id : addedUser?.id, clientAppId);
+      const uniqueSessionId = await AddUserSession(existingUser?.id ? existingUser?.id : addedUser?.id, clientAppId);
       Logger.info(`jwt token generated for user id ${existingUser?.id ? existingUser?.id : addedUser?.id}`);
       const token = jwt.sign(
         { id: existingUser?.id ? existingUser?.id : addedUser?.id, uniqueSessionId },

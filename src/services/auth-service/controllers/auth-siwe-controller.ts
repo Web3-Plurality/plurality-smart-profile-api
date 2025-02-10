@@ -6,7 +6,7 @@ import { ethers } from 'ethers';
 import jwt from 'jsonwebtoken';
 import { LoginType, User } from '../../user-service/entity/user';
 import { AppDataSource } from '../../../data-source';
-import { AddUserClientMap } from '../utils/user';
+import { AddUserSession } from '../utils/user';
 import * as dotenv from 'dotenv';
 
 dotenv.config();
@@ -36,7 +36,7 @@ const userRegisterViaWallet = async (address: string, clientAppId: string) => {
   }
   //if client id exist then add in user client map
   if (clientAppId) {
-    const uniqueSessionId = await AddUserClientMap(existingUser?.id ? existingUser?.id : addedUser?.id, clientAppId);
+    const uniqueSessionId = await AddUserSession(existingUser?.id ? existingUser?.id : addedUser?.id, clientAppId);
     const token = jwt.sign(
       { id: existingUser?.id ? existingUser?.id : addedUser?.id, uniqueSessionId },
       process.env.JWT_SECRET || '',

@@ -3,10 +3,10 @@ import { isClientAppAuthenticated, isValidUserJwt } from '../middlewares/auth-mi
 import Logger from '../../../lib/logger';
 import { AppDataSource } from '../../../data-source';
 import { User } from '../entity/user';
-import { UserClientAppMap } from '../../auth-service/entity/user-client-app-map';
+import { UserSession } from '../../auth-service/entity/user-session';
 
 const userRepository = AppDataSource.getRepository(User);
-const userClientAppMapRepository = AppDataSource.getRepository(UserClientAppMap);
+const userSessionRepository = AppDataSource.getRepository(UserSession);
 export const userRouter = express.Router();
 
 // endpoint for the client to validate the user session by providing clientAppId, clientAppSercret and user token
@@ -14,7 +14,7 @@ userRouter.get('/validate', isValidUserJwt, isClientAppAuthenticated, async (req
   // #swagger.tags = ['Client App']
   try {
     const clientApp = req?.clientApp;
-    const userClientAppMap = await userClientAppMapRepository.findOne({
+    const userClientAppMap = await userSessionRepository.findOne({
       where: {
         id: req?.user?.uniqueSessionId,
       },

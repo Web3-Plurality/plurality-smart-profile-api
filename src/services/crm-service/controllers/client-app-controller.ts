@@ -7,12 +7,11 @@ import { AppType, ClientApp, IncentiveType } from '../entity/client-app';
 import { verifyStytchJWT } from '../middlewares/auth-middleware';
 import crypto from 'crypto';
 import { connectOrbisDidPkh, initializeOrbis, insertProfileType } from '../utils/orbis';
-import { ClientAppDev } from '../entity/client-app-dev';
 import { Client } from '../entity/client';
 
 export const clientAppRouter = express.Router();
 dotenv.config();
-const clientAppRepository = AppDataSource.getRepository(ClientAppDev);
+const clientAppRepository = AppDataSource.getRepository(ClientApp);
 const clientRepository = AppDataSource.getRepository(Client);
 
 /* eslint-disable */
@@ -160,9 +159,6 @@ clientAppRouter.put('/rotate-secret/:id', verifyStytchJWT, async (req: Request, 
   }
 });
 
-//todo: add new route for client app
-//clientAppRouter.get('/' verifyStytchJWT -> need to verify the stytch jwt token and return all apps against the clientId
-
 clientAppRouter.get('/', verifyStytchJWT, async (req: Request, res: Response) => {
   // #swagger.tags = ['Client App']
   try {
@@ -178,8 +174,6 @@ clientAppRouter.get('/', verifyStytchJWT, async (req: Request, res: Response) =>
   } catch (error) {}
 });
 
-// todo: improve this route => need to change this in widgetUI as well
-// clientAppRouter.get('/:id' -> dont need to verify this route as this is public
 clientAppRouter.get('/:id', async (req: Request, res: Response) => {
   // #swagger.tags = ['Client App']
   try {

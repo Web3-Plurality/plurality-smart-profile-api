@@ -7,11 +7,11 @@ import { User } from '../entity/user';
 import { AppDataSource } from '../../../data-source';
 import { Request, Response, NextFunction } from 'express';
 import crypto from 'crypto';
-import { ClientAppDev } from '../../crm-service/entity/client-app-dev';
+import { ClientApp } from '../../crm-service/entity/client-app';
 
 dotenv.config();
 
-const clientAppRepository = AppDataSource.getRepository(ClientAppDev);
+const clientAppRepository = AppDataSource.getRepository(ClientApp);
 
 // Middleware to authenticate JWT
 export const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {

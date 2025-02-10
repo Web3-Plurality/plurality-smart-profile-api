@@ -1,7 +1,7 @@
 import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn } from 'typeorm';
 
-@Entity({ name: 'user_client_app_map' })
-export class UserClientAppMap {
+@Entity({ name: 'user_sessions' })
+export class UserSession {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 

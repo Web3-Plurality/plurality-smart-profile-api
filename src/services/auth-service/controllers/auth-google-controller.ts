@@ -14,7 +14,7 @@ import {
   hasValidEventParam,
 } from '../../oauth-service/middlewares/oauth-middleware';
 import { GOOGLE_APP } from '../../oauth-service/utils/constants';
-import { AddUserClientMap } from '../utils/user';
+import { AddUserSession } from '../utils/user';
 import stytch, { OTPsEmailLoginOrCreateRequest } from 'stytch';
 
 dotenv.config();
@@ -146,7 +146,7 @@ authGoogleRouter.post('/event', hasValidEventHeader, hasValidAccessTokenHeader, 
     //if client id exist then add in user client map
     if (clientAppId) {
       console.log('clientAppId', clientAppId);
-      const uniqueSessionId = await AddUserClientMap(tokenObj?.userId, clientAppId);
+      const uniqueSessionId = await AddUserSession(tokenObj?.userId, clientAppId);
       const token = jwt.sign({ id: tokenObj?.userId, uniqueSessionId }, process.env.JWT_SECRET || '', {
         expiresIn: '1d',
       });

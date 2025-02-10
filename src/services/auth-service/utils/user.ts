@@ -1,14 +1,12 @@
 import { AppDataSource } from '../../../data-source';
 import Logger from '../../../lib/logger';
 import { ClientApp } from '../../crm-service/entity/client-app';
-import { ClientAppDev } from '../../crm-service/entity/client-app-dev';
-import { UserClientAppMap } from '../entity/user-client-app-map';
-import { UserClientMap } from '../entity/user-client-map';
+import { UserSession } from '../entity/user-session';
 
-const userClientAppMapRepository = AppDataSource.getRepository(UserClientAppMap);
-const clientAppRepository = AppDataSource.getRepository(ClientAppDev);
+const userSessionRepository = AppDataSource.getRepository(UserSession);
+const clientAppRepository = AppDataSource.getRepository(ClientApp);
 
-export const AddUserClientMap = async (userId: string, clientAppId: string) => {
+export const AddUserSession = async (userId: string, clientAppId: string) => {
   try {
     // Check if the client exists
     const existingClientApp = await clientAppRepository.findOne({ where: { id: clientAppId } });
@@ -17,12 +15,12 @@ export const AddUserClientMap = async (userId: string, clientAppId: string) => {
       throw new Error('Client not found');
     }
     // Create a new mapping
-    const newUserClientAppMap = userClientAppMapRepository.create({ userId, clientAppId });
-    await userClientAppMapRepository.save(newUserClientAppMap);
-    Logger.info(`UserClientAppMap created: ${newUserClientAppMap.id}`);
-    return newUserClientAppMap.id;
+    const newUserSession = userSessionRepository.create({ userId, clientAppId });
+    await userSessionRepository.save(newUserSession);
+    Logger.info(`UserSession created: ${newUserSession.id}`);
+    return newUserSession.id;
   } catch (error: any) {
-    Logger.error(`Error in AddUserClientAppMap: ${error.message || JSON.stringify(error)}`);
+    Logger.error(`Error in AddUserSession: ${error.message || JSON.stringify(error)}`);
     throw error;
   }
 };

@@ -1,10 +1,8 @@
 import express, { Request, Response } from 'express';
-import * as dotenv from 'dotenv';
 import { AppDataSource } from '../../../data-source';
 import Logger from '../../../lib/logger';
 import stytch, { OTPsAuthenticateRequest, OTPsEmailLoginOrCreateRequest } from 'stytch';
 import { Client } from '../entity/client';
-import { verifyStytchJWT } from '../middlewares/auth-middleware';
 
 export const clientRouter = express.Router();
 
@@ -87,24 +85,5 @@ clientRouter.post('/authenticate', async function (req: Request, res: Response) 
   } catch (err) {
     console.error(err);
     res.status(401).send('Authentication failed');
-  }
-});
-// get a client object by id -> remove this
-clientRouter.get('/:id', verifyStytchJWT, async (req: Request, res: Response) => {
-  // #swagger.tags = ['Client App']
-  try {
-    const clientId = req.params.id;
-
-    const data: any = await clientRepository.find({
-      where: {
-        id: clientId,
-      },
-      relations: ['apps'],
-    });
-
-    return res.status(200).json({ apps: data[0]?.apps });
-  } catch (error: any) {
-    Logger.error(`Fatal error due to unknown reason: ${JSON.stringify(error)}`);
-    return res.status(500).json({ error: 'An error occurred while processing your request' });
   }
 });

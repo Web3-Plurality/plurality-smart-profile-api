@@ -4,11 +4,10 @@ import * as dotenv from 'dotenv';
 import { ClientApp } from '../entity/client-app';
 import { Request, Response, NextFunction } from 'express';
 import Logger from '../../../lib/logger';
-import { ClientAppDev } from '../entity/client-app-dev';
 import stytch from 'stytch';
 
 dotenv.config();
-const clientAppRepository = AppDataSource.getRepository(ClientAppDev);
+const clientAppRepository = AppDataSource.getRepository(ClientApp);
 /* eslint-disable */
 const stytchClient = new stytch.Client({
   project_id: 'project-test-1b1bd75d-90d4-4c94-91b2-44f03f4a1d29',
