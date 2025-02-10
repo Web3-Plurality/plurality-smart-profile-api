@@ -4,8 +4,13 @@ import dotenv from 'dotenv';
 dotenv.config(); // Load environment variables
 
 // Declare the variables for dynamically imported modules
+/* eslint-disable */
+// @ts-ignore
 let orbisSDK: typeof import('@useorbis/db-sdk');
+// @ts-ignore
 let orbisSDKAuth: typeof import('@useorbis/db-sdk/auth');
+/* eslint-enable */
+
 
 // Function to initialize the Orbis SDKs
 async function initializeOrbisSDKs() {
@@ -52,7 +57,7 @@ export async function connectOrbisDidPkh() {
     throw new Error('OrbisDB is not initialized. Call initializeOrbisDB first.');
   }
 
-  const provider = new ethers.Wallet(process.env.PUBLIC_DAPP_OWNER_WALLET_PRIVATE_KEY || '');
+  const provider: any = new ethers.Wallet(process.env.PUBLIC_DAPP_OWNER_WALLET_PRIVATE_KEY || '');
   const auth = new orbisSDKAuth.OrbisEVMAuth(provider);
 
   try {
