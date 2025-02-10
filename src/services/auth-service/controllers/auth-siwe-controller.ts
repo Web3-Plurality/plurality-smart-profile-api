@@ -4,10 +4,9 @@ import { memoryStoreNonce } from '../../../utils/global';
 import { generateNonce, SiweMessage } from 'siwe';
 import { ethers } from 'ethers';
 import jwt from 'jsonwebtoken';
-import { v4 as uuidv4 } from 'uuid';
 import { LoginType, User } from '../../user-service/entity/user';
 import { AppDataSource } from '../../../data-source';
-import { AddUserClientMap } from '../../user-service/utils/user';
+import { AddUserSession } from '../utils/user';
 import * as dotenv from 'dotenv';
 
 dotenv.config();
@@ -15,10 +14,8 @@ dotenv.config();
 export const authSiweRouter = express.Router();
 const userRepository = AppDataSource.getRepository(User);
 
-const userRegisterViaWallet = async (address: string, clientId: string) => {
-  const uniqueSessionId = uuidv4();
-  let token = '';
-  let addedUser = {};
+const userRegisterViaWallet = async (address: string, clientAppId: string) => {
+  let addedUser: any = {};
   // Check if the user with the given address already exists
   const existingUser = await userRepository.findOne({
     where: {
@@ -27,7 +24,6 @@ const userRegisterViaWallet = async (address: string, clientId: string) => {
   });
   if (existingUser) {
     Logger.info(`This user already exists!`);
-    token = jwt.sign({ id: existingUser?.id, uniqueSessionId }, process.env.JWT_SECRET, { expiresIn: '1d' });
   } else {
     // If the user doesn't exist, insert a new row
     const newUser = await userRepository.create({
@@ -37,21 +33,25 @@ const userRegisterViaWallet = async (address: string, clientId: string) => {
     });
     Logger.info(`new user created with address: ${address}`);
     addedUser = await userRepository.save(newUser);
-    token = jwt.sign({ id: addedUser?.id, uniqueSessionId }, process.env.JWT_SECRET, { expiresIn: '1d' });
   }
   //if client id exist then add in user client map
-  if (clientId) {
-    await AddUserClientMap(existingUser?.id ? existingUser?.id : addedUser?.id, clientId);
+  if (clientAppId) {
+    const uniqueSessionId = await AddUserSession(existingUser?.id ? existingUser?.id : addedUser?.id, clientAppId);
+    const token = jwt.sign(
+      { id: existingUser?.id ? existingUser?.id : addedUser?.id, uniqueSessionId },
+      process.env.JWT_SECRET || '',
+      { expiresIn: '1d' },
+    );
+    Logger.info(`jwt token generated for user id ${existingUser?.id ? existingUser?.id : addedUser?.id}`);
+    return { token, user: existingUser?.id ? existingUser : addedUser };
   } else {
     Logger.error(`Client id not found`);
     throw new Error('Client id not found');
   }
-  Logger.info(`jwt token generated for user id ${existingUser?.id ? existingUser?.id : addedUser?.id}`);
-  return { token, user: existingUser?.id ? existingUser : addedUser };
 };
 
 //generate random string to take user signature
-authSiweRouter.post('/login', (req, res) => {
+authSiweRouter.post('/login', (req: Request, res: Response) => {
   // #swagger.tags = ['Auth']
   try {
     const walletAddress: string = req.body.address;
@@ -64,17 +64,19 @@ authSiweRouter.post('/login', (req, res) => {
       Logger.info(`Nonce generated for address ${walletAddress}: ${nonce}`);
       return res.status(200).json({ message: 'success', nonce });
     }
-  } catch (error) {
+  } catch (error: any) {
     Logger.error(`Fatal error due to unknown reason: ${JSON.stringify(error)}`);
     return res.status(500).json({ error: 'An error occurred while processing your request' });
   }
 });
-// address, clientId, subscribe
-authSiweRouter.post('/authenticate', async function (req, res) {
+// address, clientAppId, subscribe
+authSiweRouter.post('/authenticate', async function (req: Request, res: Response) {
   // #swagger.tags = ['Auth']
   try {
-    const { address, clientId }: { address: string; clientId: string } = req.body;
-    const siweObj = req.headers['x-siwe'] ? JSON.parse(req.headers['x-siwe']) : '';
+    const { address, clientAppId }: { address: string; clientAppId: string } = req.body;
+    const siweObj = req.headers['x-siwe']
+      ? JSON.parse(Array.isArray(req.headers['x-siwe']) ? req.headers['x-siwe'][0] : req.headers['x-siwe'])
+      : '';
     const siweToken = siweObj?.siwe;
     const message = decodeURIComponent(siweObj?.message);
     const nonce = memoryStoreNonce.get(address);
@@ -86,7 +88,7 @@ authSiweRouter.post('/authenticate', async function (req, res) {
       return res.status(400).send('Invalid nonce');
     }
     // delete nonce with the address
-    delete memoryStoreNonce[address];
+    memoryStoreNonce.delete(address);
     // check signature
     if (!siweResponse.success) {
       Logger.error(`Invalid siwe token`);
@@ -98,7 +100,7 @@ authSiweRouter.post('/authenticate', async function (req, res) {
     }
     // create jwt token
     Logger.info(`user authenticated successfully by address ${address}`);
-    const { token, user } = await userRegisterViaWallet(address, clientId);
+    const { token, user } = await userRegisterViaWallet(address, clientAppId);
     return res.status(200).json({ success: true, token, user });
   } catch (err) {
     Logger.error(`Error occurred: ${err}`);

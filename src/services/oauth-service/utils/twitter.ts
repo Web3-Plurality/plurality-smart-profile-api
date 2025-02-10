@@ -68,7 +68,7 @@ export async function scrape(url: string) {
     const tweetObj = await page.evaluate(() => {
       const tweetElement = document.querySelector('div[data-testid="tweetText"]');
       const element = document.querySelector('article[data-testid="tweet"]');
-      if (element) {
+      if (element instanceof HTMLElement) {
         const data = element?.innerText.split('\n');
         const obj: any = {};
         let i = 0;
@@ -95,7 +95,7 @@ export async function scrape(url: string) {
         }
         return {
           ...obj,
-          tweetText: tweetElement ? tweetElement?.innerText : null,
+          tweetText: tweetElement ? (tweetElement as HTMLElement)?.innerText : null,
         };
       } else {
         return { interests: [], introTags: [] };
@@ -112,7 +112,7 @@ export async function scrape(url: string) {
       interests: semanticObj?.Interests ? semanticObj?.Interests : [],
       introTags: semanticObj?.IntroTags ? semanticObj?.IntroTags : [],
     };
-  } catch (error) {
+  } catch (error: any) {
     Logger.error(`Error during scraping:, ${error.message}`);
     return { interests: [], introTags: [] };
   }

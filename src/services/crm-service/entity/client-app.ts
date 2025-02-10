@@ -1,8 +1,9 @@
-import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Client } from './client';
 
 export enum AppType {
   rsm = 'RSM',
-  login = 'login',
+  login = 'LOGIN',
 }
 
 export enum IncentiveType {
@@ -28,11 +29,21 @@ export class ClientApp {
   @Column({ nullable: true })
   domains: string;
 
-  @Column({ nullable: true, default: IncentiveType.POITNS })
+  @Column({ nullable: true, default: IncentiveType.points })
   incentiveType: string;
 
-  @Column({
-    default: AppType.login,
-  })
+  @Column({ default: AppType.login })
   appType: string;
+
+  @Column({ nullable: false, default: '' })
+  clientSecret: string;
+
+  // Foreign key relationship with Client
+  @ManyToOne(() => Client, (client) => client.apps, {
+    nullable: false,
+    onDelete: 'CASCADE', // Ensures cascade delete behavior
+    onUpdate: 'CASCADE', // Updates foreign key if referenced key changes
+  })
+  @JoinColumn({ name: 'clientId' }) // Foreign key column name
+  client: Client;
 }

@@ -1,14 +1,13 @@
-import { Request, Response } from 'express';
+import { NextFunction, Request, Response } from 'express';
 import { memoryStoreToken, memoryStoreSSE, memoryStoreProfile } from '../../../utils/global';
 import Logger from '../../../lib/logger';
-import jwt from 'jsonwebtoken';
 import * as dotenv from 'dotenv';
 import { ethers } from 'ethers';
 
 dotenv.config();
 
-export function hasValidAccessTokenHeader(req: Request, res: Response, next) {
-  const accessTokenID = req.headers['x-token-id'];
+export function hasValidAccessTokenHeader(req: Request, res: Response, next: NextFunction) {
+  const accessTokenID = req.headers['x-token-id'] as string | undefined;
   if (accessTokenID) {
     const accessToken = memoryStoreToken.get(accessTokenID);
     if (!accessToken) {
@@ -23,8 +22,8 @@ export function hasValidAccessTokenHeader(req: Request, res: Response, next) {
   return next();
 }
 
-export function hasValidEventHeader(req: Request, res: Response, next) {
-  const sseID = req.headers['x-sse-id'];
+export function hasValidEventHeader(req: Request, res: Response, next: NextFunction) {
+  const sseID = req.headers['x-sse-id'] as string | undefined;
   if (sseID) {
     const ssEvent = memoryStoreSSE.get(sseID);
     if (!ssEvent) {
@@ -39,8 +38,8 @@ export function hasValidEventHeader(req: Request, res: Response, next) {
   return next();
 }
 
-export function hasValidEventParam(req: Request, res: Response, next) {
-  const sseID = req.query.sse_id;
+export function hasValidEventParam(req: Request, res: Response, next: NextFunction) {
+  const sseID = req?.query?.sse_id as string | undefined;
   if (sseID) {
     const ssEvent = memoryStoreSSE.get(sseID);
     if (!ssEvent) {
@@ -54,24 +53,8 @@ export function hasValidEventParam(req: Request, res: Response, next) {
   req.sseID = sseID;
   return next();
 }
-// Middleware to authenticate JWT
-export const isAuthenticated = (req, res, next) => {
-  const token = req.headers.authorization && req.headers.authorization.split(' ')[1];
 
-  if (!token) {
-    return res.status(401).send('Token is missing');
-  }
-
-  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
-    if (err) {
-      return res.status(403).send('Invalid token');
-    }
-    req.user = user;
-    next();
-  });
-};
-
-export const isProfileMapEmpty = async (req, res, next) => {
+export const isProfileMapEmpty = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const profile = memoryStoreProfile.get(req?.user?.uniqueSessionId);
     const currentTime = new Date().getTime();
@@ -81,12 +64,12 @@ export const isProfileMapEmpty = async (req, res, next) => {
     } else {
       return next();
     }
-  } catch (error) {
+  } catch (error: any) {
     Logger.error(`error: ${error}`);
     return res.status(400).send('Invalid request');
   }
 };
 
-export const isValidAddress = async (req, res, next) => {
+export const isValidAddress = async (req: Request, res: Response, next: NextFunction) => {
   ethers.isAddress(req?.body?.address) ? next() : res.status(400).send('Invalid address');
 };

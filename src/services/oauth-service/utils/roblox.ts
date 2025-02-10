@@ -29,12 +29,12 @@ export const scrapRoblox = async (url: string) => {
     );
 
     return {
-      avatar: imgElement ? imgElement.src : null,
-      joinDate: joinElement ? joinElement.innerText : null,
-      placesVisit: placesVisitElement ? placesVisitElement.innerText : null,
-      friends: friendElement ? friendElement.innerText : null,
-      followers: followerVisitElement ? followerVisitElement.innerText : null,
-      following: followingVisitElement ? followingVisitElement.innerText : null,
+      avatar: imgElement ? (imgElement as HTMLImageElement).src : null,
+      joinDate: joinElement ? (joinElement as HTMLElement).innerText : null,
+      placesVisit: placesVisitElement ? (placesVisitElement as HTMLElement).innerText : null,
+      friends: friendElement ? (friendElement as HTMLElement).innerText : null,
+      followers: followerVisitElement ? (followerVisitElement as HTMLElement).innerText : null,
+      following: followingVisitElement ? (followingVisitElement as HTMLElement).innerText : null,
     };
   });
 

@@ -4,10 +4,15 @@ import { AppDataSource } from '../../../data-source';
 import Logger from '../../../lib/logger';
 import { v2 as cloudinary } from 'cloudinary';
 import { AppType, ClientApp, IncentiveType } from '../entity/client-app';
+import { verifyStytchJWT } from '../middlewares/auth-middleware';
+import crypto from 'crypto';
+import { connectOrbisDidPkh, initializeOrbis, insertProfileType } from '../utils/orbis';
+import { Client } from '../entity/client';
 
-export const clientRouter = express.Router();
+export const clientAppRouter = express.Router();
 dotenv.config();
 const clientAppRepository = AppDataSource.getRepository(ClientApp);
+const clientRepository = AppDataSource.getRepository(Client);
 
 /* eslint-disable */
 cloudinary.config({
@@ -17,10 +22,25 @@ cloudinary.config({
 });
 /* eslint-enable */
 
-clientRouter.post('/', async (req: Request, res: Response) => {
+clientAppRouter.post('/', verifyStytchJWT, async (req: Request, res: Response) => {
   // #swagger.tags = ['Client App']
   try {
-    const { img, streamId, links, domains, incentiveType, appType } = req.body;
+    const { profileName, profileDescription, img, domains, clientId } = req.body;
+
+    // Orbis
+    await initializeOrbis();
+    const isConnected = await connectOrbisDidPkh();
+    if (!isConnected) {
+      Logger.error('Something went wrong with the orbis');
+      res.status(500).send('Internal Server Error');
+    }
+
+    const result = await insertProfileType(profileName, profileDescription);
+
+    const incentiveType = IncentiveType.stars;
+    const appType = AppType.login;
+    const links: any = [];
+    const streamId = result?.id;
     // Upload an image
     let uploadResult;
     if (img) {
@@ -28,28 +48,35 @@ clientRouter.post('/', async (req: Request, res: Response) => {
         console.log(error);
       });
     }
+
+    // Generate credentials
+    const clientSecret = crypto.randomBytes(32).toString('hex');
+    const hashedSecret = crypto.createHash('sha256').update(clientSecret).digest('hex');
+
     // Insert into clientApp
     const newClientApp = await clientAppRepository.create({
       streamId: streamId,
       logo: uploadResult?.secure_url,
       links: JSON.stringify(links),
       domains: JSON.stringify(domains),
-      appType: appType.toLowerCase() == 'RSM' ? AppType.rsm : AppType.login,
-      incentiveType: incentiveType.toLowerCase() == 'STARS' ? IncentiveType.stars : IncentiveType.points,
+      appType: appType,
+      incentiveType: incentiveType,
+      clientSecret: hashedSecret,
+      client: { id: clientId },
     });
     await clientAppRepository.save(newClientApp);
     Logger.info(`clientApp created: ${newClientApp.id}`);
     return res.status(200).json({
       message: 'clientApp created',
-      data: newClientApp,
+      data: { clientAppId: newClientApp?.id, clientSecret: clientSecret },
     });
-  } catch (error) {
+  } catch (error: any) {
     Logger.error(`Fatal error due to unknown reason: ${JSON.stringify(error)}`);
     return res.status(500).json({ error: 'An error occurred while processing your request' });
   }
 });
 
-clientRouter.put('/:id', async (req: Request, res: Response) => {
+clientAppRouter.put('/:id', verifyStytchJWT, async (req: Request, res: Response) => {
   // #swagger.tags = ['Client App']
   try {
     const { img, streamId, links, domains, incentiveType, appType } = req.body;
@@ -68,7 +95,7 @@ clientRouter.put('/:id', async (req: Request, res: Response) => {
         id: id,
       },
     });
-    console.log(data);
+
     // updated data
     const updateData = {
       streamId: streamId ? streamId : data?.streamId,
@@ -91,33 +118,84 @@ clientRouter.put('/:id', async (req: Request, res: Response) => {
     return res.status(200).json({
       message: 'clientApp updated',
     });
-  } catch (error) {
+  } catch (error: any) {
     Logger.error(`Fatal error due to unknown reason: ${JSON.stringify(error)}`);
     return res.status(500).json({ error: 'An error occurred while processing your request' });
   }
 });
 
-clientRouter.get('/', async (req: Request, res: Response) => {
+clientAppRouter.put('/rotate-secret/:id', verifyStytchJWT, async (req: Request, res: Response) => {
+  // #swagger.tags = ['Client App']
+  try {
+    const clientAppId = req.params.id;
+    // check customer exist already
+    const clientApp = await clientAppRepository.findOne({
+      where: {
+        id: clientAppId,
+      },
+    });
+
+    if (!clientApp) {
+      Logger.error('clientApp not found');
+      res.status(400).json({ error: 'clientApp does not exist.' });
+    }
+    // Generate credentials
+    const clientSecret = crypto.randomBytes(32).toString('hex');
+    const hashedSecret = crypto.createHash('sha256').update(clientSecret).digest('hex');
+    // updated data
+    const updateData = {
+      clientSecret: hashedSecret,
+    };
+    await clientAppRepository.update({ id: clientAppId }, updateData);
+    Logger.info(`clientApp secret updated: ${clientAppId}`);
+    return res.status(200).json({
+      success: true,
+      message: 'clientApp updated',
+      clientSecret,
+    });
+  } catch (error: any) {
+    Logger.error(`Fatal error due to unknown reason: ${JSON.stringify(error)}`);
+    return res.status(500).json({ error: 'An error occurred while processing your request' });
+  }
+});
+
+clientAppRouter.get('/', verifyStytchJWT, async (req: Request, res: Response) => {
+  // #swagger.tags = ['Client App']
+  try {
+    const email = req.email;
+    const data: any = await clientRepository.find({
+      where: {
+        email: email,
+      },
+      relations: ['apps'],
+    });
+
+    return res.status(200).json({ apps: data[0]?.apps });
+  } catch (error) {}
+});
+
+clientAppRouter.get('/:id', async (req: Request, res: Response) => {
   // #swagger.tags = ['Client App']
   try {
     const origin = req.headers['x-domain'];
-    const id: any = req.query.uuid;
-    const data = await clientAppRepository.findOne({
+    // remove query and change it to param id
+    const clientAppId: any = req.params.id;
+    const data: any = await clientAppRepository.findOne({
       where: {
-        id: id,
+        id: clientAppId,
       },
     });
 
     const domains = JSON.parse(data?.domains);
 
     if (domains?.includes(origin)) {
-      Logger.info(`clientApp fetched: ${id}`);
+      Logger.info(`clientApp fetched: ${clientAppId}`);
       return res.status(200).json({ data });
     }
 
     Logger.error(`Invalid domain: ${origin}`);
     return res.status(400).json({ error: 'Invalid domain' });
-  } catch (error) {
+  } catch (error: any) {
     Logger.error(`Fatal error due to unknown reason: ${JSON.stringify(error)}`);
     return res.status(500).json({ error: 'An error occurred while processing your request' });
   }
