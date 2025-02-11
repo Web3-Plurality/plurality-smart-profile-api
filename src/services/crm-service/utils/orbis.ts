@@ -11,7 +11,6 @@ let orbisSDK: typeof import('@useorbis/db-sdk');
 let orbisSDKAuth: typeof import('@useorbis/db-sdk/auth');
 /* eslint-enable */
 
-
 // Function to initialize the Orbis SDKs
 async function initializeOrbisSDKs() {
   orbisSDK = await import('@useorbis/db-sdk');

@@ -170,7 +170,7 @@ clientAppRouter.get('/', verifyStytchJWT, async (req: Request, res: Response) =>
       relations: ['apps'],
     });
 
-    return res.status(200).json({ apps: data[0]?.apps });
+    return res.status(200).json({ client: data[0] });
   } catch (error) {}
 });
 
