@@ -6,7 +6,7 @@ import { v2 as cloudinary } from 'cloudinary';
 import { AppType, ClientApp, IncentiveType } from '../entity/client-app';
 import { verifyStytchJWT } from '../middlewares/auth-middleware';
 import crypto from 'crypto';
-import { connectOrbisDidPkh, initializeOrbis, insertProfileType } from '../utils/orbis';
+import { connectOrbisDidPkh, initializeOrbis, insertProfileType, selectProfileType, updateProfileType } from '../utils/orbis';
 import { Client } from '../entity/client';
 
 export const clientAppRouter = express.Router();
@@ -56,6 +56,8 @@ clientAppRouter.post('/', verifyStytchJWT, async (req: Request, res: Response) =
     // Insert into clientApp
     const newClientApp = await clientAppRepository.create({
       streamId: streamId,
+      profileName: profileName,
+      profileDescription: profileDescription,
       logo: uploadResult?.secure_url,
       links: JSON.stringify(links),
       domains: JSON.stringify(domains),
@@ -79,42 +81,42 @@ clientAppRouter.post('/', verifyStytchJWT, async (req: Request, res: Response) =
 clientAppRouter.put('/:id', verifyStytchJWT, async (req: Request, res: Response) => {
   // #swagger.tags = ['Client App']
   try {
-    const { img, streamId, links, domains, incentiveType, appType } = req.body;
-    const id = req.params.id;
+    const { streamId, img, domains, profileName, profileDescription } = req.body;
+    const clientAppid = req.params.id;
 
-    // Upload an image
-    let uploadResult;
-    if (img) {
-      uploadResult = await cloudinary.uploader.upload(img).catch((error) => {
-        console.log(error);
-      });
+    // Orbis
+    await initializeOrbis();
+    const isConnected = await connectOrbisDidPkh();
+    if (!isConnected) {
+      Logger.error('Something went wrong with the orbis');
+      res.status(500).send('Internal Server Error');
     }
+
+    const result = await updateProfileType(streamId, profileName, profileDescription);
+    console.log(result);
+    // // Upload an image
+    // let uploadResult;
+    // if (img) {
+    //   uploadResult = await cloudinary.uploader.upload(img).catch((error) => {
+    //     console.log(error);
+    //   });
+    // }
+
     // check customer exist already
-    const data = await clientAppRepository.findOne({
-      where: {
-        id: id,
-      },
-    });
+    // const data = await clientAppRepository.findOne({
+    //   where: {
+    //     id: clientAppid,
+    //   },
+    // });
 
     // updated data
-    const updateData = {
-      streamId: streamId ? streamId : data?.streamId,
-      logo: uploadResult?.secure_url ? uploadResult?.secure_url : data?.logo,
-      links: links ? JSON.stringify(links) : data?.links,
-      domains: domains ? JSON.stringify(domains) : data?.domains,
-      appType: appType?.toLowerCase()
-        ? appType?.toLowerCase() === 'rsm'
-          ? AppType.rsm
-          : AppType.login
-        : data?.appType,
-      incentiveType: incentiveType?.toLowerCase()
-        ? incentiveType?.toLowerCase() == 'stars'
-          ? IncentiveType.stars
-          : IncentiveType.points
-        : data?.incentiveType,
-    };
-    await clientAppRepository.update({ id: id }, updateData);
-    Logger.info(`clientApp updated: ${id}`);
+    // const updateData = {
+    //   streamId: streamId ? streamId : data?.streamId,
+    //   logo: uploadResult?.secure_url ? uploadResult?.secure_url : data?.logo,
+    //   domains: domains ? JSON.stringify(domains) : data?.domains,
+    // };
+    // await clientAppRepository.update({ id: id }, updateData);
+    // Logger.info(`clientApp updated: ${id}`);
     return res.status(200).json({
       message: 'clientApp updated',
     });
@@ -169,9 +171,34 @@ clientAppRouter.get('/', verifyStytchJWT, async (req: Request, res: Response) =>
       },
       relations: ['apps'],
     });
+    // when user did not have any app
+    // if (!data[0]?.apps?.length) {
+    //   return res.status(200).json({ client: data[0] });
+    // }
+    // Orbis
+    await initializeOrbis();
+    const isConnected = await connectOrbisDidPkh();
+    if (!isConnected) {
+      Logger.error('Something went wrong with the orbis');
+      res.status(500).send('Internal Server Error');
+    }
+
+    // console.log("APP DATA==> ", data[0].apps);
+    // const apps = data[0]?.apps;
+    // if (apps.length > 0) {
+    //   apps.map(async (e: { streamId: string; }) => {
+    //     const result = await selectProfileType(e.streamId)
+    //     console.log("RESULT---> ", result);
+    //   });
+    // }
+
+    const result = await selectProfileType("kjzl6kcym7w8yagwkmn2tfublyzm78myx8fl8fbyoc2dr2nlmwrzjl1r4m20ney")
+    console.log("RESULT==> ",result);
+    
 
     return res.status(200).json({ client: data[0] });
-  } catch (error) {}
+
+  } catch (error) { }
 });
 
 clientAppRouter.get('/:id', async (req: Request, res: Response) => {
