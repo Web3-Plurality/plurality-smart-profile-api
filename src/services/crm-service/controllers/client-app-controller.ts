@@ -9,6 +9,7 @@ import crypto from 'crypto';
 import { connectOrbisDidPkh, initializeOrbis, insertProfileType, selectProfileType, updateProfileType } from '../utils/orbis';
 import { Client } from '../entity/client';
 import { ClientAppDev } from '../entity/client-app-dev';
+import { isBase64ImageDataUrl, isValidUrl } from '../utils/helper';
 
 export const clientAppRouter = express.Router();
 dotenv.config();
@@ -93,31 +94,39 @@ clientAppRouter.put('/:id', verifyStytchJWT, async (req: Request, res: Response)
       res.status(500).send('Internal Server Error');
     }
 
-    const result = await updateProfileType(streamId, profileName, profileDescription);
-    console.log("Update Result => ", result, "++++++++++");
-    // // Upload an image
-    // let uploadResult;
-    // if (img) {
-    //   uploadResult = await cloudinary.uploader.upload(img).catch((error) => {
-    //     console.log(error);
-    //   });
-    // }
+    // update in orbis
+    await updateProfileType(streamId, profileName, profileDescription);
+    
+    // Upload an image
+    let uploadResult;
+    if (img && isBase64ImageDataUrl(img)) {
+      uploadResult = await cloudinary.uploader.upload(img).catch((error) => {
+        console.log(error);
+      });
+    }
 
     // check customer exist already
-    // const data = await clientAppRepository.findOne({
-    //   where: {
-    //     id: clientAppid,
-    //   },
-    // });
+    const clientApp = await clientAppRepository.findOne({
+      where: {
+        id: clientAppid,
+      },
+    });
 
+    if (!clientApp) {
+      return res.status(404).json({
+        message: `clientApp of id ${clientAppid} does not exist`,
+      });
+    }
+  
     // updated data
-    // const updateData = {
-    //   streamId: streamId ? streamId : data?.streamId,
-    //   logo: uploadResult?.secure_url ? uploadResult?.secure_url : data?.logo,
-    //   domains: domains ? JSON.stringify(domains) : data?.domains,
-    // };
-    // await clientAppRepository.update({ id: id }, updateData);
-    // Logger.info(`clientApp updated: ${id}`);
+    const updateData = {
+      profileName,
+      profileDescription,
+      logo: uploadResult?.secure_url ? uploadResult?.secure_url : clientApp?.logo,
+      domains:  JSON.stringify(domains),
+    };
+    await clientAppRepository.update({ id: clientAppid }, updateData);
+    Logger.info(`clientApp updated: ${clientAppid}`);
     return res.status(200).json({
       message: 'clientApp updated',
     });
