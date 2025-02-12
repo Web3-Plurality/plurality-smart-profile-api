@@ -8,10 +8,11 @@ import { verifyStytchJWT } from '../middlewares/auth-middleware';
 import crypto from 'crypto';
 import { connectOrbisDidPkh, initializeOrbis, insertProfileType, selectProfileType, updateProfileType } from '../utils/orbis';
 import { Client } from '../entity/client';
+import { ClientAppDev } from '../entity/client-app-dev';
 
 export const clientAppRouter = express.Router();
 dotenv.config();
-const clientAppRepository = AppDataSource.getRepository(ClientApp);
+const clientAppRepository = AppDataSource.getRepository(ClientAppDev);
 const clientRepository = AppDataSource.getRepository(Client);
 
 /* eslint-disable */
@@ -93,7 +94,7 @@ clientAppRouter.put('/:id', verifyStytchJWT, async (req: Request, res: Response)
     }
 
     const result = await updateProfileType(streamId, profileName, profileDescription);
-    console.log(result);
+    console.log("Update Result => ", result, "++++++++++");
     // // Upload an image
     // let uploadResult;
     // if (img) {
@@ -171,21 +172,6 @@ clientAppRouter.get('/', verifyStytchJWT, async (req: Request, res: Response) =>
       },
       relations: ['apps'],
     });
-    // when user did not have any app
-    // if (!data[0]?.apps?.length) {
-    //   return res.status(200).json({ client: data[0] });
-    // }
-    // Orbis
-
-
-    // console.log("APP DATA==> ", data[0].apps);
-    // const apps = data[0]?.apps;
-    // if (apps.length > 0) {
-    //   apps.map(async (e: { streamId: string; }) => {
-    //     const result = await selectProfileType(e.streamId)
-    //     console.log("RESULT---> ", result);
-    //   });
-    // }
 
     return res.status(200).json({ client: data[0] });
 

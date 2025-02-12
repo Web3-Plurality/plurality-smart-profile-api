@@ -121,6 +121,10 @@ export async function updateProfileType(streamId: string, profileName: string, d
   /* eslint-enable */
   try {
     const result = await updateStatement.run();
+    console.log("Result->", result);
+    console.log("+++++++++++++++++++++++++++");
+    
+    
     return result;
   } catch (error) {
     console.log(error);

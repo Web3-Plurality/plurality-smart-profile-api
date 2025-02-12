@@ -11,8 +11,8 @@ export enum IncentiveType {
   stars = 'STARS',
 }
 
-@Entity({ name: 'client_apps' })
-export class ClientApp {
+@Entity({ name: 'client_apps_devs' })
+export class ClientAppDev {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
@@ -22,6 +22,12 @@ export class ClientApp {
 
   @Column({ nullable: true })
   logo: string;
+
+  @Column({ nullable: true })
+  profileName: string;
+
+  @Column({ nullable: true })
+  profileDescription: string;
 
   @Column({ nullable: true })
   links: string;
