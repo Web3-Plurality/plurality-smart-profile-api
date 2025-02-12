@@ -176,12 +176,7 @@ clientAppRouter.get('/', verifyStytchJWT, async (req: Request, res: Response) =>
     //   return res.status(200).json({ client: data[0] });
     // }
     // Orbis
-    await initializeOrbis();
-    const isConnected = await connectOrbisDidPkh();
-    if (!isConnected) {
-      Logger.error('Something went wrong with the orbis');
-      res.status(500).send('Internal Server Error');
-    }
+
 
     // console.log("APP DATA==> ", data[0].apps);
     // const apps = data[0]?.apps;
@@ -191,10 +186,6 @@ clientAppRouter.get('/', verifyStytchJWT, async (req: Request, res: Response) =>
     //     console.log("RESULT---> ", result);
     //   });
     // }
-
-    const result = await selectProfileType("kjzl6kcym7w8yagwkmn2tfublyzm78myx8fl8fbyoc2dr2nlmwrzjl1r4m20ney")
-    console.log("RESULT==> ",result);
-    
 
     return res.status(200).json({ client: data[0] });
 

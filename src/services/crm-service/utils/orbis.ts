@@ -133,9 +133,9 @@ export async function selectProfileType(streamId: string) {
     const selectStatement = await orbisdb
       .select()
       .from(data.models.profile_type_model || '')
-      .where({
-        stream_id: streamId,
-      })
+      // .where({
+      //   stream_id: streamId,
+      // })
       .context(process.env.ORBIS_PLURALITY_CONTEXT || '');
     /* eslint-enable */
     const query = selectStatement.build();

@@ -24,6 +24,12 @@ export class ClientApp {
   logo: string;
 
   @Column({ nullable: true })
+  profileName: string;
+
+  @Column({ nullable: true })
+  profileDescription: string;
+
+  @Column({ nullable: true })
   links: string;
 
   @Column({ nullable: true })
