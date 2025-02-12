@@ -3,6 +3,7 @@ import { AppDataSource } from '../../../data-source';
 import Logger from '../../../lib/logger';
 import stytch, { OTPsAuthenticateRequest, OTPsEmailLoginOrCreateRequest } from 'stytch';
 import { Client } from '../entity/client';
+import { verifyStytchJWT } from '../middlewares/auth-middleware';
 
 export const clientRouter = express.Router();
 
@@ -86,4 +87,20 @@ clientRouter.post('/authenticate', async function (req: Request, res: Response) 
     console.error(err);
     res.status(401).send('Authentication failed');
   }
+});
+
+
+clientRouter.get('/', verifyStytchJWT, async (req: Request, res: Response) => {
+  // #swagger.tags = ['Client App']
+  try {
+    const email = req.email;
+    const data: any = await clientRepository.find({
+      where: {
+        email: email,
+      },
+      relations: ['apps'],
+    });
+
+    return res.status(200).json({ client: data[0] });
+  } catch (error) {}
 });

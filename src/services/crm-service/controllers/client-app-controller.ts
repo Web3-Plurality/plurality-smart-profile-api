@@ -6,7 +6,13 @@ import { v2 as cloudinary } from 'cloudinary';
 import { AppType, ClientApp, IncentiveType } from '../entity/client-app';
 import { verifyStytchJWT } from '../middlewares/auth-middleware';
 import crypto from 'crypto';
-import { connectOrbisDidPkh, initializeOrbis, insertProfileType, selectProfileType, updateProfileType } from '../utils/orbis';
+import {
+  connectOrbisDidPkh,
+  initializeOrbis,
+  insertProfileType,
+  selectProfileType,
+  updateProfileType,
+} from '../utils/orbis';
 import { Client } from '../entity/client';
 import { ClientAppDev } from '../entity/client-app-dev';
 import { isBase64ImageDataUrl, isValidUrl } from '../utils/helper';
@@ -96,7 +102,7 @@ clientAppRouter.put('/:id', verifyStytchJWT, async (req: Request, res: Response)
 
     // update in orbis
     await updateProfileType(streamId, profileName, profileDescription);
-    
+
     // Upload an image
     let uploadResult;
     if (img && isBase64ImageDataUrl(img)) {
@@ -117,13 +123,13 @@ clientAppRouter.put('/:id', verifyStytchJWT, async (req: Request, res: Response)
         message: `clientApp of id ${clientAppid} does not exist`,
       });
     }
-  
+
     // updated data
     const updateData = {
       profileName,
       profileDescription,
       logo: uploadResult?.secure_url ? uploadResult?.secure_url : clientApp?.logo,
-      domains:  JSON.stringify(domains),
+      domains: JSON.stringify(domains),
     };
     await clientAppRepository.update({ id: clientAppid }, updateData);
     Logger.info(`clientApp updated: ${clientAppid}`);
@@ -183,8 +189,7 @@ clientAppRouter.get('/', verifyStytchJWT, async (req: Request, res: Response) =>
     });
 
     return res.status(200).json({ client: data[0] });
-
-  } catch (error) { }
+  } catch (error) {}
 });
 
 clientAppRouter.get('/:id', async (req: Request, res: Response) => {

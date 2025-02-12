@@ -142,7 +142,7 @@ export async function selectProfileType(streamId: string) {
     console.log('Query that will be run', query);
     const result = await selectStatement.run();
     console.log(result);
-      return result
+    return result;
     // const { columns, rows } = result
     // console.log("select first: ", { columns, rows, neededPlatforms });
     // return { columns, rows, neededPlatforms };
