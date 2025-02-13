@@ -3,7 +3,7 @@ import * as dotenv from 'dotenv';
 import { AppDataSource } from '../../../data-source';
 import Logger from '../../../lib/logger';
 import { v2 as cloudinary } from 'cloudinary';
-import { AppType, ClientApp, IncentiveType } from '../entity/client-app';
+import { AppType, IncentiveType } from '../entity/client-app';
 import { verifyStytchJWT } from '../middlewares/auth-middleware';
 import crypto from 'crypto';
 import {
@@ -14,12 +14,12 @@ import {
   updateProfileType,
 } from '../utils/orbis';
 import { Client } from '../entity/client';
-import { ClientAppDev } from '../entity/client-app-dev';
-import { isBase64ImageDataUrl, isValidUrl } from '../utils/helper';
+import { ClientApp } from '../entity/client-app';
+import { isBase64ImageDataUrl } from '../utils/helper';
 
 export const clientAppRouter = express.Router();
 dotenv.config();
-const clientAppRepository = AppDataSource.getRepository(ClientAppDev);
+const clientAppRepository = AppDataSource.getRepository(ClientApp);
 const clientRepository = AppDataSource.getRepository(Client);
 
 /* eslint-disable */
@@ -90,6 +90,14 @@ clientAppRouter.put('/:id', verifyStytchJWT, async (req: Request, res: Response)
   // #swagger.tags = ['Client App']
   try {
     const { streamId, img, domains, profileName, profileDescription } = req.body;
+    console.log("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
+    
+    console.log("Stream Id",streamId);
+    console.log("profileName",profileName);
+    console.log("Description",profileDescription);
+    console.log("img",img);
+    console.log("Domains",domains);
+    
     const clientAppid = req.params.id;
 
     // Orbis
@@ -126,8 +134,6 @@ clientAppRouter.put('/:id', verifyStytchJWT, async (req: Request, res: Response)
 
     // updated data
     const updateData = {
-      profileName,
-      profileDescription,
       logo: uploadResult?.secure_url ? uploadResult?.secure_url : clientApp?.logo,
       domains: JSON.stringify(domains),
     };
