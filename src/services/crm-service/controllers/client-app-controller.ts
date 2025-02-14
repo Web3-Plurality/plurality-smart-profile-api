@@ -45,7 +45,7 @@ clientAppRouter.post('/', verifyStytchJWT, async (req: Request, res: Response) =
 
     const result = await insertProfileType(profileName, profileDescription);
 
-    const incentiveType = IncentiveType.stars;
+    const incentiveType = IncentiveType.points;
     const appType = AppType.login;
     const links: any = [];
     const streamId = result?.id;
@@ -64,8 +64,6 @@ clientAppRouter.post('/', verifyStytchJWT, async (req: Request, res: Response) =
     // Insert into clientApp
     const newClientApp = await clientAppRepository.create({
       streamId: streamId,
-      profileName: profileName,
-      profileDescription: profileDescription,
       logo: uploadResult?.secure_url,
       links: JSON.stringify(links),
       domains: JSON.stringify(domains),
@@ -90,14 +88,14 @@ clientAppRouter.put('/:id', verifyStytchJWT, async (req: Request, res: Response)
   // #swagger.tags = ['Client App']
   try {
     const { streamId, img, domains, profileName, profileDescription } = req.body;
-    console.log("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
-    
-    console.log("Stream Id",streamId);
-    console.log("profileName",profileName);
-    console.log("Description",profileDescription);
-    console.log("img",img);
-    console.log("Domains",domains);
-    
+    console.log('++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++');
+
+    console.log('Stream Id', streamId);
+    console.log('profileName', profileName);
+    console.log('Description', profileDescription);
+    console.log('img', img);
+    console.log('Domains', domains);
+
     const clientAppid = req.params.id;
 
     // Orbis

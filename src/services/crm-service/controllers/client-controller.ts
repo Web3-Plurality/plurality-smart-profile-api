@@ -89,7 +89,6 @@ clientRouter.post('/authenticate', async function (req: Request, res: Response) 
   }
 });
 
-
 clientRouter.get('/', verifyStytchJWT, async (req: Request, res: Response) => {
   // #swagger.tags = ['Client App']
   try {
