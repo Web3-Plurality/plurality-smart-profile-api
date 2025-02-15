@@ -7,7 +7,6 @@ import { AppType, IncentiveType } from '../entity/client-app';
 import { verifyStytchJWT } from '../middlewares/auth-middleware';
 import crypto from 'crypto';
 import { connectOrbisDidPkh, initializeOrbis, insertProfileType, updateProfileType } from '../utils/orbis';
-import { Client } from '../entity/client';
 import { ClientApp } from '../entity/client-app';
 import { isBase64ImageDataUrl } from '../utils/helper';
 
