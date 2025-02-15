@@ -1,5 +1,6 @@
 import { Entity, Column, PrimaryGeneratedColumn, OneToMany } from 'typeorm';
 import { ClientApp } from './client-app';
+// import { ClientAppDev } from './client-app-dev';
 
 @Entity({ name: 'clients' })
 export class Client {

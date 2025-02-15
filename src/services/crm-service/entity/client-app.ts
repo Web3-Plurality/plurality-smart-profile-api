@@ -40,7 +40,7 @@ export class ClientApp {
 
   // Foreign key relationship with Client
   @ManyToOne(() => Client, (client) => client.apps, {
-    nullable: false,
+    nullable: true,
     onDelete: 'CASCADE', // Ensures cascade delete behavior
     onUpdate: 'CASCADE', // Updates foreign key if referenced key changes
   })

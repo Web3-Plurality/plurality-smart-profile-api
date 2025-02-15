@@ -4,8 +4,12 @@ import dotenv from 'dotenv';
 dotenv.config(); // Load environment variables
 
 // Declare the variables for dynamically imported modules
+/* eslint-disable */
+// @ts-ignore
 let orbisSDK: typeof import('@useorbis/db-sdk');
+// @ts-ignore
 let orbisSDKAuth: typeof import('@useorbis/db-sdk/auth');
+/* eslint-enable */
 
 // Function to initialize the Orbis SDKs
 async function initializeOrbisSDKs() {
@@ -52,7 +56,7 @@ export async function connectOrbisDidPkh() {
     throw new Error('OrbisDB is not initialized. Call initializeOrbisDB first.');
   }
 
-  const provider = new ethers.Wallet(process.env.PUBLIC_DAPP_OWNER_WALLET_PRIVATE_KEY || '');
+  const provider: any = new ethers.Wallet(process.env.PUBLIC_DAPP_OWNER_WALLET_PRIVATE_KEY || '');
   const auth = new orbisSDKAuth.OrbisEVMAuth(provider);
 
   try {
@@ -101,6 +105,50 @@ export async function insertProfileType(profileName: string, description: string
   }
 
   console.log('Insert statement runs:', insertStatement.runs);
+}
+
+export async function updateProfileType(streamId: string, profileName: string, description: string) {
+  // This will perform a shallow merge before updating the document
+  // { ...oldContent, ...newContent }
+  if (!orbisdb) {
+    throw new Error('OrbisDB is not initialized. Call initializeOrbisDB first.');
+  }
+  /* eslint-disable */
+  const updateStatement = await orbisdb.update(streamId).set({
+    profile_name: profileName,
+    description: description,
+  });
+  /* eslint-enable */
+  try {
+    const result = await updateStatement.run();
+    return result;
+  } catch (error) {
+    console.log(error);
+  }
+}
+
+export async function selectProfileType(streamId: string) {
+  try {
+    /* eslint-disable */
+    const selectStatement = await orbisdb
+      .select()
+      .from(data.models.profile_type_model || '')
+      // .where({
+      //   stream_id: streamId,
+      // })
+      .context(process.env.ORBIS_PLURALITY_CONTEXT || '');
+    /* eslint-enable */
+    const query = selectStatement.build();
+    console.log('Query that will be run', query);
+    const result = await selectStatement.run();
+    console.log(result);
+    return result;
+    // const { columns, rows } = result
+    // console.log("select first: ", { columns, rows, neededPlatforms });
+    // return { columns, rows, neededPlatforms };
+  } catch (error) {
+    console.log('Error', error);
+  }
 }
 
 // Call this function to initialize everything before running other functions

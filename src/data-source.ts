@@ -19,6 +19,8 @@ export const AppDataSource = new DataSource({
   ],
   synchronize: true,
   ssl: {
+    // eslint-disable-next-line
+    // @ts-ignore
     require: true,
     rejectUnauthorized: true, // Set to true in production with a valid certificate
     ca: fs.readFileSync('certificates/eu-north-1-bundle.pem').toString(),
