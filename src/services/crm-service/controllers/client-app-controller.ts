@@ -6,13 +6,7 @@ import { v2 as cloudinary } from 'cloudinary';
 import { AppType, IncentiveType } from '../entity/client-app';
 import { verifyStytchJWT } from '../middlewares/auth-middleware';
 import crypto from 'crypto';
-import {
-  connectOrbisDidPkh,
-  initializeOrbis,
-  insertProfileType,
-  selectProfileType,
-  updateProfileType,
-} from '../utils/orbis';
+import { connectOrbisDidPkh, initializeOrbis, insertProfileType, updateProfileType } from '../utils/orbis';
 import { Client } from '../entity/client';
 import { ClientApp } from '../entity/client-app';
 import { isBase64ImageDataUrl } from '../utils/helper';
@@ -20,7 +14,6 @@ import { isBase64ImageDataUrl } from '../utils/helper';
 export const clientAppRouter = express.Router();
 dotenv.config();
 const clientAppRepository = AppDataSource.getRepository(ClientApp);
-const clientRepository = AppDataSource.getRepository(Client);
 
 /* eslint-disable */
 cloudinary.config({
@@ -88,14 +81,6 @@ clientAppRouter.put('/:id', verifyStytchJWT, async (req: Request, res: Response)
   // #swagger.tags = ['Client App']
   try {
     const { streamId, img, domains, profileName, profileDescription } = req.body;
-    console.log('++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++');
-
-    console.log('Stream Id', streamId);
-    console.log('profileName', profileName);
-    console.log('Description', profileDescription);
-    console.log('img', img);
-    console.log('Domains', domains);
-
     const clientAppid = req.params.id;
 
     // Orbis
@@ -179,21 +164,6 @@ clientAppRouter.put('/rotate-secret/:id', verifyStytchJWT, async (req: Request, 
     Logger.error(`Fatal error due to unknown reason: ${JSON.stringify(error)}`);
     return res.status(500).json({ error: 'An error occurred while processing your request' });
   }
-});
-
-clientAppRouter.get('/', verifyStytchJWT, async (req: Request, res: Response) => {
-  // #swagger.tags = ['Client App']
-  try {
-    const email = req.email;
-    const data: any = await clientRepository.find({
-      where: {
-        email: email,
-      },
-      relations: ['apps'],
-    });
-
-    return res.status(200).json({ client: data[0] });
-  } catch (error) {}
 });
 
 clientAppRouter.get('/:id', async (req: Request, res: Response) => {
