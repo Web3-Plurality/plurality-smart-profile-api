@@ -84,7 +84,7 @@ export async function insertProfileType(profileName: string, description: string
     .value({
       profile_name: profileName,
       platforms:
-        '[{"platform":"Instagram","authentication":false},{"platform":"Meta","authentication":false},{"platform":"Twitter","authentication":true},{"platform":"TikTok","authentication":true},{"platform":"Roblox","authentication":true},{"platform":"Snapchat","authentication":true}]',
+        '[{"platform":"Twitter","authentication":true},{"platform":"TikTok","authentication":true},{"platform":"Roblox","authentication":true},{"platform":"Snapchat","authentication":true},{"platform":"Fortnite","authentication":true}]',
       version: '1.0',
       description: description,
     })
