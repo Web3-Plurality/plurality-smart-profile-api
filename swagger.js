@@ -59,7 +59,7 @@ function generateDescription(platformName) {
         - **x-token-id**: Your **accessTokenId**  
       - **Body:**  
         - **redirect**: **false**  
-        - **clientId**: Client ID obtained from Plurality  
+        - **clientAppId**: Client App ID obtained from Plurality  
 
    This will provide the **accessToken** in the "Register Event" tab.
 `;
@@ -113,7 +113,11 @@ const doc = {
             type: 'http',
             scheme: 'bearer',
             bearerFormat: 'JWT'
-        }
+        },
+        basicAuth: {
+          type: 'http',
+          scheme: 'basic',
+      }
     }
 }
 };
@@ -134,7 +138,7 @@ async function  generateSwagger(){
       if (path.includes('/event')) {
         const match = path.match(/-(.*?)\//);
         if (match) {
-        // Replace placeholder with actual domain value
+            // Replace placeholder with actual domain value
             swaggerData.paths[path]['post']['description'] = generateDescription(match[1]);
             if (match[1] === 'facebook') {
               swaggerData.paths[path]['post']['tags'] = ['OAuth'];

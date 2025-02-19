@@ -7,7 +7,7 @@
   },
   "servers": [
     {
-      "url": "https://undefined",
+      "url": "https://app.plurality.local",
       "description": ""
     }
   ],
@@ -182,7 +182,7 @@
         "tags": [
           "Auth"
         ],
-        "description": "\n \n1. **Register the Event**  \n   Navigate to the following URL in your browser to register the event:  \n     [Register Event](https://undefined/register-event/)  \n   Copy the **sseId** from the response. This will be used in subsequent steps.\n\n2. **Obtain the Access Token ID**  \n   Open a new browser tab and use the **sseId** obtained in step 1 with the following endpoint:  \n     [Obtain Access Token](https://undefined/auth/google/login?sse_id=<your_sseId>)  \n   This will return the **accessTokenId**, which is required for the next step.\n\n3. **Set Headers and Call the Event Endpoint**  \n   Notify the server that you have successfully obtained the **accessTokenId**:  \n    - In Swagger UI, make a request with the following:  \n      - **Headers:**  \n        - **x-sse-id**: Your **sseId**  \n        - **x-token-id**: Your **accessTokenId**  \n      - **Body:**  \n        - **redirect**: **false**  \n        - **clientId**: Client ID obtained from Plurality  \n\n   This will provide the **accessToken** in the \"Register Event\" tab.\n",
+        "description": "\n \n1. **Register the Event**  \n   Navigate to the following URL in your browser to register the event:  \n     [Register Event](https://app.plurality.local/register-event/)  \n   Copy the **sseId** from the response. This will be used in subsequent steps.\n\n2. **Obtain the Access Token ID**  \n   Open a new browser tab and use the **sseId** obtained in step 1 with the following endpoint:  \n     [Obtain Access Token](https://app.plurality.local/auth/google/login?sse_id=<your_sseId>)  \n   This will return the **accessTokenId**, which is required for the next step.\n\n3. **Set Headers and Call the Event Endpoint**  \n   Notify the server that you have successfully obtained the **accessTokenId**:  \n    - In Swagger UI, make a request with the following:  \n      - **Headers:**  \n        - **x-sse-id**: Your **sseId**  \n        - **x-token-id**: Your **accessTokenId**  \n      - **Body:**  \n        - **redirect**: **false**  \n        - **clientAppId**: Client App ID obtained from Plurality  \n\n   This will provide the **accessToken** in the \"Register Event\" tab.\n",
         "parameters": [
           {
             "name": "x-sse-id",
@@ -404,9 +404,9 @@
       }
     },
     "/user/validate": {
-      "get": {
+      "post": {
         "tags": [
-          "Client App"
+          "Users"
         ],
         "description": "",
         "parameters": [
@@ -431,7 +431,12 @@
           "500": {
             "description": "Internal Server Error"
           }
-        }
+        },
+        "security": [
+          {
+            "basicAuth": []
+          }
+        ]
       }
     },
     "/oauth-twitter/event": {
@@ -439,7 +444,7 @@
         "tags": [
           "OAuth"
         ],
-        "description": "\n  ### Using OAuth with twitter<br>\n  \n  1. **Login to Plurality and obtain the token**<br> <br>\n     Log in to Plurality using any available method to get the Plurality token.<br>\n  \n  2. **Register the Event**  <br><br>\n     Navigate to the following URL to register the event:  <br>\n     [Register Event](https://undefined/register-event/)  <br>\n     Copy the **sseId** from the response. This will be used in subsequent steps.<br>\n  \n  3. **Obtain the Access Token ID**  <br><br>\n     Open a new browser tab and use the **sseId** obtained in Step 2 with the following endpoint:  <br>\n     [Obtain Access Token](https://undefined/oauth-twitter?sse_id=<your_sseId>)  <br>\n     This will return the **accessTokenId**, which is required for the next step.<br>\n  \n  4. **Set Headers and call the event endpoint**  <br><br>\n     Notify the server that you have successfully obtained the **accessTokenId**:  <br>\n     - **Headers**:  <br>\n       - x-sse-id: Your *sseId*  <br>\n       - x-token-id: Your *accessTokenId*  <br>\n  \n  5. **Fetch User Information**  <br><br>\n     To retrieve user information, call the info endpoint in Swagger UI:<br>\n     - **Headers**:  <br>\n       - Authorization: Bearer *PluralityAccessToken*  <br>\n       - x-token-id: *accessTokenId*  <br>\n  ",
+        "description": "\n  ### Using OAuth with twitter<br>\n  \n  1. **Login to Plurality and obtain the token**<br> <br>\n     Log in to Plurality using any available method to get the Plurality token.<br>\n  \n  2. **Register the Event**  <br><br>\n     Navigate to the following URL to register the event:  <br>\n     [Register Event](https://app.plurality.local/register-event/)  <br>\n     Copy the **sseId** from the response. This will be used in subsequent steps.<br>\n  \n  3. **Obtain the Access Token ID**  <br><br>\n     Open a new browser tab and use the **sseId** obtained in Step 2 with the following endpoint:  <br>\n     [Obtain Access Token](https://app.plurality.local/oauth-twitter?sse_id=<your_sseId>)  <br>\n     This will return the **accessTokenId**, which is required for the next step.<br>\n  \n  4. **Set Headers and call the event endpoint**  <br><br>\n     Notify the server that you have successfully obtained the **accessTokenId**:  <br>\n     - **Headers**:  <br>\n       - x-sse-id: Your *sseId*  <br>\n       - x-token-id: Your *accessTokenId*  <br>\n  \n  5. **Fetch User Information**  <br><br>\n     To retrieve user information, call the info endpoint in Swagger UI:<br>\n     - **Headers**:  <br>\n       - Authorization: Bearer *PluralityAccessToken*  <br>\n       - x-token-id: *accessTokenId*  <br>\n  ",
         "parameters": [
           {
             "name": "x-sse-id",
@@ -523,7 +528,7 @@
         "tags": [
           "OAuth"
         ],
-        "description": "\n  ### Using OAuth with snapchat<br>\n  \n  1. **Login to Plurality and obtain the token**<br> <br>\n     Log in to Plurality using any available method to get the Plurality token.<br>\n  \n  2. **Register the Event**  <br><br>\n     Navigate to the following URL to register the event:  <br>\n     [Register Event](https://undefined/register-event/)  <br>\n     Copy the **sseId** from the response. This will be used in subsequent steps.<br>\n  \n  3. **Obtain the Access Token ID**  <br><br>\n     Open a new browser tab and use the **sseId** obtained in Step 2 with the following endpoint:  <br>\n     [Obtain Access Token](https://undefined/oauth-snapchat?sse_id=<your_sseId>)  <br>\n     This will return the **accessTokenId**, which is required for the next step.<br>\n  \n  4. **Set Headers and call the event endpoint**  <br><br>\n     Notify the server that you have successfully obtained the **accessTokenId**:  <br>\n     - **Headers**:  <br>\n       - x-sse-id: Your *sseId*  <br>\n       - x-token-id: Your *accessTokenId*  <br>\n  \n  5. **Fetch User Information**  <br><br>\n     To retrieve user information, call the info endpoint in Swagger UI:<br>\n     - **Headers**:  <br>\n       - Authorization: Bearer *PluralityAccessToken*  <br>\n       - x-token-id: *accessTokenId*  <br>\n  ",
+        "description": "\n  ### Using OAuth with snapchat<br>\n  \n  1. **Login to Plurality and obtain the token**<br> <br>\n     Log in to Plurality using any available method to get the Plurality token.<br>\n  \n  2. **Register the Event**  <br><br>\n     Navigate to the following URL to register the event:  <br>\n     [Register Event](https://app.plurality.local/register-event/)  <br>\n     Copy the **sseId** from the response. This will be used in subsequent steps.<br>\n  \n  3. **Obtain the Access Token ID**  <br><br>\n     Open a new browser tab and use the **sseId** obtained in Step 2 with the following endpoint:  <br>\n     [Obtain Access Token](https://app.plurality.local/oauth-snapchat?sse_id=<your_sseId>)  <br>\n     This will return the **accessTokenId**, which is required for the next step.<br>\n  \n  4. **Set Headers and call the event endpoint**  <br><br>\n     Notify the server that you have successfully obtained the **accessTokenId**:  <br>\n     - **Headers**:  <br>\n       - x-sse-id: Your *sseId*  <br>\n       - x-token-id: Your *accessTokenId*  <br>\n  \n  5. **Fetch User Information**  <br><br>\n     To retrieve user information, call the info endpoint in Swagger UI:<br>\n     - **Headers**:  <br>\n       - Authorization: Bearer *PluralityAccessToken*  <br>\n       - x-token-id: *accessTokenId*  <br>\n  ",
         "parameters": [
           {
             "name": "x-sse-id",
@@ -607,7 +612,7 @@
         "tags": [
           "OAuth"
         ],
-        "description": "\n  ### Using OAuth with roblox<br>\n  \n  1. **Login to Plurality and obtain the token**<br> <br>\n     Log in to Plurality using any available method to get the Plurality token.<br>\n  \n  2. **Register the Event**  <br><br>\n     Navigate to the following URL to register the event:  <br>\n     [Register Event](https://undefined/register-event/)  <br>\n     Copy the **sseId** from the response. This will be used in subsequent steps.<br>\n  \n  3. **Obtain the Access Token ID**  <br><br>\n     Open a new browser tab and use the **sseId** obtained in Step 2 with the following endpoint:  <br>\n     [Obtain Access Token](https://undefined/oauth-roblox?sse_id=<your_sseId>)  <br>\n     This will return the **accessTokenId**, which is required for the next step.<br>\n  \n  4. **Set Headers and call the event endpoint**  <br><br>\n     Notify the server that you have successfully obtained the **accessTokenId**:  <br>\n     - **Headers**:  <br>\n       - x-sse-id: Your *sseId*  <br>\n       - x-token-id: Your *accessTokenId*  <br>\n  \n  5. **Fetch User Information**  <br><br>\n     To retrieve user information, call the info endpoint in Swagger UI:<br>\n     - **Headers**:  <br>\n       - Authorization: Bearer *PluralityAccessToken*  <br>\n       - x-token-id: *accessTokenId*  <br>\n  ",
+        "description": "\n  ### Using OAuth with roblox<br>\n  \n  1. **Login to Plurality and obtain the token**<br> <br>\n     Log in to Plurality using any available method to get the Plurality token.<br>\n  \n  2. **Register the Event**  <br><br>\n     Navigate to the following URL to register the event:  <br>\n     [Register Event](https://app.plurality.local/register-event/)  <br>\n     Copy the **sseId** from the response. This will be used in subsequent steps.<br>\n  \n  3. **Obtain the Access Token ID**  <br><br>\n     Open a new browser tab and use the **sseId** obtained in Step 2 with the following endpoint:  <br>\n     [Obtain Access Token](https://app.plurality.local/oauth-roblox?sse_id=<your_sseId>)  <br>\n     This will return the **accessTokenId**, which is required for the next step.<br>\n  \n  4. **Set Headers and call the event endpoint**  <br><br>\n     Notify the server that you have successfully obtained the **accessTokenId**:  <br>\n     - **Headers**:  <br>\n       - x-sse-id: Your *sseId*  <br>\n       - x-token-id: Your *accessTokenId*  <br>\n  \n  5. **Fetch User Information**  <br><br>\n     To retrieve user information, call the info endpoint in Swagger UI:<br>\n     - **Headers**:  <br>\n       - Authorization: Bearer *PluralityAccessToken*  <br>\n       - x-token-id: *accessTokenId*  <br>\n  ",
         "parameters": [
           {
             "name": "x-sse-id",
@@ -691,7 +696,7 @@
         "tags": [
           "OAuth"
         ],
-        "description": "\n  ### Using OAuth with facebook<br>\n  \n  1. **Login to Plurality and obtain the token**<br> <br>\n     Log in to Plurality using any available method to get the Plurality token.<br>\n  \n  2. **Register the Event**  <br><br>\n     Navigate to the following URL to register the event:  <br>\n     [Register Event](https://undefined/register-event/)  <br>\n     Copy the **sseId** from the response. This will be used in subsequent steps.<br>\n  \n  3. **Obtain the Access Token ID**  <br><br>\n     Open a new browser tab and use the **sseId** obtained in Step 2 with the following endpoint:  <br>\n     [Obtain Access Token](https://undefined/oauth-facebook?sse_id=<your_sseId>)  <br>\n     This will return the **accessTokenId**, which is required for the next step.<br>\n  \n  4. **Set Headers and call the event endpoint**  <br><br>\n     Notify the server that you have successfully obtained the **accessTokenId**:  <br>\n     - **Headers**:  <br>\n       - x-sse-id: Your *sseId*  <br>\n       - x-token-id: Your *accessTokenId*  <br>\n  \n  5. **Fetch User Information**  <br><br>\n     To retrieve user information, call the info endpoint in Swagger UI:<br>\n     - **Headers**:  <br>\n       - Authorization: Bearer *PluralityAccessToken*  <br>\n       - x-token-id: *accessTokenId*  <br>\n  ",
+        "description": "\n  ### Using OAuth with facebook<br>\n  \n  1. **Login to Plurality and obtain the token**<br> <br>\n     Log in to Plurality using any available method to get the Plurality token.<br>\n  \n  2. **Register the Event**  <br><br>\n     Navigate to the following URL to register the event:  <br>\n     [Register Event](https://app.plurality.local/register-event/)  <br>\n     Copy the **sseId** from the response. This will be used in subsequent steps.<br>\n  \n  3. **Obtain the Access Token ID**  <br><br>\n     Open a new browser tab and use the **sseId** obtained in Step 2 with the following endpoint:  <br>\n     [Obtain Access Token](https://app.plurality.local/oauth-facebook?sse_id=<your_sseId>)  <br>\n     This will return the **accessTokenId**, which is required for the next step.<br>\n  \n  4. **Set Headers and call the event endpoint**  <br><br>\n     Notify the server that you have successfully obtained the **accessTokenId**:  <br>\n     - **Headers**:  <br>\n       - x-sse-id: Your *sseId*  <br>\n       - x-token-id: Your *accessTokenId*  <br>\n  \n  5. **Fetch User Information**  <br><br>\n     To retrieve user information, call the info endpoint in Swagger UI:<br>\n     - **Headers**:  <br>\n       - Authorization: Bearer *PluralityAccessToken*  <br>\n       - x-token-id: *accessTokenId*  <br>\n  ",
         "parameters": [
           {
             "name": "x-sse-id",
@@ -775,7 +780,7 @@
         "tags": [
           "OAuth"
         ],
-        "description": "\n  ### Using OAuth with instagram<br>\n  \n  1. **Login to Plurality and obtain the token**<br> <br>\n     Log in to Plurality using any available method to get the Plurality token.<br>\n  \n  2. **Register the Event**  <br><br>\n     Navigate to the following URL to register the event:  <br>\n     [Register Event](https://undefined/register-event/)  <br>\n     Copy the **sseId** from the response. This will be used in subsequent steps.<br>\n  \n  3. **Obtain the Access Token ID**  <br><br>\n     Open a new browser tab and use the **sseId** obtained in Step 2 with the following endpoint:  <br>\n     [Obtain Access Token](https://undefined/oauth-instagram?sse_id=<your_sseId>)  <br>\n     This will return the **accessTokenId**, which is required for the next step.<br>\n  \n  4. **Set Headers and call the event endpoint**  <br><br>\n     Notify the server that you have successfully obtained the **accessTokenId**:  <br>\n     - **Headers**:  <br>\n       - x-sse-id: Your *sseId*  <br>\n       - x-token-id: Your *accessTokenId*  <br>\n  \n  5. **Fetch User Information**  <br><br>\n     To retrieve user information, call the info endpoint in Swagger UI:<br>\n     - **Headers**:  <br>\n       - Authorization: Bearer *PluralityAccessToken*  <br>\n       - x-token-id: *accessTokenId*  <br>\n  ",
+        "description": "\n  ### Using OAuth with instagram<br>\n  \n  1. **Login to Plurality and obtain the token**<br> <br>\n     Log in to Plurality using any available method to get the Plurality token.<br>\n  \n  2. **Register the Event**  <br><br>\n     Navigate to the following URL to register the event:  <br>\n     [Register Event](https://app.plurality.local/register-event/)  <br>\n     Copy the **sseId** from the response. This will be used in subsequent steps.<br>\n  \n  3. **Obtain the Access Token ID**  <br><br>\n     Open a new browser tab and use the **sseId** obtained in Step 2 with the following endpoint:  <br>\n     [Obtain Access Token](https://app.plurality.local/oauth-instagram?sse_id=<your_sseId>)  <br>\n     This will return the **accessTokenId**, which is required for the next step.<br>\n  \n  4. **Set Headers and call the event endpoint**  <br><br>\n     Notify the server that you have successfully obtained the **accessTokenId**:  <br>\n     - **Headers**:  <br>\n       - x-sse-id: Your *sseId*  <br>\n       - x-token-id: Your *accessTokenId*  <br>\n  \n  5. **Fetch User Information**  <br><br>\n     To retrieve user information, call the info endpoint in Swagger UI:<br>\n     - **Headers**:  <br>\n       - Authorization: Bearer *PluralityAccessToken*  <br>\n       - x-token-id: *accessTokenId*  <br>\n  ",
         "parameters": [
           {
             "name": "x-sse-id",
@@ -859,7 +864,7 @@
         "tags": [
           "OAuth"
         ],
-        "description": "\n  ### Using OAuth with fortnite<br>\n  \n  1. **Login to Plurality and obtain the token**<br> <br>\n     Log in to Plurality using any available method to get the Plurality token.<br>\n  \n  2. **Register the Event**  <br><br>\n     Navigate to the following URL to register the event:  <br>\n     [Register Event](https://undefined/register-event/)  <br>\n     Copy the **sseId** from the response. This will be used in subsequent steps.<br>\n  \n  3. **Obtain the Access Token ID**  <br><br>\n     Open a new browser tab and use the **sseId** obtained in Step 2 with the following endpoint:  <br>\n     [Obtain Access Token](https://undefined/oauth-fortnite?sse_id=<your_sseId>)  <br>\n     This will return the **accessTokenId**, which is required for the next step.<br>\n  \n  4. **Set Headers and call the event endpoint**  <br><br>\n     Notify the server that you have successfully obtained the **accessTokenId**:  <br>\n     - **Headers**:  <br>\n       - x-sse-id: Your *sseId*  <br>\n       - x-token-id: Your *accessTokenId*  <br>\n  \n  5. **Fetch User Information**  <br><br>\n     To retrieve user information, call the info endpoint in Swagger UI:<br>\n     - **Headers**:  <br>\n       - Authorization: Bearer *PluralityAccessToken*  <br>\n       - x-token-id: *accessTokenId*  <br>\n  ",
+        "description": "\n  ### Using OAuth with fortnite<br>\n  \n  1. **Login to Plurality and obtain the token**<br> <br>\n     Log in to Plurality using any available method to get the Plurality token.<br>\n  \n  2. **Register the Event**  <br><br>\n     Navigate to the following URL to register the event:  <br>\n     [Register Event](https://app.plurality.local/register-event/)  <br>\n     Copy the **sseId** from the response. This will be used in subsequent steps.<br>\n  \n  3. **Obtain the Access Token ID**  <br><br>\n     Open a new browser tab and use the **sseId** obtained in Step 2 with the following endpoint:  <br>\n     [Obtain Access Token](https://app.plurality.local/oauth-fortnite?sse_id=<your_sseId>)  <br>\n     This will return the **accessTokenId**, which is required for the next step.<br>\n  \n  4. **Set Headers and call the event endpoint**  <br><br>\n     Notify the server that you have successfully obtained the **accessTokenId**:  <br>\n     - **Headers**:  <br>\n       - x-sse-id: Your *sseId*  <br>\n       - x-token-id: Your *accessTokenId*  <br>\n  \n  5. **Fetch User Information**  <br><br>\n     To retrieve user information, call the info endpoint in Swagger UI:<br>\n     - **Headers**:  <br>\n       - Authorization: Bearer *PluralityAccessToken*  <br>\n       - x-token-id: *accessTokenId*  <br>\n  ",
         "parameters": [
           {
             "name": "x-sse-id",
@@ -943,7 +948,7 @@
         "tags": [
           "OAuth"
         ],
-        "description": "\n  ### Using OAuth with tiktok<br>\n  \n  1. **Login to Plurality and obtain the token**<br> <br>\n     Log in to Plurality using any available method to get the Plurality token.<br>\n  \n  2. **Register the Event**  <br><br>\n     Navigate to the following URL to register the event:  <br>\n     [Register Event](https://undefined/register-event/)  <br>\n     Copy the **sseId** from the response. This will be used in subsequent steps.<br>\n  \n  3. **Obtain the Access Token ID**  <br><br>\n     Open a new browser tab and use the **sseId** obtained in Step 2 with the following endpoint:  <br>\n     [Obtain Access Token](https://undefined/oauth-tiktok?sse_id=<your_sseId>)  <br>\n     This will return the **accessTokenId**, which is required for the next step.<br>\n  \n  4. **Set Headers and call the event endpoint**  <br><br>\n     Notify the server that you have successfully obtained the **accessTokenId**:  <br>\n     - **Headers**:  <br>\n       - x-sse-id: Your *sseId*  <br>\n       - x-token-id: Your *accessTokenId*  <br>\n  \n  5. **Fetch User Information**  <br><br>\n     To retrieve user information, call the info endpoint in Swagger UI:<br>\n     - **Headers**:  <br>\n       - Authorization: Bearer *PluralityAccessToken*  <br>\n       - x-token-id: *accessTokenId*  <br>\n  ",
+        "description": "\n  ### Using OAuth with tiktok<br>\n  \n  1. **Login to Plurality and obtain the token**<br> <br>\n     Log in to Plurality using any available method to get the Plurality token.<br>\n  \n  2. **Register the Event**  <br><br>\n     Navigate to the following URL to register the event:  <br>\n     [Register Event](https://app.plurality.local/register-event/)  <br>\n     Copy the **sseId** from the response. This will be used in subsequent steps.<br>\n  \n  3. **Obtain the Access Token ID**  <br><br>\n     Open a new browser tab and use the **sseId** obtained in Step 2 with the following endpoint:  <br>\n     [Obtain Access Token](https://app.plurality.local/oauth-tiktok?sse_id=<your_sseId>)  <br>\n     This will return the **accessTokenId**, which is required for the next step.<br>\n  \n  4. **Set Headers and call the event endpoint**  <br><br>\n     Notify the server that you have successfully obtained the **accessTokenId**:  <br>\n     - **Headers**:  <br>\n       - x-sse-id: Your *sseId*  <br>\n       - x-token-id: Your *accessTokenId*  <br>\n  \n  5. **Fetch User Information**  <br><br>\n     To retrieve user information, call the info endpoint in Swagger UI:<br>\n     - **Headers**:  <br>\n       - Authorization: Bearer *PluralityAccessToken*  <br>\n       - x-token-id: *accessTokenId*  <br>\n  ",
         "parameters": [
           {
             "name": "x-sse-id",
@@ -1045,6 +1050,11 @@
             "description": "Internal Server Error"
           }
         },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -1069,29 +1079,6 @@
                 }
               }
             }
-          }
-        }
-      },
-      "get": {
-        "tags": [
-          "Client App"
-        ],
-        "description": "",
-        "parameters": [
-          {
-            "name": "authorization",
-            "in": "header",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          },
-          "401": {
-            "description": "Unauthorized"
           }
         }
       }
@@ -1126,32 +1113,37 @@
           "401": {
             "description": "Unauthorized"
           },
+          "404": {
+            "description": "Not Found"
+          },
           "500": {
             "description": "Internal Server Error"
           }
         },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
                 "type": "object",
                 "properties": {
-                  "img": {
-                    "example": "any"
-                  },
                   "streamId": {
                     "example": "any"
                   },
-                  "links": {
+                  "img": {
                     "example": "any"
                   },
                   "domains": {
                     "example": "any"
                   },
-                  "incentiveType": {
+                  "profileName": {
                     "example": "any"
                   },
-                  "appType": {
+                  "profileDescription": {
                     "example": "any"
                   }
                 }
@@ -1192,7 +1184,12 @@
           "500": {
             "description": "Internal Server Error"
           }
-        }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
       }
     },
     "/crm/client-app/rotate-secret/{id}": {
@@ -1231,7 +1228,12 @@
           "500": {
             "description": "Internal Server Error"
           }
-        }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
       }
     },
     "/crm/client/login": {
@@ -1302,6 +1304,36 @@
           }
         }
       }
+    },
+    "/crm/client/": {
+      "get": {
+        "tags": [
+          "Client App"
+        ],
+        "description": "",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
     }
   },
   "components": {
@@ -1310,6 +1342,10 @@
         "type": "http",
         "scheme": "bearer",
         "bearerFormat": "JWT"
+      },
+      "basicAuth": {
+        "type": "http",
+        "scheme": "basic"
       }
     }
   }

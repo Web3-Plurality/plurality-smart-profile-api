@@ -92,8 +92,6 @@ export const isClientAppAuthenticated = async (req: Request, res: Response, next
   const base64Credentials = authHeader.split(' ')[1];
   const credentials = Buffer.from(base64Credentials, 'base64').toString('utf-8');
   const [clientAppId, clientSecret] = credentials.split(':');
-  console.log(clientAppId);
-  console.log(clientSecret);
 
   // clientId and secret should not be empty
   if (!clientAppId || !clientSecret || typeof clientAppId !== 'string' || typeof clientSecret !== 'string') {

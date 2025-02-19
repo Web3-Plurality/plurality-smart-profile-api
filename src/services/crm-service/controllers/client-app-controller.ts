@@ -24,6 +24,9 @@ cloudinary.config({
 
 clientAppRouter.post('/', verifyStytchJWT, async (req: Request, res: Response) => {
   // #swagger.tags = ['Client App']
+  /* #swagger.security = [{
+            "bearerAuth": []
+    }] */
   try {
     const { profileName, profileDescription, img, domains, clientId } = req.body;
 
@@ -78,6 +81,9 @@ clientAppRouter.post('/', verifyStytchJWT, async (req: Request, res: Response) =
 
 clientAppRouter.put('/:id', verifyStytchJWT, async (req: Request, res: Response) => {
   // #swagger.tags = ['Client App']
+  /* #swagger.security = [{
+            "bearerAuth": []
+    }] */
   try {
     const { streamId, img, domains, profileName, profileDescription } = req.body;
     const clientAppid = req.params.id;
@@ -132,6 +138,9 @@ clientAppRouter.put('/:id', verifyStytchJWT, async (req: Request, res: Response)
 
 clientAppRouter.put('/rotate-secret/:id', verifyStytchJWT, async (req: Request, res: Response) => {
   // #swagger.tags = ['Client App']
+  /* #swagger.security = [{
+            "bearerAuth": []
+    }] */
   try {
     const clientAppId = req.params.id;
     // check customer exist already
@@ -167,6 +176,9 @@ clientAppRouter.put('/rotate-secret/:id', verifyStytchJWT, async (req: Request, 
 
 clientAppRouter.get('/:id', async (req: Request, res: Response) => {
   // #swagger.tags = ['Client App']
+    /* #swagger.security = [{
+            "bearerAuth": []
+    }] */
   try {
     const origin = req.headers['x-domain'];
     // remove query and change it to param id
