@@ -75,13 +75,10 @@ app.use('/crm/client-app', clientAppRouter);
 app.use('/crm/client', clientRouter);
 
 // swagger router
-const devSwagger =  swaggerUi.setup(swaggerDocumentForDevDashboard,{customSiteTitle:" Dev API"});
-const clientSwagger = swaggerUi.setup(swaggerDocumentForClient,{customSiteTitle:" Client API"});
-const pluralitySwagger = swaggerUi.setup(swaggerDocumentForPluralityDashboard,{customSiteTitle:" Plurality API"});
+app.use('/docs-plurality', swaggerUi.serve, (req: any, res: any, next: any) => swaggerUi.setup(swaggerDocumentForPluralityDashboard)(req, res, next));
+app.use('/docs-dev', swaggerUi.serve, (req: any, res: any, next: any) => swaggerUi.setup(swaggerDocumentForDevDashboard)(req, res, next));
+app.use('/docs-client', swaggerUi.serve, (req: any, res: any, next: any) => swaggerUi.setup(swaggerDocumentForClient)(req, res, next));
 
-app.use('/docs/plurality', swaggerUi.serve, (req: any, res: any, next: any) => pluralitySwagger(req, res, next));
-app.use('/docs/dev', swaggerUi.serve, (req: any, res: any, next: any) => devSwagger(req, res, next));
-app.use('/docs/client', swaggerUi.serve, (req: any, res: any, next: any) => clientSwagger(req, res, next));
 
 try {
   app.locals.litNodeClient = new LitJsSdk.LitNodeClientNodeJs({

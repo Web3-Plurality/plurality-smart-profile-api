@@ -12,7 +12,7 @@ export const userRouter = express.Router();
 // endpoint for the client to validate the user session by providing clientAppId, clientAppSercret and user token
 userRouter.post('/validate', isValidUserJwt, isClientAppAuthenticated, async (req: Request, res: Response) => {
   // #swagger.tags = ['Users']
-    /* #swagger.security = [{
+  /* #swagger.security = [{
         "basicAuth": []
     }] */
   try {
@@ -32,7 +32,7 @@ userRouter.post('/validate', isValidUserJwt, isClientAppAuthenticated, async (re
       },
     });
 
-    res.status(200).json({success: true, user });
+    res.status(200).json({ success: true, user });
   } catch (error: any) {
     Logger.error(`Fatal error due to unknown reason: ${JSON.stringify(error)}`);
     return res.status(500).json({ error: 'An error occurred while processing your request' });

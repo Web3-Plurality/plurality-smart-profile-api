@@ -31,7 +31,7 @@ export const isAuthenticated = (req: Request, res: Response, next: NextFunction)
 };
 
 export const isValidUserJwt = (req: Request, res: Response, next: NextFunction) => {
-  const token = req?.body?.token;
+  const token = req.body.token || "";
 
   if (!token) {
     return res.status(401).send('Token is missing');
