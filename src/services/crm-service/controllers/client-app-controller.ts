@@ -176,9 +176,6 @@ clientAppRouter.put('/rotate-secret/:id', verifyStytchJWT, async (req: Request, 
 
 clientAppRouter.get('/:id', async (req: Request, res: Response) => {
   // #swagger.tags = ['Client App']
-    /* #swagger.security = [{
-            "bearerAuth": []
-    }] */
   try {
     const origin = req.headers['x-domain'];
     // remove query and change it to param id

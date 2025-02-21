@@ -1,14 +1,191 @@
-const swaggerAutogen = require('swagger-autogen')({openapi: '3.0.0'});
+const swaggerAutogen = require('swagger-autogen')({ openapi: '3.0.0' });
 const dotenv = require('dotenv');
 const fs = require('fs');
 dotenv.config();
 
-const outputFile = './src/swagger.json'; // File to write Swagger JSON
-const endpointsFiles = ['./src/index.ts']; // File(s) containing API routes
+const swaggerConfigs = {
+  plurality: {
+    outputFile: './src/swagger-plurality.json',
+    endpointsFiles: ['./src/index.ts'],
+    doc: {
+      info: {
+        title: 'Plurality API',
+        description: 'Description of Plurality API',
+        version: "1.0.0",
+      },
+      tags: [
+        {
+          name: 'Auth',
+          description: 'Auth service'
+        },
+        {
+          name: 'Users',
+          description: 'user service'
+        },
+        {
+          name: 'OAuth',
+          description: 'OAuth service'
+        },
+        {
+          name: 'Client App',
+          description: 'client app service'
+        },
 
+      ],
+      servers: [
+        {
+          url: `https://${process.env.PLURALITY_BACKEND}`,
+          description: ""
+        }
+      ],
+      components: {
+        securitySchemes: {
+          bearerAuth: {
+            type: "http",
+            scheme: "bearer",
+            bearerFormat: "JWT"
+          },
+          basicAuth: {
+            type: "http",
+            scheme: "basic"
+          }
+        }
+      }
+    },
+    excludePaths: [
+      {
+        path: '/crm/client-app/',
+        methods: ['GET', 'POST', 'PUT', 'DELETE']
+      },
+      {
+        path: '/crm/client-app/{id}',
+        methods: ['PUT', 'DELETE']
+      },
+      {
+        path: '/crm/client-app/rotate-secret/{id}',
+        methods: ['PUT']
+      },
+      {
+        path: '/crm/client/login',
+        methods: ['POST']
+      },
+      {
+        path: '/crm/client/authenticate',
+        methods: ['POST']
+      },
+      {
+        path: '/crm/client/',
+        methods: ['GET', 'POST']
+      },
+      {
+        path: '/user/validate',
+        methods: ['POST']
+      }
+    ]
+  },
+  developer: {
+    outputFile: './src/swagger-developer.json',
+    endpointsFiles: ['./src/index.ts'],
+    doc: {
+      info: {
+        title: 'Plurality Developer Dashboard API',
+        description: 'API endpoints for the developer dashboard',
+        version: "1.0.0",
+      },
+      tags: [
+        {
+          name: 'Client App',
+          description: 'client app service'
+        },
+        {
+          name: 'Auth',
+          description: 'Auth service'
+        }
+      ],
+      servers: [
+        {
+          url: `https://${process.env.PLURALITY_BACKEND}`,
+          description: ""
+        }
+      ],
+      components: {
+        securitySchemes: {
+          bearerAuth: {
+            type: "http",
+            scheme: "bearer",
+            bearerFormat: "JWT"
+          }
+        }
+      }
+    },
+    includePaths: [
+      {
+        path: '/crm/client-app/',
+        methods: ['GET', 'POST', 'PUT', 'DELETE']
+      },
+      {
+        path: '/crm/client-app/{id}',
+        methods: ['GET', 'PUT', 'DELETE']
+      },
+      {
+        path: '/crm/client-app/rotate-secret/{id}',
+        methods: ['PUT']
+      },
+      {
+        path: '/crm/client/login',
+        methods: ['POST']
+      },
+      {
+        path: '/crm/client/authenticate',
+        methods: ['POST']
+      },
+      {
+        path: '/crm/client/',
+        methods: ['GET', 'POST']
+      }
+    ]
+  },
+  client: {
+    outputFile: './src/swagger-client.json',
+    endpointsFiles: ['./src/index.ts'],
+    doc: {
+      info: {
+        title: 'Plurality Client API',
+        description: 'API endpoints for client validation',
+        version: "1.0.0",
+      },
+      tags: [
+        {
+          name: 'Users',
+          description: 'User validation service'
+        }
+      ],
+      servers: [
+        {
+          url: "https://app.plurality.local",
+          description: ""
+        }
+      ],
+      components: {
+        securitySchemes: {
+          basicAuth: {
+            type: "http",
+            scheme: "basic"
+          }
+        }
+      }
+    },
+    includePaths: [
+      {
+        path: '/user/validate',
+        methods: ['POST']
+      }
+    ]
+  }
+};
 
 function generateDescription(platformName) {
-    return `
+  return `
   ### Using OAuth with ${platformName}<br>
   
   1. **Login to Plurality and obtain the token**<br> <br>
@@ -36,10 +213,10 @@ function generateDescription(platformName) {
        - Authorization: Bearer *PluralityAccessToken*  <br>
        - x-token-id: *accessTokenId*  <br>
   `;
-  }
-  
+}
 
-  const googleOauthDescription=`
+
+const googleOauthDescription = `
  
 1. **Register the Event**  
    Navigate to the following URL in your browser to register the event:  
@@ -66,98 +243,179 @@ function generateDescription(platformName) {
 
 
 
-const doc = {
-    info: {
-        title: 'Plurality API',
-        description: 'Description of Plurality API',
-        version: "1.0.0",
+const docForDevDashboard = {
+  info: {
+    title: 'Plurality API',
+    description: 'Description of Plurality API',
+    version: "1.0.0",
+  },
+  tags: [
+    {
+      name: 'Auth',
+      description: 'Auth service'
     },
-    tags: [
-        {
-            name: 'Auth',
-            description: 'Auth service'
-        },
-        {
-            name: 'Users',
-            description: 'user service' 
-        },
-        {
-            name: 'Client App',
-            description: 'client app service'
-        },
-        {
-            name: 'OAuth',
-            description: 'OAuth service'
-        },
 
-        // {
-        //     name: 'Test',
-        //     description: 'for api testing'
-        // },
-        // {
-        //     name: 'SSE',
-        //     description: 'Server sent events'
-        // },
+    {
+      name: 'Client App',
+      description: 'client app service'
+    },
 
-    ],
-    servers: [
-        {
-          url: `https://${process.env.PLURALITY_BACKEND}`,
-          description: ''
-        },
-       
-      ],
-      components: {
-        securitySchemes:{
-        bearerAuth: {
-            type: 'http',
-            scheme: 'bearer',
-            bearerFormat: 'JWT'
-        },
-        basicAuth: {
-          type: 'http',
-          scheme: 'basic',
-      }
-    }
-}
-};
+  ],
+  servers: [
+    {
+      url: `https://${process.env.PLURALITY_BACKEND}`,
+      description: ''
+    },
 
-async function  generateSwagger(){
-
-  swaggerAutogen(outputFile, endpointsFiles, doc)
-  console.log('Swagger JSON generated')
-}
- function main() {
- generateSwagger().then(()=>{
-  
-  setTimeout(() => {
-    console.log("Modifying swagger file");
-    const swaggerData = JSON.parse(fs.readFileSync(outputFile, 'utf-8'));
-    // Loop through all paths in the Swagger JSON
-    for (const [path, methods] of Object.entries(swaggerData.paths)) {
-      if (path.includes('/event')) {
-        const match = path.match(/-(.*?)\//);
-        if (match) {
-            // Replace placeholder with actual domain value
-            swaggerData.paths[path]['post']['description'] = generateDescription(match[1]);
-            if (match[1] === 'facebook') {
-              swaggerData.paths[path]['post']['tags'] = ['OAuth'];
-              
-            }
-        }
-        else if(path.includes('/google/event')){
-          swaggerData.paths[path]['post']['description'] = googleOauthDescription;
-        
+  ],
+  components: {
+    securitySchemes: {
+      bearerAuth: {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT'
+      },
+      basicAuth: {
+        type: 'http',
+        scheme: 'basic',
       }
     }
   }
-    
-  // Save the updated Swagger JSON file
-    fs.writeFileSync(outputFile, JSON.stringify(swaggerData, null, 2));
-    console.log('Swagger output updated successfully!');
-   
+};
+
+
+const docForPluralityDashboard = {
+  info: {
+    title: 'Plurality API',
+    description: 'Description of Plurality API',
+    version: "1.0.0",
+  },
+  tags: [
+    {
+      name: 'Auth',
+      description: 'Auth service'
+    },
+    {
+      name: 'Users',
+      description: 'user service'
+    },
+    {
+      name: 'Client App',
+      description: 'client app service'
+    },
+    {
+      name: 'OAuth',
+      description: 'OAuth service'
+    },
+  ],
+  servers: [
+    {
+      url: `https://${process.env.PLURALITY_BACKEND}`,
+      description: ''
+    },
+
+  ],
+  components: {
+    securitySchemes: {
+      bearerAuth: {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT'
+      },
+      basicAuth: {
+        type: 'http',
+        scheme: 'basic',
+      }
+    }
+  }
+};
+
+
+
+async function generateSwagger(name, config) {
+  await swaggerAutogen(config.outputFile, config.endpointsFiles, config.doc);
+  console.log(`Swagger JSON generated for ${config.doc.info.title}`);
+
+  setTimeout(() => {
+    console.log(`Modifying swagger file: ${config.outputFile}`);
+    const swaggerData = JSON.parse(fs.readFileSync(config.outputFile, 'utf-8'));
+    const filteredPaths = {};
+
+    if (name === 'developer') {
+      // Include only specified paths and methods
+      for (const [path, methods] of Object.entries(swaggerData.paths)) {
+        const matchingConfig = config.includePaths.find(p => path === p.path);
+        if (matchingConfig) {
+          filteredPaths[path] = {};
+          // Only include specified HTTP methods
+          for (const [method, methodConfig] of Object.entries(methods)) {
+            if (matchingConfig.methods.includes(method.toUpperCase())) {
+              filteredPaths[path][method] = methodConfig;
+            }
+          }
+        }
+      }
+    } if (name === 'client') {
+      // Include only specified paths and methods
+      for (const [path, methods] of Object.entries(swaggerData.paths)) {
+        const matchingConfig = config.includePaths.find(p => path === p.path);
+        if (matchingConfig) {
+          filteredPaths[path] = {};
+          // Only include specified HTTP methods
+          for (const [method, methodConfig] of Object.entries(methods)) {
+            if (matchingConfig.methods.includes(method.toUpperCase())) {
+              filteredPaths[path][method] = methodConfig;
+            }
+          }
+        }
+      }
+    }
+    else if (name === 'plurality') {
+      // Include all paths except excluded ones
+      for (const [path, methods] of Object.entries(swaggerData.paths)) {
+        const matchingConfig = config.excludePaths.find(p => path === p.path);
+        if (!matchingConfig) {
+          // Include all methods for non-excluded paths
+          filteredPaths[path] = methods;
+        } else {
+          // For excluded paths, only include non-excluded methods
+          filteredPaths[path] = {};
+          for (const [method, methodConfig] of Object.entries(methods)) {
+            if (!matchingConfig.methods.includes(method.toUpperCase())) {
+              filteredPaths[path][method] = methodConfig;
+            }
+          }
+        }
+      }
+
+      // Add custom descriptions for event endpoints
+      for (const [path, methods] of Object.entries(filteredPaths)) {
+        if (path.includes('/event')) {
+          const match = path.match(/-(.*?)\//);
+          if (match) {
+            // Replace placeholder with actual domain value
+            filteredPaths[path]['post']['description'] = generateDescription(match[1]);
+            if (match[1] === 'facebook') {
+              filteredPaths[path]['post']['tags'] = ['OAuth'];
+            }
+          }
+          else if (path.includes('/google/event')) {
+            filteredPaths[path]['post']['description'] = googleOauthDescription;
+          }
+        }
+      }
+    }
+
+    swaggerData.paths = filteredPaths;
+    fs.writeFileSync(config.outputFile, JSON.stringify(swaggerData, null, 2));
+    console.log(`Swagger output updated successfully for ${config.doc.info.title}!`);
   }, 5000);
-   
-})}
+}
+
+async function main() {
+  for (const [name, config] of Object.entries(swaggerConfigs)) {
+    await generateSwagger(name, config);
+  }
+}
 
 main();

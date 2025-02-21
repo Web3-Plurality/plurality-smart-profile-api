@@ -21,12 +21,12 @@
       "description": "user service"
     },
     {
-      "name": "Client App",
-      "description": "client app service"
-    },
-    {
       "name": "OAuth",
       "description": "OAuth service"
+    },
+    {
+      "name": "Client App",
+      "description": "client app service"
     }
   ],
   "paths": {
@@ -403,42 +403,7 @@
         }
       }
     },
-    "/user/validate": {
-      "post": {
-        "tags": [
-          "Users"
-        ],
-        "description": "",
-        "parameters": [
-          {
-            "name": "authorization",
-            "in": "header",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          },
-          "401": {
-            "description": "Unauthorized"
-          },
-          "403": {
-            "description": "Forbidden"
-          },
-          "500": {
-            "description": "Internal Server Error"
-          }
-        },
-        "security": [
-          {
-            "basicAuth": []
-          }
-        ]
-      }
-    },
+    "/user/validate": {},
     "/oauth-twitter/event": {
       "post": {
         "tags": [
@@ -1024,134 +989,8 @@
         ]
       }
     },
-    "/crm/client-app/": {
-      "post": {
-        "tags": [
-          "Client App"
-        ],
-        "description": "",
-        "parameters": [
-          {
-            "name": "authorization",
-            "in": "header",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          },
-          "401": {
-            "description": "Unauthorized"
-          },
-          "500": {
-            "description": "Internal Server Error"
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "profileName": {
-                    "example": "any"
-                  },
-                  "profileDescription": {
-                    "example": "any"
-                  },
-                  "img": {
-                    "example": "any"
-                  },
-                  "domains": {
-                    "example": "any"
-                  },
-                  "clientId": {
-                    "example": "any"
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
+    "/crm/client-app/": {},
     "/crm/client-app/{id}": {
-      "put": {
-        "tags": [
-          "Client App"
-        ],
-        "description": "",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "authorization",
-            "in": "header",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          },
-          "401": {
-            "description": "Unauthorized"
-          },
-          "404": {
-            "description": "Not Found"
-          },
-          "500": {
-            "description": "Internal Server Error"
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "streamId": {
-                    "example": "any"
-                  },
-                  "img": {
-                    "example": "any"
-                  },
-                  "domains": {
-                    "example": "any"
-                  },
-                  "profileName": {
-                    "example": "any"
-                  },
-                  "profileDescription": {
-                    "example": "any"
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
       "get": {
         "tags": [
           "Client App"
@@ -1184,157 +1023,13 @@
           "500": {
             "description": "Internal Server Error"
           }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ]
-      }
-    },
-    "/crm/client-app/rotate-secret/{id}": {
-      "put": {
-        "tags": [
-          "Client App"
-        ],
-        "description": "",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "authorization",
-            "in": "header",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          },
-          "400": {
-            "description": "Bad Request"
-          },
-          "401": {
-            "description": "Unauthorized"
-          },
-          "500": {
-            "description": "Internal Server Error"
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ]
-      }
-    },
-    "/crm/client/login": {
-      "post": {
-        "tags": [
-          "Auth"
-        ],
-        "description": "",
-        "responses": {
-          "200": {
-            "description": "OK"
-          },
-          "400": {
-            "description": "Bad Request"
-          }
-        },
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "email": {
-                    "example": "any"
-                  }
-                }
-              }
-            }
-          }
         }
       }
     },
-    "/crm/client/authenticate": {
-      "post": {
-        "tags": [
-          "Auth"
-        ],
-        "description": "",
-        "responses": {
-          "200": {
-            "description": "OK"
-          },
-          "401": {
-            "description": "Unauthorized"
-          }
-        },
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "code": {
-                    "example": "any"
-                  },
-                  "emailId": {
-                    "example": "any"
-                  },
-                  "projectName": {
-                    "example": "any"
-                  },
-                  "projectWebsite": {
-                    "example": "any"
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/crm/client/": {
-      "get": {
-        "tags": [
-          "Client App"
-        ],
-        "description": "",
-        "parameters": [
-          {
-            "name": "authorization",
-            "in": "header",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          },
-          "401": {
-            "description": "Unauthorized"
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ]
-      }
-    }
+    "/crm/client-app/rotate-secret/{id}": {},
+    "/crm/client/login": {},
+    "/crm/client/authenticate": {},
+    "/crm/client/": {}
   },
   "components": {
     "securitySchemes": {
