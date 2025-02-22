@@ -45,7 +45,7 @@ export const isClientAppAuthenticated = async (req: Request, res: Response, next
 
 export const verifyStytchJWT = async (req: Request, res: Response, next: NextFunction) => {
   // Get token from Authorization header
-  const authHeader = req.headers.authorization;
+  const authHeader = req?.headers?.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({ message: 'Missing or invalid authorization header' });
   }

@@ -75,10 +75,15 @@ app.use('/crm/client-app', clientAppRouter);
 app.use('/crm/client', clientRouter);
 
 // swagger router
-app.use('/docs-plurality', swaggerUi.serve, (req: any, res: any, next: any) => swaggerUi.setup(swaggerDocumentForPluralityDashboard)(req, res, next));
-app.use('/docs-dev', swaggerUi.serve, (req: any, res: any, next: any) => swaggerUi.setup(swaggerDocumentForDevDashboard)(req, res, next));
-app.use('/docs-client', swaggerUi.serve, (req: any, res: any, next: any) => swaggerUi.setup(swaggerDocumentForClient)(req, res, next));
-
+app.use('/docs-wallet', swaggerUi.serve, (req: any, res: any, next: any) =>
+  swaggerUi.setup(swaggerDocumentForPluralityDashboard)(req, res, next),
+);
+app.use('/docs-developer', swaggerUi.serve, (req: any, res: any, next: any) =>
+  swaggerUi.setup(swaggerDocumentForDevDashboard)(req, res, next),
+);
+app.use('/docs-client', swaggerUi.serve, (req: any, res: any, next: any) =>
+  swaggerUi.setup(swaggerDocumentForClient)(req, res, next),
+);
 
 try {
   app.locals.litNodeClient = new LitJsSdk.LitNodeClientNodeJs({

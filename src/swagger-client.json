@@ -2,7 +2,7 @@
   "openapi": "3.0.0",
   "info": {
     "title": "Plurality Client API",
-    "description": "API endpoints for client validation",
+    "description": "API endpoints for user validation",
     "version": "1.0.0"
   },
   "servers": [
@@ -24,15 +24,6 @@
           "Users"
         ],
         "description": "",
-        "parameters": [
-          {
-            "name": "authorization",
-            "in": "header",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "OK"
@@ -73,7 +64,8 @@
     "securitySchemes": {
       "basicAuth": {
         "type": "http",
-        "scheme": "basic"
+        "scheme": "basic",
+        "description": "you have to pass clientId to username and clientSecret to password"
       }
     }
   }

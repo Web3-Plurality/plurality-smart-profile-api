@@ -9,7 +9,7 @@ const swaggerConfigs = {
     endpointsFiles: ['./src/index.ts'],
     doc: {
       info: {
-        title: 'Plurality API',
+        title: 'Plurality Wallet API',
         description: 'Description of Plurality API',
         version: "1.0.0",
       },
@@ -43,7 +43,8 @@ const swaggerConfigs = {
           bearerAuth: {
             type: "http",
             scheme: "bearer",
-            bearerFormat: "JWT"
+            bearerFormat: "JWT",
+            description: "you have to pass plurality jwt token"
           }
         }
       }
@@ -109,7 +110,8 @@ const swaggerConfigs = {
           bearerAuth: {
             type: "http",
             scheme: "bearer",
-            bearerFormat: "JWT"
+            bearerFormat: "JWT",
+            description: "you have to pass stytch jwt token"
           }
         }
       }
@@ -147,7 +149,7 @@ const swaggerConfigs = {
     doc: {
       info: {
         title: 'Plurality Client API',
-        description: 'API endpoints for client validation',
+        description: 'API endpoints for user validation',
         version: "1.0.0",
       },
       tags: [
@@ -166,7 +168,8 @@ const swaggerConfigs = {
         securitySchemes: {
           basicAuth: {
             type: "http",
-            scheme: "basic"
+            scheme: "basic",
+            description: "you have to pass clientId to username and clientSecret to password"
           }
         }
       }
@@ -236,96 +239,6 @@ const googleOauthDescription = `
 
    This will provide the **accessToken** in the "Register Event" tab.
 `;
-
-
-
-const docForDevDashboard = {
-  info: {
-    title: 'Plurality API',
-    description: 'Description of Plurality API',
-    version: "1.0.0",
-  },
-  tags: [
-    {
-      name: 'Auth',
-      description: 'Auth service'
-    },
-
-    {
-      name: 'Client App',
-      description: 'client app service'
-    },
-
-  ],
-  servers: [
-    {
-      url: `https://${process.env.PLURALITY_BACKEND}`,
-      description: ''
-    },
-
-  ],
-  components: {
-    securitySchemes: {
-      bearerAuth: {
-        type: 'http',
-        scheme: 'bearer',
-        bearerFormat: 'JWT'
-      },
-      basicAuth: {
-        type: 'http',
-        scheme: 'basic',
-      }
-    }
-  }
-};
-
-
-const docForPluralityDashboard = {
-  info: {
-    title: 'Plurality API',
-    description: 'Description of Plurality API',
-    version: "1.0.0",
-  },
-  tags: [
-    {
-      name: 'Auth',
-      description: 'Auth service'
-    },
-    {
-      name: 'Users',
-      description: 'user service'
-    },
-    {
-      name: 'Client App',
-      description: 'client app service'
-    },
-    {
-      name: 'OAuth',
-      description: 'OAuth service'
-    },
-  ],
-  servers: [
-    {
-      url: `https://${process.env.PLURALITY_BACKEND}`,
-      description: ''
-    },
-
-  ],
-  components: {
-    securitySchemes: {
-      bearerAuth: {
-        type: 'http',
-        scheme: 'bearer',
-        bearerFormat: 'JWT'
-      },
-      basicAuth: {
-        type: 'http',
-        scheme: 'basic',
-      }
-    }
-  }
-};
-
 
 
 async function generateSwagger(name, config) {
