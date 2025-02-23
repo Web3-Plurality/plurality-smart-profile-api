@@ -10,8 +10,11 @@ const userSessionRepository = AppDataSource.getRepository(UserSession);
 export const userRouter = express.Router();
 
 // endpoint for the client to validate the user session by providing clientAppId, clientAppSercret and user token
-userRouter.get('/validate', isValidUserJwt, isClientAppAuthenticated, async (req: Request, res: Response) => {
-  // #swagger.tags = ['Client App']
+userRouter.post('/validate', isValidUserJwt, isClientAppAuthenticated, async (req: Request, res: Response) => {
+  // #swagger.tags = ['Users']
+  /* #swagger.security = [{
+        "basicAuth": []
+    }] */
   try {
     const clientApp = req?.clientApp;
     const userClientAppMap = await userSessionRepository.findOne({
@@ -29,7 +32,10 @@ userRouter.get('/validate', isValidUserJwt, isClientAppAuthenticated, async (req
       },
     });
 
-    res.status(200).json({ user });
+    res.status(200).json({
+      success: true,
+      user: { id: user?.id, email: user?.email, authAddress: user?.authAddress, proxyAddress: user?.pkpAddress },
+    });
   } catch (error: any) {
     Logger.error(`Fatal error due to unknown reason: ${JSON.stringify(error)}`);
     return res.status(500).json({ error: 'An error occurred while processing your request' });

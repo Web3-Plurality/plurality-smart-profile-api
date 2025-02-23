@@ -1,0 +1,72 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Plurality Client API",
+    "description": "API endpoints for user validation",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://app.plurality.local",
+      "description": ""
+    }
+  ],
+  "tags": [
+    {
+      "name": "Users",
+      "description": "User validation service"
+    }
+  ],
+  "paths": {
+    "/user/validate": {
+      "post": {
+        "tags": [
+          "Users"
+        ],
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "basicAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "token": {
+                    "example": "any"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "basicAuth": {
+        "type": "http",
+        "scheme": "basic",
+        "description": "you have to pass clientId to username and clientSecret to password"
+      }
+    }
+  }
+}
