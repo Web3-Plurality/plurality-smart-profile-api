@@ -54,4 +54,4 @@ RUN npm install
 COPY . ./
 
 # Set the command to run the application
-CMD ["npm", "run", "prod"]
+CMD ["sh", "-c", "npm run swagger && npm run prod"]

@@ -160,7 +160,7 @@ const swaggerConfigs = {
       ],
       servers: [
         {
-          url: "https://app.plurality.local",
+          url: `https://${process.env.PLURALITY_BACKEND}`,
           description: ""
         }
       ],
