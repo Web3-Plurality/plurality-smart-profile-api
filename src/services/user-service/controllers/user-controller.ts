@@ -32,7 +32,10 @@ userRouter.post('/validate', isValidUserJwt, isClientAppAuthenticated, async (re
       },
     });
 
-    res.status(200).json({ success: true, user });
+    res.status(200).json({
+      success: true,
+      user: { id: user?.id, email: user?.email, authAddress: user?.authAddress, proxyAddress: user?.pkpAddress },
+    });
   } catch (error: any) {
     Logger.error(`Fatal error due to unknown reason: ${JSON.stringify(error)}`);
     return res.status(500).json({ error: 'An error occurred while processing your request' });
