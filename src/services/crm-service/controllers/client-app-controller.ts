@@ -9,10 +9,14 @@ import crypto from 'crypto';
 import { connectOrbisDidPkh, initializeOrbis, insertProfileType, updateProfileType } from '../utils/orbis';
 import { ClientApp } from '../entity/client-app';
 import { isBase64ImageDataUrl } from '../utils/helper';
+import { ClientAppDev } from '../entity/client-app-dev';
+import { PlatformCategory } from '../entity/platform-category';
+import { Not } from 'typeorm';
 
 export const clientAppRouter = express.Router();
 dotenv.config();
-const clientAppRepository = AppDataSource.getRepository(ClientApp);
+const clientAppRepository = AppDataSource.getRepository(ClientAppDev);
+const platformCategoryRepository = AppDataSource.getRepository(PlatformCategory);
 
 /* eslint-disable */
 cloudinary.config({
@@ -28,7 +32,20 @@ clientAppRouter.post('/', verifyStytchJWT, async (req: Request, res: Response) =
             "bearerAuth": []
     }] */
   try {
-    const { profileName, profileDescription, img, domains, clientId } = req.body;
+    const {
+      profileName,
+      profileDescription,
+      img,
+      domains,
+      clientId,
+      emailAuth = false,
+      gmailAuth = false,
+      walletAuth = false,
+      customOnboarding = false,
+      onboardingConfig = null,
+      platformConnection = false,
+      platformCategoryId = null
+    } = req.body;
 
     // Orbis
     await initializeOrbis();
@@ -44,6 +61,7 @@ clientAppRouter.post('/', verifyStytchJWT, async (req: Request, res: Response) =
     const appType = AppType.login;
     const links: any = [];
     const streamId = result?.id;
+
     // Upload an image
     let uploadResult;
     if (img) {
@@ -56,8 +74,16 @@ clientAppRouter.post('/', verifyStytchJWT, async (req: Request, res: Response) =
     const clientSecret = crypto.randomBytes(32).toString('hex');
     const hashedSecret = crypto.createHash('sha256').update(clientSecret).digest('hex');
 
+    // Create platform category relation if platformConnection is true
+    let platformCategory: { id: string } | undefined;
+    if (platformConnection && platformCategoryId) {
+      platformCategory = { id: platformCategoryId };
+    }
+
+
+
     // Insert into clientApp
-    const newClientApp = await clientAppRepository.create({
+    const newClientApp = clientAppRepository.create({
       streamId: streamId,
       logo: uploadResult?.secure_url,
       links: JSON.stringify(links),
@@ -66,12 +92,26 @@ clientAppRouter.post('/', verifyStytchJWT, async (req: Request, res: Response) =
       incentiveType: incentiveType,
       clientSecret: hashedSecret,
       client: { id: clientId },
+      emailAuth,
+      gmailAuth,
+      walletAuth,
+      customOnboarding,
+      onboardingConfig,
+      platformConnection,
+      platformCategory
     });
     await clientAppRepository.save(newClientApp);
     Logger.info(`clientApp created: ${newClientApp.id}`);
+
     return res.status(200).json({
       message: 'clientApp created',
-      data: { clientAppId: newClientApp?.id, clientSecret: clientSecret },
+      data: {
+        clientAppId: newClientApp?.id,
+        clientSecret: clientSecret,
+        platformConnection: newClientApp.platformConnection,
+        platformCategory: newClientApp.platformCategory?.id || null,
+        customOnboarding: newClientApp.customOnboarding
+      },
     });
   } catch (error: any) {
     Logger.error(`Fatal error due to unknown reason: ${JSON.stringify(error)}`);
@@ -184,6 +224,11 @@ clientAppRouter.get('/:id', async (req: Request, res: Response) => {
       where: {
         id: clientAppId,
       },
+      relations: {
+        platformCategory: {
+          platforms: true
+        }
+      }
     });
 
     const domains = JSON.parse(data?.domains);
@@ -198,5 +243,37 @@ clientAppRouter.get('/:id', async (req: Request, res: Response) => {
   } catch (error: any) {
     Logger.error(`Fatal error due to unknown reason: ${JSON.stringify(error)}`);
     return res.status(500).json({ error: 'An error occurred while processing your request' });
+  }
+});
+
+// Get all platform categories (excluding custom)
+clientAppRouter.get('/platform-categories', async (req: Request, res: Response) => {
+  // #swagger.tags = ['Client App']
+  try {
+    const categories = await platformCategoryRepository.find({
+      where: {
+        name: Not('CUSTOM')
+      },
+      relations: ['platforms'],
+      order: {
+        name: 'ASC'
+      }
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: categories.map(category => ({
+        id: category.id,
+        name: category.name,
+        description: category.description,
+        platforms: category.platforms
+      }))
+    });
+  } catch (error: any) {
+    Logger.error(`Error fetching platform categories: ${JSON.stringify(error)}`);
+    return res.status(500).json({ 
+      success: false,
+      error: 'An error occurred while fetching platform categories' 
+    });
   }
 });
