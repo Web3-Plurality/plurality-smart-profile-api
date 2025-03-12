@@ -74,7 +74,7 @@ export async function connectOrbisDidPkh() {
 }
 
 // Function to insert a profile type
-export async function insertProfileType(profileName: string, description: string) {
+export async function insertProfileType(profileName: string, description: string, platformNeeded: string= '') {
   if (!orbisdb) {
     throw new Error('OrbisDB is not initialized. Call initializeOrbisDB first.');
   }
@@ -84,7 +84,7 @@ export async function insertProfileType(profileName: string, description: string
     .value({
       profile_name: profileName,
       platforms:
-        '[{"platform":"Twitter","authentication":true},{"platform":"TikTok","authentication":true},{"platform":"Roblox","authentication":true},{"platform":"Snapchat","authentication":true},{"platform":"Fortnite","authentication":true}]',
+      platformNeeded,
       version: '1.0',
       description: description,
     })

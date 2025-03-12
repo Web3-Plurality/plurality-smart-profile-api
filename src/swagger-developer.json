@@ -56,6 +56,9 @@
                   "profileDescription": {
                     "example": "any"
                   },
+                  "profileTypeStreamId": {
+                    "example": "any"
+                  },
                   "img": {
                     "example": "any"
                   },
@@ -63,6 +66,24 @@
                     "example": "any"
                   },
                   "clientId": {
+                    "example": "any"
+                  },
+                  "emailAuth": {
+                    "example": "any"
+                  },
+                  "gmailAuth": {
+                    "example": "any"
+                  },
+                  "walletAuth": {
+                    "example": "any"
+                  },
+                  "onboardingConfig": {
+                    "example": "any"
+                  },
+                  "platformConnection": {
+                    "example": "any"
+                  },
+                  "platformNeeded": {
                     "example": "any"
                   }
                 }

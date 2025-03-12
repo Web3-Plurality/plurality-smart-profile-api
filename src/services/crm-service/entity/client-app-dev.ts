@@ -1,6 +1,6 @@
 import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn } from 'typeorm';
 import { Client } from './client';
-import { PlatformCategory } from './platform-category';
+
 
 export enum AppType {
   rsm = 'RSM',
@@ -19,6 +19,7 @@ export enum QuestionType {
 }
 
 
+
 @Entity({ name: 'client_apps_dev' })
 export class ClientAppDev {
   @PrimaryGeneratedColumn('uuid')
@@ -31,18 +32,20 @@ export class ClientAppDev {
   @Column({ nullable: true })
   logo: string;
 
-  @Column({ nullable: false, default: false })
-  emailAuth: boolean;
-  @Column({ nullable: false, default: false })  
-  gmailAuth: boolean;  
-  @Column({ nullable: false, default: false })
-  walletAuth: boolean;
-
-  @Column({ nullable: true, default: false })
-  customOnboarding: boolean;
+  @Column({ type: 'jsonb', nullable: true, default: {
+    EMAIL: false,
+    GMAIL: false,
+    WALLET: false
+  }})
+  authentication: {
+    EMAIL: boolean;
+    GMAIL: boolean;
+    WALLET: boolean;
+  };
 
   @Column({ type: 'jsonb', nullable: true })
   onboardingConfig: {
+    customOnboarding: boolean;
     questions: Array<{
       type: QuestionType;
       question: string;
@@ -73,12 +76,6 @@ export class ClientAppDev {
   @Column({ nullable: true, default: false })
   platformConnection: boolean;
 
-  // Platform category will be null when platformConnection is false
-  @ManyToOne(() => PlatformCategory, category => category.clientApps, {
-    nullable: true // Making the relationship nullable
-  })
-  @JoinColumn({ name: 'platformCategoryId' })
-  platformCategory: PlatformCategory;
 
   // Foreign key relationship with Client
   @ManyToOne(() => Client, (client) => client.apps, {

@@ -3,20 +3,18 @@ import * as dotenv from 'dotenv';
 import { AppDataSource } from '../../../data-source';
 import Logger from '../../../lib/logger';
 import { v2 as cloudinary } from 'cloudinary';
-import { AppType, IncentiveType } from '../entity/client-app';
+import { AppType, IncentiveType,  } from '../entity/client-app-dev';
 import { verifyStytchJWT } from '../middlewares/auth-middleware';
 import crypto from 'crypto';
 import { connectOrbisDidPkh, initializeOrbis, insertProfileType, updateProfileType } from '../utils/orbis';
 import { ClientApp } from '../entity/client-app';
 import { isBase64ImageDataUrl } from '../utils/helper';
 import { ClientAppDev } from '../entity/client-app-dev';
-import { PlatformCategory } from '../entity/platform-category';
 import { Not } from 'typeorm';
 
 export const clientAppRouter = express.Router();
 dotenv.config();
 const clientAppRepository = AppDataSource.getRepository(ClientAppDev);
-const platformCategoryRepository = AppDataSource.getRepository(PlatformCategory);
 
 /* eslint-disable */
 cloudinary.config({
@@ -35,32 +33,47 @@ clientAppRouter.post('/', verifyStytchJWT, async (req: Request, res: Response) =
     const {
       profileName,
       profileDescription,
+      profileTypeStreamId,
       img,
       domains,
       clientId,
       emailAuth = false,
       gmailAuth = false,
       walletAuth = false,
-      customOnboarding = false,
       onboardingConfig = null,
       platformConnection = false,
-      platformCategoryId = null
+      platformNeeded = [] // [{platform: 'Twitter', authentication: true}]
     } = req.body;
 
-    // Orbis
-    await initializeOrbis();
-    const isConnected = await connectOrbisDidPkh();
-    if (!isConnected) {
-      Logger.error('Something went wrong with the orbis');
-      res.status(500).send('Internal Server Error');
-    }
-
-    const result = await insertProfileType(profileName, profileDescription);
+    // Create authentication object
+    const authentication = {
+      EMAIL: emailAuth,
+      GMAIL: gmailAuth,
+      WALLET: walletAuth
+    };
 
     const incentiveType = IncentiveType.points;
     const appType = AppType.login;
     const links: any = [];
-    const streamId = result?.id;
+    let streamId = '';
+
+    if (platformConnection && profileTypeStreamId) {
+      streamId = profileTypeStreamId;
+      Logger.info(`Profile type stream id found: ${streamId}`);
+    }else  {
+      // Orbis
+      await initializeOrbis();
+      const isConnected = await connectOrbisDidPkh();
+      if (!isConnected) {
+        Logger.error('Something went wrong with the orbis');
+        res.status(500).send('Internal Server Error');
+      }
+
+      const result = platformConnection && platformNeeded.length > 0 ? await insertProfileType(profileName, profileDescription, JSON.stringify(platformNeeded)) : await insertProfileType(profileName, profileDescription, '');
+      streamId = result?.id || '';
+      Logger.info(`Profile type stream id created: ${streamId}`);
+    }
+
 
     // Upload an image
     let uploadResult;
@@ -74,12 +87,6 @@ clientAppRouter.post('/', verifyStytchJWT, async (req: Request, res: Response) =
     const clientSecret = crypto.randomBytes(32).toString('hex');
     const hashedSecret = crypto.createHash('sha256').update(clientSecret).digest('hex');
 
-    // Create platform category relation if platformConnection is true
-    let platformCategory: { id: string } | undefined;
-    if (platformConnection && platformCategoryId) {
-      platformCategory = { id: platformCategoryId };
-    }
-
 
 
     // Insert into clientApp
@@ -92,13 +99,9 @@ clientAppRouter.post('/', verifyStytchJWT, async (req: Request, res: Response) =
       incentiveType: incentiveType,
       clientSecret: hashedSecret,
       client: { id: clientId },
-      emailAuth,
-      gmailAuth,
-      walletAuth,
-      customOnboarding,
+      authentication,
       onboardingConfig,
       platformConnection,
-      platformCategory
     });
     await clientAppRepository.save(newClientApp);
     Logger.info(`clientApp created: ${newClientApp.id}`);
@@ -109,8 +112,8 @@ clientAppRouter.post('/', verifyStytchJWT, async (req: Request, res: Response) =
         clientAppId: newClientApp?.id,
         clientSecret: clientSecret,
         platformConnection: newClientApp.platformConnection,
-        platformCategory: newClientApp.platformCategory?.id || null,
-        customOnboarding: newClientApp.customOnboarding
+        customOnboarding: newClientApp.onboardingConfig,
+        authentication: newClientApp.authentication
       },
     });
   } catch (error: any) {
@@ -224,11 +227,6 @@ clientAppRouter.get('/:id', async (req: Request, res: Response) => {
       where: {
         id: clientAppId,
       },
-      relations: {
-        platformCategory: {
-          platforms: true
-        }
-      }
     });
 
     const domains = JSON.parse(data?.domains);
@@ -246,34 +244,52 @@ clientAppRouter.get('/:id', async (req: Request, res: Response) => {
   }
 });
 
-// Get all platform categories (excluding custom)
-clientAppRouter.get('/platform-categories', async (req: Request, res: Response) => {
+clientAppRouter.get('/profile-types', async (req: Request, res: Response) => {
   // #swagger.tags = ['Client App']
   try {
-    const categories = await platformCategoryRepository.find({
-      where: {
-        name: Not('CUSTOM')
+ 
+    // Group platforms by category
+    const profileTypes = [
+      {
+        SOCIAL: {
+          streamId: '123',
+          platforms: ['Instagram', 'Facebook', 'TikTok', 'Twitter', 'Snapchat']
+        }
       },
-      relations: ['platforms'],
-      order: {
-        name: 'ASC'
+      {
+        GAMING: {
+          streamId: '123',
+          platforms: ['Roblox', 'Fortnite', 'Steam', 'Epic']
+        }
+      },
+      {
+        MUSIC: {
+          streamId: '123',
+          platforms: ['Spotify', 'Apple Music', 'SoundCloud']
+        }
+      },
+      {
+        PROFESSIONAL: {
+          streamId: '123',
+          platforms: ['LinkedIn', 'GitHub']
+        }
       }
-    });
+    ];
 
     return res.status(200).json({
       success: true,
-      data: categories.map(category => ({
-        id: category.id,
-        name: category.name,
-        description: category.description,
-        platforms: category.platforms
-      }))
+      data: {
+        profileTypes
+      }
     });
+
   } catch (error: any) {
-    Logger.error(`Error fetching platform categories: ${JSON.stringify(error)}`);
+    Logger.error(`Error fetching profile types: ${JSON.stringify(error)}`);
     return res.status(500).json({ 
       success: false,
-      error: 'An error occurred while fetching platform categories' 
+      error: 'An error occurred while fetching profile types' 
     });
   }
 });
+
+
