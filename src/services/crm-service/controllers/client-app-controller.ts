@@ -30,9 +30,19 @@ clientAppRouter.post('/', verifyStytchJWT, async (req: Request, res: Response) =
     }] */
   try {
     const {
+      // all universalProfiles can be fetched via api call -> mapping of universalProfileName to streamId is in DB
+      //universalProfiles = [SOCIAL, GAMING, MUSIC, PROFESSIONAL]
+      // universalProfileNames = SOCIAL or GAMING or MUSIC or PROFESSIONAL
+      // always required params isUniveralProfileSelected, showRoulette, logo, domains, clientId, emailAuth, gmailAuth, walletAuth
+      // if isUniveralProfileSelected is false, then profileName, profileDescription is required
+          // if showRoulette is true, then platformNeeded is required
+          // if showRoulette is false, then platformNeeded can be null -> upload '' to orbis 
+      // if isUniveralProfileSelected is true, then universalProfileName is required
       profileName,
       profileDescription,
+      // universalProfileName
       profileTypeStreamId,
+      //logo
       img,
       domains,
       clientId,
@@ -40,6 +50,7 @@ clientAppRouter.post('/', verifyStytchJWT, async (req: Request, res: Response) =
       gmailAuth = false,
       walletAuth = false,
       onboardingConfig = null,
+      //showRoulette = false,
       platformConnection = false,
       platformNeeded = [], // [{platform: 'Twitter', authentication: true}]
     } = req.body;
@@ -242,7 +253,7 @@ clientAppRouter.get('/:id', async (req: Request, res: Response) => {
     return res.status(500).json({ error: 'An error occurred while processing your request' });
   }
 });
-
+// /universal-profile-types
 clientAppRouter.get('/profile-types', async (req: Request, res: Response) => {
   // #swagger.tags = ['Client App']
   try {

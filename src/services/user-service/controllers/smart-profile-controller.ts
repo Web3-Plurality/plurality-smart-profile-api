@@ -187,6 +187,7 @@ smartProfileRouter.post(
       }
 
       const profileTypeStreamId = req.headers['x-profile-type-stream-id'];
+      // probably we dont need these both
       const id = req?.user?.uniqueSessionId;
       const memorySmartProfile = memoryStoreProfile.get(id)?.smartProfile;
 
