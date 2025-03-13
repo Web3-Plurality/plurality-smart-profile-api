@@ -308,9 +308,6 @@ smartProfileRouter.post(
   },
 );
 
-
-
-
 smartProfileRouter.post(
   '/exchange-profile',
   isAuthenticated,

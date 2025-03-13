@@ -1,7 +1,6 @@
 import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn } from 'typeorm';
 import { Client } from './client';
 
-
 export enum AppType {
   rsm = 'RSM',
   login = 'LOGIN',
@@ -13,12 +12,10 @@ export enum IncentiveType {
 }
 
 export enum QuestionType {
-  SIMPLE_QUESTION = 'SIMPLE_QUESTION',
-  MULTICHOICE_QUESTION = 'MULTICHOICE_QUESTION',
-  CATEGORY_QUESTION = 'CATEGORY_QUESTION'
+  simpleQuestion = 'SIMPLE_QUESTION',
+  multiChoiceQuestion = 'MULTICHOICE_QUESTION',
+  categoryQuestion = 'CATEGORY_QUESTION',
 }
-
-
 
 @Entity({ name: 'client_apps_dev' })
 export class ClientAppDev {
@@ -32,15 +29,19 @@ export class ClientAppDev {
   @Column({ nullable: true })
   logo: string;
 
-  @Column({ type: 'jsonb', nullable: true, default: {
-    EMAIL: false,
-    GMAIL: false,
-    WALLET: false
-  }})
+  @Column({
+    type: 'jsonb',
+    nullable: true,
+    default: {
+      email: false,
+      gmail: false,
+      wallet: false,
+    },
+  })
   authentication: {
-    EMAIL: boolean;
-    GMAIL: boolean;
-    WALLET: boolean;
+    email: boolean;
+    gmail: boolean;
+    wallet: boolean;
   };
 
   @Column({ type: 'jsonb', nullable: true })
@@ -75,7 +76,6 @@ export class ClientAppDev {
 
   @Column({ nullable: true, default: false })
   platformConnection: boolean;
-
 
   // Foreign key relationship with Client
   @ManyToOne(() => Client, (client) => client.apps, {

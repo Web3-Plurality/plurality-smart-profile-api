@@ -74,7 +74,7 @@ export async function connectOrbisDidPkh() {
 }
 
 // Function to insert a profile type
-export async function insertProfileType(profileName: string, description: string, platformNeeded: string= '') {
+export async function insertProfileType(profileName: string, description: string, platformNeeded = '') {
   if (!orbisdb) {
     throw new Error('OrbisDB is not initialized. Call initializeOrbisDB first.');
   }
@@ -83,8 +83,7 @@ export async function insertProfileType(profileName: string, description: string
     .insert(data.models.profile_type_model || '')
     .value({
       profile_name: profileName,
-      platforms:
-      platformNeeded,
+      platforms: platformNeeded,
       version: '1.0',
       description: description,
     })

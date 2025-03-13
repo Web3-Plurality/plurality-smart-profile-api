@@ -3,14 +3,13 @@ import * as dotenv from 'dotenv';
 import { AppDataSource } from '../../../data-source';
 import Logger from '../../../lib/logger';
 import { v2 as cloudinary } from 'cloudinary';
-import { AppType, IncentiveType,  } from '../entity/client-app-dev';
+import { AppType, IncentiveType } from '../entity/client-app-dev';
 import { verifyStytchJWT } from '../middlewares/auth-middleware';
 import crypto from 'crypto';
 import { connectOrbisDidPkh, initializeOrbis, insertProfileType, updateProfileType } from '../utils/orbis';
 import { ClientApp } from '../entity/client-app';
 import { isBase64ImageDataUrl } from '../utils/helper';
 import { ClientAppDev } from '../entity/client-app-dev';
-import { Not } from 'typeorm';
 
 export const clientAppRouter = express.Router();
 dotenv.config();
@@ -42,14 +41,14 @@ clientAppRouter.post('/', verifyStytchJWT, async (req: Request, res: Response) =
       walletAuth = false,
       onboardingConfig = null,
       platformConnection = false,
-      platformNeeded = [] // [{platform: 'Twitter', authentication: true}]
+      platformNeeded = [], // [{platform: 'Twitter', authentication: true}]
     } = req.body;
 
     // Create authentication object
     const authentication = {
-      EMAIL: emailAuth,
-      GMAIL: gmailAuth,
-      WALLET: walletAuth
+      email: emailAuth,
+      gmail: gmailAuth,
+      wallet: walletAuth,
     };
 
     const incentiveType = IncentiveType.points;
@@ -60,7 +59,7 @@ clientAppRouter.post('/', verifyStytchJWT, async (req: Request, res: Response) =
     if (platformConnection && profileTypeStreamId) {
       streamId = profileTypeStreamId;
       Logger.info(`Profile type stream id found: ${streamId}`);
-    }else  {
+    } else {
       // Orbis
       await initializeOrbis();
       const isConnected = await connectOrbisDidPkh();
@@ -69,11 +68,13 @@ clientAppRouter.post('/', verifyStytchJWT, async (req: Request, res: Response) =
         res.status(500).send('Internal Server Error');
       }
 
-      const result = platformConnection && platformNeeded.length > 0 ? await insertProfileType(profileName, profileDescription, JSON.stringify(platformNeeded)) : await insertProfileType(profileName, profileDescription, '');
+      const result =
+        platformConnection && platformNeeded.length > 0
+          ? await insertProfileType(profileName, profileDescription, JSON.stringify(platformNeeded))
+          : await insertProfileType(profileName, profileDescription, '');
       streamId = result?.id || '';
       Logger.info(`Profile type stream id created: ${streamId}`);
     }
-
 
     // Upload an image
     let uploadResult;
@@ -86,8 +87,6 @@ clientAppRouter.post('/', verifyStytchJWT, async (req: Request, res: Response) =
     // Generate credentials
     const clientSecret = crypto.randomBytes(32).toString('hex');
     const hashedSecret = crypto.createHash('sha256').update(clientSecret).digest('hex');
-
-
 
     // Insert into clientApp
     const newClientApp = clientAppRepository.create({
@@ -113,7 +112,7 @@ clientAppRouter.post('/', verifyStytchJWT, async (req: Request, res: Response) =
         clientSecret: clientSecret,
         platformConnection: newClientApp.platformConnection,
         customOnboarding: newClientApp.onboardingConfig,
-        authentication: newClientApp.authentication
+        authentication: newClientApp.authentication,
       },
     });
   } catch (error: any) {
@@ -247,49 +246,45 @@ clientAppRouter.get('/:id', async (req: Request, res: Response) => {
 clientAppRouter.get('/profile-types', async (req: Request, res: Response) => {
   // #swagger.tags = ['Client App']
   try {
- 
     // Group platforms by category
     const profileTypes = [
       {
-        SOCIAL: {
+        social: {
           streamId: '123',
-          platforms: ['Instagram', 'Facebook', 'TikTok', 'Twitter', 'Snapchat']
-        }
+          platforms: ['Instagram', 'Facebook', 'TikTok', 'Twitter', 'Snapchat'],
+        },
       },
       {
-        GAMING: {
+        gaming: {
           streamId: '123',
-          platforms: ['Roblox', 'Fortnite', 'Steam', 'Epic']
-        }
+          platforms: ['Roblox', 'Fortnite', 'Steam', 'Epic'],
+        },
       },
       {
-        MUSIC: {
+        music: {
           streamId: '123',
-          platforms: ['Spotify', 'Apple Music', 'SoundCloud']
-        }
+          platforms: ['Spotify', 'Apple Music', 'SoundCloud'],
+        },
       },
       {
-        PROFESSIONAL: {
+        professional: {
           streamId: '123',
-          platforms: ['LinkedIn', 'GitHub']
-        }
-      }
+          platforms: ['LinkedIn', 'GitHub'],
+        },
+      },
     ];
 
     return res.status(200).json({
       success: true,
       data: {
-        profileTypes
-      }
+        profileTypes,
+      },
     });
-
   } catch (error: any) {
     Logger.error(`Error fetching profile types: ${JSON.stringify(error)}`);
-    return res.status(500).json({ 
+    return res.status(500).json({
       success: false,
-      error: 'An error occurred while fetching profile types' 
+      error: 'An error occurred while fetching profile types',
     });
   }
 });
-
-
