@@ -1008,6 +1008,22 @@
       }
     },
     "/crm/client-app/rotate-secret/{id}": {},
+    "/crm/client-app/universal-profile": {
+      "get": {
+        "tags": [
+          "Client App"
+        ],
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
     "/crm/client/login": {},
     "/crm/client/authenticate": {},
     "/crm/client/": {}

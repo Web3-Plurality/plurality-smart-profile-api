@@ -75,7 +75,7 @@ export class ClientAppDev {
   clientSecret: string;
 
   @Column({ nullable: true, default: false })
-  platformConnection: boolean;
+  showRoulette: boolean;
 
   // Foreign key relationship with Client
   @ManyToOne(() => Client, (client) => client.apps, {
