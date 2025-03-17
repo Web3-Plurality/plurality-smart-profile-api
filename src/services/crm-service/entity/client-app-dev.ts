@@ -72,7 +72,7 @@ export class ClientAppDev {
   appType: string;
 
   @Column({ nullable: false, default: '' })
-  clientSecret: string;
+  clientAppSecret: string;
 
   @Column({ nullable: true, default: false })
   showRoulette: boolean;

@@ -32,14 +32,6 @@ clientAppRouter.post('/', verifyStytchJWT, async (req: Request, res: Response) =
     }] */
   try {
     const {
-      // all universalProfiles can be fetched via api call -> mapping of universalProfileName to streamId is in DB
-      //universalProfiles = [SOCIAL, GAMING, MUSIC, PROFESSIONAL]
-      // universalProfileNames = SOCIAL or GAMING or MUSIC or PROFESSIONAL
-      // always required params isUniveralProfileSelected, showRoulette, logo, domains, clientId, emailAuth, gmailAuth, walletAuth
-      // if isUniveralProfileSelected is false, then profileName, profileDescription is required
-      // if showRoulette is true, then platformNeeded is required
-      // if showRoulette is false, then platformNeeded can be null -> upload '' to orbis
-      // if isUniveralProfileSelected is true, then universalProfileName is required
       profileName,
       profileDescription,
       isUniversalProfileSelected,
@@ -100,7 +92,9 @@ clientAppRouter.post('/', verifyStytchJWT, async (req: Request, res: Response) =
         return res.status(400).json({ error: 'Platform needed not found' });
       } else if (showRoulette && platformNeeded?.length) {
         // if showRoulette is true and platformNeeded is found, then we need to create a new profile
-        const result = await insertProfileType(profileName, profileDescription, JSON.stringify(platformNeeded));
+
+        const platforms = platformNeeded.map((platform: string) => {return({platform, authentication: true})})
+        const result = await insertProfileType(profileName, profileDescription, JSON.stringify(platforms));
         streamId = result?.id || '';
         Logger.info(`Profile type stream id created: ${streamId}`);
       } else {
@@ -120,8 +114,8 @@ clientAppRouter.post('/', verifyStytchJWT, async (req: Request, res: Response) =
     }
 
     // Generate credentials
-    const clientSecret = crypto.randomBytes(32).toString('hex');
-    const hashedSecret = crypto.createHash('sha256').update(clientSecret).digest('hex');
+    const clientAppSecret = crypto.randomBytes(32).toString('hex');
+    const hashedSecret = crypto.createHash('sha256').update(clientAppSecret).digest('hex');
 
     // Insert into clientApp
     const newClientApp = clientAppRepository.create({
@@ -131,7 +125,7 @@ clientAppRouter.post('/', verifyStytchJWT, async (req: Request, res: Response) =
       domains: JSON.stringify(domains),
       appType: appType,
       incentiveType: incentiveType,
-      clientSecret: hashedSecret,
+      clientAppSecret: hashedSecret,
       client: { id: clientId },
       authentication: authentication,
       onboardingConfig: onboardingConfig,
@@ -144,7 +138,7 @@ clientAppRouter.post('/', verifyStytchJWT, async (req: Request, res: Response) =
       message: 'clientApp created',
       data: {
         clientAppId: newClientApp?.id,
-        clientSecret: clientSecret,
+        clientAppSecret: clientAppSecret,
         customOnboarding: newClientApp.onboardingConfig,
         authentication: newClientApp.authentication,
       },
@@ -231,18 +225,18 @@ clientAppRouter.put('/rotate-secret/:id', verifyStytchJWT, async (req: Request, 
       res.status(400).json({ error: 'clientApp does not exist.' });
     }
     // Generate credentials
-    const clientSecret = crypto.randomBytes(32).toString('hex');
-    const hashedSecret = crypto.createHash('sha256').update(clientSecret).digest('hex');
+    const clientAppSecret = crypto.randomBytes(32).toString('hex');
+    const hashedSecret = crypto.createHash('sha256').update(clientAppSecret).digest('hex');
     // updated data
     const updateData = {
-      clientSecret: hashedSecret,
+      clientAppSecret: hashedSecret,
     };
     await clientAppRepository.update({ id: clientAppId }, updateData);
     Logger.info(`clientApp secret updated: ${clientAppId}`);
     return res.status(200).json({
       success: true,
       message: 'clientApp updated',
-      clientSecret,
+      clientAppSecret,
     });
   } catch (error: any) {
     Logger.error(`Fatal error due to unknown reason: ${JSON.stringify(error)}`);
