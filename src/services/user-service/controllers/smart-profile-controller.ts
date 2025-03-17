@@ -66,8 +66,10 @@ smartProfileRouter.put(
           return true;
         }
         const base64Pattern = /^data:image\/(jpeg|png|gif|bmp|tiff|webp);base64,/;
-        if (!base64Pattern.test(value)) {
-          throw new Error('Profile image must be a base64 encoded image');
+        const urlPattern = /^(https?:\/\/)/i;
+        
+        if (!base64Pattern.test(value) && !urlPattern.test(value)) {
+          throw new Error('Profile image must be either a base64 encoded image or a valid URL');
         }
         return true;
       }),
