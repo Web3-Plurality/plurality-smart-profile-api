@@ -37,8 +37,8 @@ clientAppRouter.post('/', verifyStytchJWT, async (req: Request, res: Response) =
       // universalProfileNames = SOCIAL or GAMING or MUSIC or PROFESSIONAL
       // always required params isUniveralProfileSelected, showRoulette, logo, domains, clientId, emailAuth, gmailAuth, walletAuth
       // if isUniveralProfileSelected is false, then profileName, profileDescription is required
-          // if showRoulette is true, then platformNeeded is required
-          // if showRoulette is false, then platformNeeded can be null -> upload '' to orbis 
+      // if showRoulette is true, then platformNeeded is required
+      // if showRoulette is false, then platformNeeded can be null -> upload '' to orbis
       // if isUniveralProfileSelected is true, then universalProfileName is required
       profileName,
       profileDescription,
@@ -69,11 +69,10 @@ clientAppRouter.post('/', verifyStytchJWT, async (req: Request, res: Response) =
 
     // if universal profile is selected, then we need to get the stream id from the universal profile
     if (isUniversalProfileSelected) {
-      
       const universalProfile = await universalProfileRepository.findOne({
         where: {
-          name: universalProfileName
-        }
+          name: universalProfileName,
+        },
       });
       if (!universalProfile?.streamId) {
         Logger.error(`Profile type stream id not found: ${universalProfileName}`);
@@ -99,19 +98,17 @@ clientAppRouter.post('/', verifyStytchJWT, async (req: Request, res: Response) =
       if (showRoulette && !platformNeeded?.length) {
         Logger.error(`Platform needed not found`);
         return res.status(400).json({ error: 'Platform needed not found' });
-      }else if(showRoulette && platformNeeded?.length) {
+      } else if (showRoulette && platformNeeded?.length) {
         // if showRoulette is true and platformNeeded is found, then we need to create a new profile
-        const result = await insertProfileType(profileName, profileDescription, JSON.stringify(platformNeeded))
+        const result = await insertProfileType(profileName, profileDescription, JSON.stringify(platformNeeded));
         streamId = result?.id || '';
         Logger.info(`Profile type stream id created: ${streamId}`);
-      }else{
+      } else {
         // if showRoulette is false, then we need to create a new profile without platform connection
         const result = await insertProfileType(profileName, profileDescription, '');
         streamId = result?.id || '';
         Logger.info(`Profile type stream id created: ${streamId}`);
       }
-
-
     }
 
     // Upload an image
@@ -164,7 +161,7 @@ clientAppRouter.put('/:id', verifyStytchJWT, async (req: Request, res: Response)
             "bearerAuth": []
     }] */
   try {
-    const { streamId, img, domains, profileName, profileDescription } = req.body;
+    const { streamId, logo, domains, profileName, profileDescription } = req.body;
     const clientAppid = req.params.id;
 
     // Orbis
@@ -180,8 +177,8 @@ clientAppRouter.put('/:id', verifyStytchJWT, async (req: Request, res: Response)
 
     // Upload an image
     let uploadResult;
-    if (img && isBase64ImageDataUrl(img)) {
-      uploadResult = await cloudinary.uploader.upload(img).catch((error) => {
+    if (logo && isBase64ImageDataUrl(logo)) {
+      uploadResult = await cloudinary.uploader.upload(logo).catch((error) => {
         console.log(error);
       });
     }
@@ -259,21 +256,21 @@ clientAppRouter.get('/universal-profile', async (req: Request, res: Response) =>
   try {
     const universalProfiles = await universalProfileRepository.find({
       order: {
-        name: 'ASC'
-      }
+        name: 'ASC',
+      },
     });
 
     return res.status(200).json({
       success: true,
       data: {
-        universalProfiles
-      }
+        universalProfiles,
+      },
     });
   } catch (error: any) {
     Logger.error(`Error fetching profile types: ${JSON.stringify(error)}`);
     return res.status(500).json({
       success: false,
-      error: 'An error occurred while fetching profile types'
+      error: 'An error occurred while fetching profile types',
     });
   }
 });
@@ -305,4 +302,3 @@ clientAppRouter.get('/:id', async (req: Request, res: Response) => {
     return res.status(500).json({ error: 'An error occurred while processing your request' });
   }
 });
-

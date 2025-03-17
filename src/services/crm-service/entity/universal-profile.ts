@@ -4,7 +4,7 @@ export enum UniversalProfileType {
   social = 'SOCIAL',
   gaming = 'GAMING',
   music = 'MUSIC',
-  professional = 'PROFESSIONAL'
+  professional = 'PROFESSIONAL',
 }
 
 @Entity('universal_profiles')
@@ -15,11 +15,10 @@ export class UniversalProfile {
   @Column({
     type: 'enum',
     enum: UniversalProfileType,
-    unique: true
+    unique: true,
   })
   name: UniversalProfileType;
 
   @Column({ nullable: false })
   streamId: string;
-
-} 
+}
