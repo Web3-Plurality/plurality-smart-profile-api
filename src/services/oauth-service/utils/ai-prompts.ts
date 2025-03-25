@@ -119,3 +119,32 @@ export const ROBLOX_FETCH_INTEREST_PROMPT = [
               Text:`,
   },
 ];
+
+export const USER_ONBOARDING_INSIGHTS_PROMPT = [
+  {
+    role: 'system',
+    content:
+      'You are helpful assistant which extract insights from user onboarding responses and output it in JSON. The JSON object must use the schema: {interests: string[], reputationTags: string[], badges: string[], collections: string[]}.'
+  },
+  {
+    role: 'user',
+    content: `Analyze these user onboarding responses and extract meaningful insights in JSON format.
+              The JSON schema must contain the following fields:
+              
+              1. interests: An array of strings representing the user's interests, hobbies, and preferences
+              2. reputationTags: An array of strings representing professional roles, identities, skills, and characteristics  
+              3. badges: An array of strings representing achievements or notable attributes
+              4. collections: An array of strings representing categories or groups that the user might belong to
+              
+              For simple question responses, extract key information about the user's personality and interests.
+              For multiple choice selections, categorize them into the appropriate arrays.
+              For category questions, add selected tags to both interests and their relevant arrays.
+              
+              If you don't find relevant data for any field, include an empty array.
+              
+              The output JSON object must strictly follow this schema: 
+              {interests: string[], reputationTags: string[], badges: string[], collections: string[]}
+              
+              User onboarding responses:`
+  }
+];

@@ -18,6 +18,8 @@ import {
   SmartProfile,
   ScoreTypes,
 } from '@plurality-network/smart-profile-utils';
+import { createPrompt, USER_ONBOARDING_INSIGHTS_PROMPT } from '../../oauth-service/utils/ai-prompts';
+import { analyze } from '../../oauth-service/utils/groq';
 
 export const smartProfileRouter = express.Router();
 dotenv.config();
@@ -134,6 +136,17 @@ smartProfileRouter.put(
               id: req?.user?.id,
             },
           });
+
+          // get insights from user onboarding Questions
+          if (smartProfile?.extendedPublicData?.customOnboarding && !smartProfile.privateData.claims.analyzed ) {
+          const prompt = createPrompt(USER_ONBOARDING_INSIGHTS_PROMPT, smartProfile?.extendedPublicData);
+          const insights = await analyze(prompt);
+          smartProfile.privateData.claims.interests = insights?.interests || {};
+          smartProfile.privateData.claims.collections = insights?.collections || {};
+          smartProfile.privateData.claims.badges = insights?.badges || {};
+          smartProfile.privateData.claims.reputationTags = insights?.reputationTags || {};
+            smartProfile.privateData.claims.analyzed = true;
+          }
           const attestedSmartProfile = await pluralityAttestation.attestSmartProfile(
             user?.id || '',
             smartProfile,
