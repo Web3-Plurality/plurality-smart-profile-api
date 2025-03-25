@@ -124,7 +124,7 @@ export const USER_ONBOARDING_INSIGHTS_PROMPT = [
   {
     role: 'system',
     content:
-      'You are helpful assistant which extract insights from user onboarding responses and output it in JSON. The JSON object must use the schema: {interests: string[], reputationTags: string[], badges: string[], collections: string[]}.'
+      'You are helpful assistant which extract insights from user onboarding responses and output it in JSON. The JSON object must use the schema: {interests: string[], reputationTags: string[], badges: string[], collections: string[]}.',
   },
   {
     role: 'user',
@@ -145,6 +145,6 @@ export const USER_ONBOARDING_INSIGHTS_PROMPT = [
               The output JSON object must strictly follow this schema: 
               {interests: string[], reputationTags: string[], badges: string[], collections: string[]}
               
-              User onboarding responses:`
-  }
+              User onboarding responses:`,
+  },
 ];

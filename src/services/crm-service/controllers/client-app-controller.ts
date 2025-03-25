@@ -93,7 +93,9 @@ clientAppRouter.post('/', verifyStytchJWT, async (req: Request, res: Response) =
       } else if (showRoulette && platformNeeded?.length) {
         // if showRoulette is true and platformNeeded is found, then we need to create a new profile
 
-        const platforms = platformNeeded.map((platform: string) => {return({platform, authentication: true})})
+        const platforms = platformNeeded.map((platform: string) => {
+          return { platform, authentication: true };
+        });
         const result = await insertProfileType(profileName, profileDescription, JSON.stringify(platforms));
         streamId = result?.id || '';
         Logger.info(`Profile type stream id created: ${streamId}`);

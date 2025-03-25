@@ -138,13 +138,14 @@ smartProfileRouter.put(
           });
 
           // get insights from user onboarding Questions
-          if (smartProfile?.extendedPublicData?.customOnboarding && !smartProfile.privateData.claims.analyzed ) {
-          const prompt = createPrompt(USER_ONBOARDING_INSIGHTS_PROMPT, smartProfile?.extendedPublicData);
-          const insights = await analyze(prompt);
-          smartProfile.privateData.claims.interests = insights?.interests || {};
-          smartProfile.privateData.claims.collections = insights?.collections || {};
-          smartProfile.privateData.claims.badges = insights?.badges || {};
-          smartProfile.privateData.claims.reputationTags = insights?.reputationTags || {};
+          if (smartProfile?.extendedPublicData?.customOnboarding && !smartProfile.privateData.claims.analyzed) {
+            Logger.info(`Analyzing user onboarding insights`, smartProfile?.extendedPublicData);
+            const prompt = createPrompt(USER_ONBOARDING_INSIGHTS_PROMPT, JSON.stringify(smartProfile?.extendedPublicData?.onboardingData));
+            const insights = await analyze(prompt);
+            smartProfile.privateData.claims.interests = insights?.interests || {};
+            smartProfile.privateData.claims.collections = insights?.collections || {};
+            smartProfile.privateData.claims.badges = insights?.badges || {};
+            smartProfile.privateData.claims.reputationTags = insights?.reputationTags || {};
             smartProfile.privateData.claims.analyzed = true;
           }
           const attestedSmartProfile = await pluralityAttestation.attestSmartProfile(
