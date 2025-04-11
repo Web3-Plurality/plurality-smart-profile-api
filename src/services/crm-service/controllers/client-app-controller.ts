@@ -36,12 +36,14 @@ clientAppRouter.post('/', verifyStytchJWT, async (req: Request, res: Response) =
       profileDescription,
       isUniversalProfileSelected,
       universalProfileName,
-      logo,
+      logos = { light: '', dark: '' },
       domains,
       clientId,
-      emailAuth = false,
-      gmailAuth = false,
-      walletAuth = false,
+      authOptions = {
+        email: true,
+        gmail: false,
+        metamask: false,
+      },
       onboardingConfig = null,
       showRoulette = false,
       platformNeeded = [], // [{platform: 'Twitter', authentication: true}]
@@ -49,9 +51,9 @@ clientAppRouter.post('/', verifyStytchJWT, async (req: Request, res: Response) =
 
     // Create authentication object
     const authentication = {
-      email: emailAuth,
-      gmail: gmailAuth,
-      wallet: walletAuth,
+      email: authOptions?.email,
+      gmail: authOptions?.gmail,
+      wallet: authOptions?.metamask,
     };
 
     const incentiveType = IncentiveType.points;
@@ -108,11 +110,16 @@ clientAppRouter.post('/', verifyStytchJWT, async (req: Request, res: Response) =
     }
 
     // Upload an image
-    let uploadResult;
-    if (logo) {
-      uploadResult = await cloudinary.uploader.upload(logo).catch((error) => {
+    let uploadResult = { light: '', dark: '' };
+    if (logos?.light) {
+      uploadResult.light = await cloudinary.uploader.upload(logos?.light).catch((error) => {
         console.log(error);
-      });
+      })?.secure_url;
+    }
+    if (logos?.dark) {
+      uploadResult.dark = await cloudinary.uploader.upload(logos?.dark).catch((error) => {
+        console.log(error);
+      })?.secure_url;
     }
 
     // Generate credentials
@@ -122,7 +129,7 @@ clientAppRouter.post('/', verifyStytchJWT, async (req: Request, res: Response) =
     // Insert into clientApp
     const newClientApp = clientAppRepository.create({
       streamId: streamId,
-      logo: uploadResult?.secure_url,
+      logos: uploadResult,
       links: JSON.stringify(links),
       domains: JSON.stringify(domains),
       appType: appType,
@@ -208,6 +215,61 @@ clientAppRouter.put('/:id', verifyStytchJWT, async (req: Request, res: Response)
   }
 });
 
+clientAppRouter.get('/universal-profile', async (req: Request, res: Response) => {
+  // #swagger.tags = ['Client App']
+  try {
+    const universalProfiles = await universalProfileRepository.find({
+      order: {
+        name: 'ASC',
+      },
+      select: {
+        name: true,
+      },
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        universalProfiles,
+      },
+    });
+  } catch (error: any) {
+    Logger.error(`Error fetching profile types: ${JSON.stringify(error)}`);
+    return res.status(500).json({
+      success: false,
+      error: 'An error occurred while fetching profile types',
+    });
+  }
+});
+
+clientAppRouter.get('/:id', async (req: Request, res: Response) => {
+  // #swagger.tags = ['Client App']
+  try {
+    const origin = req.headers['x-domain'];
+    // remove query and change it to param id
+    const clientAppId: any = req.params.id;
+    const data: any = await clientAppRepository.findOne({
+      where: {
+        id: clientAppId,
+      },
+    });
+
+    const domains = JSON.parse(data?.domains);
+
+    if (domains?.includes(origin)) {
+      Logger.info(`clientApp fetched: ${clientAppId}`);
+      return res.status(200).json({ data });
+    }
+
+    Logger.error(`Invalid domain: ${origin}`);
+    return res.status(400).json({ error: 'Invalid domain' });
+  } catch (error: any) {
+    Logger.error(`Fatal error due to unknown reason: ${JSON.stringify(error)}`);
+    return res.status(500).json({ error: 'An error occurred while processing your request' });
+  }
+});
+
+
 clientAppRouter.put('/rotate-secret/:id', verifyStytchJWT, async (req: Request, res: Response) => {
   // #swagger.tags = ['Client App']
   /* #swagger.security = [{
@@ -246,55 +308,4 @@ clientAppRouter.put('/rotate-secret/:id', verifyStytchJWT, async (req: Request, 
   }
 });
 
-// Move universal-profile route BEFORE the /:id route
-clientAppRouter.get('/universal-profile', async (req: Request, res: Response) => {
-  // #swagger.tags = ['Client App']
-  try {
-    const universalProfiles = await universalProfileRepository.find({
-      order: {
-        name: 'ASC',
-      },
-    });
 
-    return res.status(200).json({
-      success: true,
-      data: {
-        universalProfiles,
-      },
-    });
-  } catch (error: any) {
-    Logger.error(`Error fetching profile types: ${JSON.stringify(error)}`);
-    return res.status(500).json({
-      success: false,
-      error: 'An error occurred while fetching profile types',
-    });
-  }
-});
-
-// Move this route AFTER the /universal-profile route
-clientAppRouter.get('/:id', async (req: Request, res: Response) => {
-  // #swagger.tags = ['Client App']
-  try {
-    const origin = req.headers['x-domain'];
-    // remove query and change it to param id
-    const clientAppId: any = req.params.id;
-    const data: any = await clientAppRepository.findOne({
-      where: {
-        id: clientAppId,
-      },
-    });
-
-    const domains = JSON.parse(data?.domains);
-
-    if (domains?.includes(origin)) {
-      Logger.info(`clientApp fetched: ${clientAppId}`);
-      return res.status(200).json({ data });
-    }
-
-    Logger.error(`Invalid domain: ${origin}`);
-    return res.status(400).json({ error: 'Invalid domain' });
-  } catch (error: any) {
-    Logger.error(`Fatal error due to unknown reason: ${JSON.stringify(error)}`);
-    return res.status(500).json({ error: 'An error occurred while processing your request' });
-  }
-});

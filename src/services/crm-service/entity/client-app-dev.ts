@@ -26,14 +26,17 @@ export class ClientAppDev {
   @Column({ nullable: true })
   streamId: string;
 
-  @Column({ nullable: true })
-  logo: string;
+  @Column({ type: 'jsonb', nullable: true, default: { light: '', dark: '' } })
+  logos: {
+    light: string;
+    dark: string;
+  };
 
   @Column({
     type: 'jsonb',
     nullable: true,
     default: {
-      email: false,
+      email: true,
       gmail: false,
       wallet: false,
     },
