@@ -54,7 +54,9 @@ export class ClientAppDev {
       type: QuestionType;
       question: string;
       supportingText?: string;
-      options?: Array<string>;
+      options?: Array<{
+        text: string;
+      }>;
       tagGroups?: Array<{
         category: string;
         tags: Array<string>;
