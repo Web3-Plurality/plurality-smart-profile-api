@@ -46,7 +46,7 @@ clientAppRouter.post('/', verifyStytchJWT, async (req: Request, res: Response) =
       },
       onboardingConfig = null,
       showRoulette = false,
-      platformNeeded = [], // [{platform: 'Twitter', authentication: true}]
+      platformNeeded = [], // [ 'Twitter', Instagram}]
     } = req.body;
 
     // Create authentication object
@@ -224,6 +224,7 @@ clientAppRouter.get('/universal-profile', async (req: Request, res: Response) =>
       },
       select: {
         name: true,
+        streamId: true,
       },
     });
 
