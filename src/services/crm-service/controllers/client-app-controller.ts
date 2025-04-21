@@ -110,7 +110,7 @@ clientAppRouter.post('/', verifyStytchJWT, async (req: Request, res: Response) =
     }
 
     // Upload an image
-    let uploadResult = { light: '', dark: '' };
+    const uploadResult = { light: '', dark: '' };
     if (logos?.light) {
       uploadResult.light = await cloudinary.uploader.upload(logos?.light).catch((error) => {
         console.log(error);
@@ -270,7 +270,6 @@ clientAppRouter.get('/:id', async (req: Request, res: Response) => {
   }
 });
 
-
 clientAppRouter.put('/rotate-secret/:id', verifyStytchJWT, async (req: Request, res: Response) => {
   // #swagger.tags = ['Client App']
   /* #swagger.security = [{
@@ -308,5 +307,3 @@ clientAppRouter.put('/rotate-secret/:id', verifyStytchJWT, async (req: Request, 
     return res.status(500).json({ error: 'An error occurred while processing your request' });
   }
 });
-
-
