@@ -45,7 +45,7 @@ clientAppRouter.post('/', verifyStytchJWT, async (req: Request, res: Response) =
         metamask: false,
       },
       onboardingConfig = null,
-      showRoulette = false,
+      showRoulette = true,
       platformNeeded = [], // [ 'Twitter', Instagram}]
     } = req.body;
 
@@ -112,14 +112,16 @@ clientAppRouter.post('/', verifyStytchJWT, async (req: Request, res: Response) =
     // Upload an image
     const uploadResult = { light: '', dark: '' };
     if (logos?.light) {
-      uploadResult.light = await cloudinary.uploader.upload(logos?.light).catch((error) => {
+      const lightUploadResult = await cloudinary.uploader.upload(logos?.light).catch((error) => {
         console.log(error);
-      })?.secure_url;
+      });
+      uploadResult.light = lightUploadResult?.secure_url || '';
     }
     if (logos?.dark) {
-      uploadResult.dark = await cloudinary.uploader.upload(logos?.dark).catch((error) => {
+      const darkUploadResult = await cloudinary.uploader.upload(logos?.dark).catch((error) => {
         console.log(error);
-      })?.secure_url;
+      });
+      uploadResult.dark = darkUploadResult?.secure_url || '';
     }
 
     // Generate credentials
