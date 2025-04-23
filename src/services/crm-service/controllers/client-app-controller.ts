@@ -261,7 +261,12 @@ clientAppRouter.get('/:id', async (req: Request, res: Response) => {
 
     if (domains?.includes(origin)) {
       Logger.info(`clientApp fetched: ${clientAppId}`);
-      return res.status(200).json({ data });
+      // for only light theme for now
+      const clientApp = {
+        ...data,
+        logo: data?.logos?.light || data?.logos?.dark,
+      };
+      return res.status(200).json({ data: clientApp });
     }
 
     Logger.error(`Invalid domain: ${origin}`);
