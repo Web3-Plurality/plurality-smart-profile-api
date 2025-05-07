@@ -26,6 +26,9 @@ export class ClientAppDev {
   @Column({ nullable: true })
   streamId: string;
 
+  @Column({ nullable: true })
+  appName: string;
+
   @Column({ type: 'jsonb', nullable: true, default: { light: '', dark: '' } })
   logos: {
     light: string;

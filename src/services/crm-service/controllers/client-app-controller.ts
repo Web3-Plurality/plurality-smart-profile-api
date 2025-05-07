@@ -34,6 +34,7 @@ clientAppRouter.post('/', verifyStytchJWT, async (req: Request, res: Response) =
     const {
       profileName,
       profileDescription,
+      appName,
       isUniversalProfileSelected,
       universalProfileName,
       logos = { light: '', dark: '' },
@@ -130,6 +131,7 @@ clientAppRouter.post('/', verifyStytchJWT, async (req: Request, res: Response) =
 
     // Insert into clientApp
     const newClientApp = clientAppRepository.create({
+      appName: appName,
       streamId: streamId,
       logos: uploadResult,
       links: JSON.stringify(links),
