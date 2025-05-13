@@ -8,7 +8,7 @@ import { faker } from '@faker-js/faker';
 import { memoryStoreProfile } from '../../../utils/global';
 import { calculateSocialScore } from '../utils/score';
 import { plainToInstance } from 'class-transformer';
-import { SmartProfileMap } from '../entity/smart-profile-map';
+// import { SmartProfileMap } from '../entity/smart-profile-map';
 import { EarlyUser } from '../entity/early-user';
 import { isAuthenticated, isValidAttestation } from '../middlewares/auth-middleware';
 import { User } from '../entity/user';
@@ -20,10 +20,11 @@ import {
 } from '@plurality-network/smart-profile-utils';
 import { createPrompt, USER_ONBOARDING_INSIGHTS_PROMPT } from '../../oauth-service/utils/ai-prompts';
 import { analyze } from '../../oauth-service/utils/groq';
+import { SmartProfileMapDev } from '../entity/smart-profile-map-dev';
 
 export const smartProfileRouter = express.Router();
 dotenv.config();
-const smartProfileMapRepository = AppDataSource.getRepository(SmartProfileMap);
+const smartProfileMapRepository = AppDataSource.getRepository(SmartProfileMapDev);
 const earlyUserRepository = AppDataSource.getRepository(EarlyUser);
 const userRepository = AppDataSource.getRepository(User);
 
@@ -93,6 +94,10 @@ smartProfileRouter.put(
         Logger.error(`Fatal error due to missing profile type stream id`);
         return res.status(400).json({ errors: 'profile type stream id is missing' });
       }
+      if (!req.headers['x-client-app-id'] || typeof req.headers['x-client-app-id'] !== 'string') {
+        Logger.error(`Fatal error due to missing client app id`);
+        return res.status(400).json({ errors: 'client app id is missing' });
+      }
       const clientAppId = req.headers['x-client-app-id'];
       const profileTypeStreamId = req.headers['x-profile-type-stream-id'];
       const userUpdateReqData = JSON.parse(JSON.stringify(req.body.data));
@@ -103,6 +108,9 @@ smartProfileRouter.put(
         where: {
           userId: id,
           profileTypeStreamId: profileTypeStreamId,
+          clientAppDev: {
+            id: clientAppId,
+          },
         },
       });
 
@@ -123,28 +131,30 @@ smartProfileRouter.put(
 
           // if we have onboarding data but did not assign to smart profile then we assign it smart profile
           let onBoardingAvailable = false;
-          if(!userUpdateReqData.get(clientAppId)?.onboardingData && Object.keys(userUpdateReqData?.onboardingData).length > 0){
+          if (clientAppId && 
+            !smartProfile?.extendedPublicData?.[clientAppId]?.onboardingData &&
+            userUpdateReqData?.onboardingData && 
+            Object.keys(userUpdateReqData?.onboardingData || {})?.length > 0
+          ) {
             smartProfile.extendedPublicData[clientAppId] = userUpdateReqData.onboardingData;
             onBoardingAvailable = true;
           }
 
-
-          let updatedUser : any = {
+          let updatedUser: any = {
             username: userUpdateReqData.username || smartProfile?.username,
             avatar: uploadResult?.secure_url || smartProfile?.avatar,
             bio: userUpdateReqData.bio || smartProfile?.bio,
-            
           };
 
-          if(onBoardingAvailable){
-           updatedUser = {
-            ...updatedUser,
-            "onboardingData": userUpdateReqData.onboardingData,
-            "clientAppId": clientAppId,
-           }
+          if (onBoardingAvailable) {
+            updatedUser = {
+              ...updatedUser,
+              onboardingData: userUpdateReqData.onboardingData,
+            }
           }
+ 
           // Update the existing profile
-          await smartProfileMapRepository.update({ id: existingUser.id }, updatedUser);
+          await smartProfileMapRepository.update({ id: existingUser.id, clientAppDev: { id: clientAppId } }, updatedUser);
           Logger.info(`Smart profile updated locally for user id: ${id}`);
           // attest profile
           const user = await userRepository.findOne({
@@ -164,7 +174,8 @@ smartProfileRouter.put(
             insights?.interests?.length && smartProfile.privateData.claims.interests.push(...insights?.interests);
             insights?.collections?.length && smartProfile.privateData.claims.collections.push(...insights?.collections);
             insights?.badges?.length && smartProfile.privateData.claims.badges.push(...insights?.badges);
-            insights?.reputationTags?.length && smartProfile.privateData.claims.reputationTags.push(...insights?.reputationTags);
+            insights?.reputationTags?.length &&
+              smartProfile.privateData.claims.reputationTags.push(...insights?.reputationTags);
           }
           const attestedSmartProfile = await pluralityAttestation.attestSmartProfile(
             user?.id || '',
@@ -219,7 +230,11 @@ smartProfileRouter.post(
         Logger.error(`Fatal error due to missing profile type stream id`);
         return res.status(400).json({ errors: 'profile type stream id is missing' });
       }
-
+      if (!req.headers['x-client-app-id'] || typeof req.headers['x-client-app-id'] !== 'string') {
+        Logger.error(`Fatal error due to missing client app id`);
+        return res.status(400).json({ errors: 'client app id is missing' });
+      }
+      const clientAppId = req.headers['x-client-app-id'];
       const profileTypeStreamId = req.headers['x-profile-type-stream-id'];
       // probably we dont need these both
       const id = req?.user?.uniqueSessionId;
@@ -233,6 +248,9 @@ smartProfileRouter.post(
           where: {
             userId: req?.user?.id,
             profileTypeStreamId: profileTypeStreamId,
+            clientAppDev: {
+              id: clientAppId,
+            },
           },
         });
         if (!profileMapping) {
@@ -263,6 +281,9 @@ smartProfileRouter.post(
             scores: newProfile?.scores,
             profileTypeStreamId: profileTypeStreamId,
             userId: req?.user?.id,
+            clientAppDev: {
+              id: clientAppId,
+            },
           });
 
           await smartProfileMapRepository.save(newSmartProfileMap);
@@ -307,7 +328,7 @@ smartProfileRouter.post(
           Logger.info(`Old version of smart profile returned from profile map: ${id}, This is not normal workflow`);
           // updatin previous map of smart profile
           await smartProfileMapRepository.update(
-            { userId: req?.user?.id },
+            { userId: req?.user?.id, clientAppDev: { id: clientAppId } },
             {
               connectedProfiles: [],
               scores: oldProfile?.scores,
@@ -369,7 +390,11 @@ smartProfileRouter.post(
         Logger.error(`Fatal error due to missing profile type stream id`);
         return res.status(400).json({ errors: 'profile type stream id is missing' });
       }
-
+      if (!req.headers['x-client-app-id'] || typeof req.headers['x-client-app-id'] !== 'string') {
+        Logger.error(`Fatal error due to missing client app id`);
+        return res.status(400).json({ errors: 'client app id is missing' });
+      }
+      const clientAppId = req.headers['x-client-app-id'];
       const profileTypeStreamId = req.headers['x-profile-type-stream-id'];
       const id = req?.user?.uniqueSessionId;
       const memorySmartProfile = memoryStoreProfile.get(id)?.smartProfile;
@@ -383,6 +408,9 @@ smartProfileRouter.post(
           where: {
             userId: req?.user?.id,
             profileTypeStreamId: profileTypeStreamId,
+            clientAppDev: {
+              id: clientAppId,
+            },
           },
         });
         if (!profileMapping) {
@@ -396,6 +424,9 @@ smartProfileRouter.post(
             scores: smartProfile?.scores,
             profileTypeStreamId: profileTypeStreamId,
             userId: req?.user?.id,
+            clientAppDev: {
+              id: clientAppId,
+            },
           });
 
           await smartProfileMapRepository.save(newSmartProfileMap);
@@ -441,7 +472,7 @@ smartProfileRouter.post(
 
         // Update the profiles mapping table with updated profile
         await smartProfileMapRepository.update(
-          { userId: req?.user?.id, profileTypeStreamId: profileTypeStreamId },
+          { userId: req?.user?.id, profileTypeStreamId: profileTypeStreamId, clientAppDev: { id: clientAppId } },
           updatedSmartProfileMap,
         );
         Logger.info(`Smart profile updated for user id: ${req?.user?.id}`);
