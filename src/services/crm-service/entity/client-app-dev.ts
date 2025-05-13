@@ -1,5 +1,6 @@
-import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
 import { Client } from './client';
+import { SmartProfileMap } from '../../user-service/entity/smart-profile-map';
 
 export enum AppType {
   rsm = 'RSM',
@@ -91,4 +92,7 @@ export class ClientAppDev {
   })
   @JoinColumn({ name: 'clientId' }) // Foreign key column name
   client: Client;
+
+  @OneToMany(() => SmartProfileMap, (smartProfileMap) => smartProfileMap.clientAppDev)
+  smartProfileMaps: SmartProfileMap[];
 }

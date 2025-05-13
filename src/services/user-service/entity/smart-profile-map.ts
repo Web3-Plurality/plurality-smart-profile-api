@@ -1,4 +1,6 @@
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
+import { ClientAppDev } from '../../crm-service/entity/client-app-dev';
+import { Client } from '../../crm-service/entity/client';
 
 interface ConnectedProfiles {
   platformName: string;
@@ -36,4 +38,16 @@ export class SmartProfileMap {
 
   @Column({ type: 'varchar', length: 300, nullable: true })
   bio: string;
+  
+  @Column({ type: 'jsonb', nullable: true })
+  onboardingData: Record<string, any>;
+
+  // Foreign key relationship with Client
+  @ManyToOne(() => ClientAppDev, (clientAppDev) => clientAppDev.smartProfileMaps, {
+    nullable: true,
+    onDelete: 'CASCADE', // Ensures cascade delete behavior
+    onUpdate: 'CASCADE', // Updates foreign key if referenced key changes
+  })
+  @JoinColumn({ name: 'clientAppId' }) // Foreign key column name
+  clientAppDev: ClientAppDev;
 }

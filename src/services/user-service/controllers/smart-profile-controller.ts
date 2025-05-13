@@ -93,7 +93,7 @@ smartProfileRouter.put(
         Logger.error(`Fatal error due to missing profile type stream id`);
         return res.status(400).json({ errors: 'profile type stream id is missing' });
       }
-
+      const clientAppId = req.headers['x-client-app-id'];
       const profileTypeStreamId = req.headers['x-profile-type-stream-id'];
       const userUpdateReqData = JSON.parse(JSON.stringify(req.body.data));
       const smartProfile = normalizeSmartProfile(req?.body?.smartProfile);
@@ -121,12 +121,28 @@ smartProfileRouter.put(
           smartProfile.avatar = uploadResult?.secure_url || smartProfile?.avatar;
           smartProfile.bio = userUpdateReqData.bio || smartProfile?.bio;
 
-          const updatedUser = {
+          // if we have onboarding data but did not assign to smart profile then we assign it smart profile
+          let onBoardingAvailable = false;
+          if(!userUpdateReqData.get(clientAppId)?.onboardingData && Object.keys(userUpdateReqData?.onboardingData).length > 0){
+            smartProfile.extendedPublicData[clientAppId] = userUpdateReqData.onboardingData;
+            onBoardingAvailable = true;
+          }
+
+
+          let updatedUser : any = {
             username: userUpdateReqData.username || smartProfile?.username,
             avatar: uploadResult?.secure_url || smartProfile?.avatar,
             bio: userUpdateReqData.bio || smartProfile?.bio,
+            
           };
 
+          if(onBoardingAvailable){
+           updatedUser = {
+            ...updatedUser,
+            "onboardingData": userUpdateReqData.onboardingData,
+            "clientAppId": clientAppId,
+           }
+          }
           // Update the existing profile
           await smartProfileMapRepository.update({ id: existingUser.id }, updatedUser);
           Logger.info(`Smart profile updated locally for user id: ${id}`);
@@ -138,18 +154,17 @@ smartProfileRouter.put(
           });
 
           // get insights from user onboarding Questions
-          if (smartProfile?.extendedPublicData?.customOnboarding && !smartProfile.privateData.claims.analyzed) {
-            Logger.info(`Analyzing user onboarding insights`, smartProfile?.extendedPublicData);
+          if (onBoardingAvailable) {
+            Logger.info(`Analyzing user onboarding insights`, userUpdateReqData?.onboardingData);
             const prompt = createPrompt(
               USER_ONBOARDING_INSIGHTS_PROMPT,
-              JSON.stringify(smartProfile?.extendedPublicData?.onboardingData),
+              JSON.stringify(userUpdateReqData?.onboardingData),
             );
             const insights = await analyze(prompt);
-            smartProfile.privateData.claims.interests = insights?.interests || {};
-            smartProfile.privateData.claims.collections = insights?.collections || {};
-            smartProfile.privateData.claims.badges = insights?.badges || {};
-            smartProfile.privateData.claims.reputationTags = insights?.reputationTags || {};
-            smartProfile.privateData.claims.analyzed = true;
+            insights?.interests?.length && smartProfile.privateData.claims.interests.push(...insights?.interests);
+            insights?.collections?.length && smartProfile.privateData.claims.collections.push(...insights?.collections);
+            insights?.badges?.length && smartProfile.privateData.claims.badges.push(...insights?.badges);
+            insights?.reputationTags?.length && smartProfile.privateData.claims.reputationTags.push(...insights?.reputationTags);
           }
           const attestedSmartProfile = await pluralityAttestation.attestSmartProfile(
             user?.id || '',
