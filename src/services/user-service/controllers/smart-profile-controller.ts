@@ -287,7 +287,7 @@ smartProfileRouter.post(
           });
 
           await smartProfileMapRepository.save(newSmartProfileMap);
-          Logger.info(`New smart profile created for user id: ${id}`);
+          Logger.info(`New smart profile created for user id: ${id} against clientAppId: ${clientAppId}`);
           // profile attestation
           const existingUser = await userRepository.findOne({
             where: {
@@ -351,12 +351,48 @@ smartProfileRouter.post(
           );
           return res.status(200).json({ success: true, smartProfile: attestedSmartProfile });
         }
-      } else {
+      } else if (!memorySmartProfile && Object.keys(reqSmartProfile).length > 0 && profileTypeStreamId) {
+        // when smart profile is present in the request body against a client different client app id
+        Logger.info(`Smart profile is present in the request body against a client different client app id`);
+        const profileMapping = await smartProfileMapRepository.findOne({
+          where: {
+            userId: req?.user?.id,
+            profileTypeStreamId: profileTypeStreamId,
+            clientAppDev: {
+              id: clientAppId,
+            },
+          },
+        });
+        if (!profileMapping) {
+        const newSmartProfileMap = await smartProfileMapRepository.create({
+          username: reqSmartProfile?.username,
+          avatar: reqSmartProfile?.avatar,
+          bio: reqSmartProfile?.bio,
+          connectedProfiles: [],
+          scores: reqSmartProfile?.scores,
+          profileTypeStreamId: profileTypeStreamId,
+          userId: req?.user?.id,
+          clientAppDev: {
+            id: clientAppId,
+          },
+        });
+        
+        await smartProfileMapRepository.save(newSmartProfileMap);
+        Logger.info(`New smart profile created for user id: ${id} against clientAppId: ${clientAppId}`);
+        return res.status(200).json({ success: true, smartProfile: reqSmartProfile, message: `smart profile registered against cliantApp ID: ${clientAppId}` });
+      } else{
+        Logger.error(
+          `smart profile Map and smart profile already exist against cliantApp ID: ${clientAppId}`,
+        );
+        return res.status(400).json({ error: `smart profile already exists against cliantApp ID: ${clientAppId}` });
+      }
+
+      }else{
         Logger.error(
           `Either smart profile is not in the request body or no individual profile is connected for user: ${id}`,
         );
         return res.status(400).json({ error: 'Bad request' });
-      }
+    }
     } catch (error: any) {
       Logger.error(`Fatal error due to unknown reason: ${JSON.stringify(error)}`);
       return res.status(500).json({ error: 'An error occurred while processing your request' });
