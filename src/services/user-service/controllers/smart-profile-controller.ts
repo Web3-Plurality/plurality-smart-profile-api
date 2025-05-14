@@ -131,9 +131,10 @@ smartProfileRouter.put(
 
           // if we have onboarding data but did not assign to smart profile then we assign it smart profile
           let onBoardingAvailable = false;
-          if (clientAppId && 
+          if (
+            clientAppId &&
             !smartProfile?.extendedPublicData?.[clientAppId]?.onboardingData &&
-            userUpdateReqData?.onboardingData && 
+            userUpdateReqData?.onboardingData &&
             Object.keys(userUpdateReqData?.onboardingData || {})?.length > 0
           ) {
             smartProfile.extendedPublicData[clientAppId] = userUpdateReqData.onboardingData;
@@ -150,11 +151,14 @@ smartProfileRouter.put(
             updatedUser = {
               ...updatedUser,
               onboardingData: userUpdateReqData.onboardingData,
-            }
+            };
           }
- 
+
           // Update the existing profile
-          await smartProfileMapRepository.update({ id: existingUser.id, clientAppDev: { id: clientAppId } }, updatedUser);
+          await smartProfileMapRepository.update(
+            { id: existingUser.id, clientAppDev: { id: clientAppId } },
+            updatedUser,
+          );
           Logger.info(`Smart profile updated locally for user id: ${id}`);
           // attest profile
           const user = await userRepository.findOne({
@@ -267,6 +271,9 @@ smartProfileRouter.post(
               : 'https://res.cloudinary.com/dblrsf3fe/image/upload/v1721919290/wkaejhi7ocnwhfl42vb8.png',
             bio: '',
             profileTypeStreamId: profileTypeStreamId,
+            extendedPublicData: {
+              [clientAppId]: {},
+            },
           });
           newProfile.updateScoreValue(
             ScoreTypes.socialScore,
@@ -301,7 +308,13 @@ smartProfileRouter.post(
             process.env.PUBLIC_SCHEMA_UID || '',
             process.env.PRIVATE_SCHEMA_UID || '',
           );
-          return res.status(200).json({ success: true, smartProfile: attestedSmartProfile });
+          return res
+            .status(200)
+            .json({
+              success: true,
+              smartProfile: attestedSmartProfile,
+              message: `smart profile registered against cliantApp ID: ${clientAppId}`,
+            });
         } else {
           // if profile map exists in database we return the smart profile based on the map
           Logger.info(`Profile map already found in database`);
@@ -313,6 +326,9 @@ smartProfileRouter.post(
               : 'https://res.cloudinary.com/dblrsf3fe/image/upload/v1721919290/wkaejhi7ocnwhfl42vb8.png',
             bio: profileMapping?.bio,
             profileTypeStreamId: profileTypeStreamId,
+            extendedPublicData: {
+              [clientAppId]: {},
+            },
           });
 
           const earlyUser = await earlyUserRepository.findOne({
@@ -364,35 +380,39 @@ smartProfileRouter.post(
           },
         });
         if (!profileMapping) {
-        const newSmartProfileMap = await smartProfileMapRepository.create({
-          username: reqSmartProfile?.username,
-          avatar: reqSmartProfile?.avatar,
-          bio: reqSmartProfile?.bio,
-          connectedProfiles: [],
-          scores: reqSmartProfile?.scores,
-          profileTypeStreamId: profileTypeStreamId,
-          userId: req?.user?.id,
-          clientAppDev: {
-            id: clientAppId,
-          },
-        });
-        
-        await smartProfileMapRepository.save(newSmartProfileMap);
-        Logger.info(`New smart profile created for user id: ${id} against clientAppId: ${clientAppId}`);
-        return res.status(200).json({ success: true, smartProfile: reqSmartProfile, message: `smart profile registered against cliantApp ID: ${clientAppId}` });
-      } else{
-        Logger.error(
-          `smart profile Map and smart profile already exist against cliantApp ID: ${clientAppId}`,
-        );
-        return res.status(400).json({ error: `smart profile already exists against cliantApp ID: ${clientAppId}` });
-      }
+          const newSmartProfileMap = await smartProfileMapRepository.create({
+            username: reqSmartProfile?.username,
+            avatar: reqSmartProfile?.avatar,
+            bio: reqSmartProfile?.bio,
+            connectedProfiles: [],
+            scores: reqSmartProfile?.scores,
+            profileTypeStreamId: profileTypeStreamId,
+            userId: req?.user?.id,
+            clientAppDev: {
+              id: clientAppId,
+            },
+          });
 
-      }else{
+          await smartProfileMapRepository.save(newSmartProfileMap);
+          Logger.info(`New smart profile created for user id: ${id} against clientAppId: ${clientAppId}`);
+          return res
+            .status(200)
+            .json({
+              success: true,
+              smartProfile: reqSmartProfile,
+              message: `smart profile registered against cliantApp ID: ${clientAppId}`,
+            });
+        } else {
+          Logger.error(`smart profile Map and smart profile already exist against cliantApp ID: ${clientAppId}`);
+          // should we send 200 or 400?
+          return res.status(400).json({ error: `smart profile already exists against cliantApp ID: ${clientAppId}` });
+        }
+      } else {
         Logger.error(
           `Either smart profile is not in the request body or no individual profile is connected for user: ${id}`,
         );
         return res.status(400).json({ error: 'Bad request' });
-    }
+      }
     } catch (error: any) {
       Logger.error(`Fatal error due to unknown reason: ${JSON.stringify(error)}`);
       return res.status(500).json({ error: 'An error occurred while processing your request' });

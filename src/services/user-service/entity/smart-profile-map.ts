@@ -38,5 +38,4 @@ export class SmartProfileMap {
 
   @Column({ type: 'varchar', length: 300, nullable: true })
   bio: string;
-
 }
