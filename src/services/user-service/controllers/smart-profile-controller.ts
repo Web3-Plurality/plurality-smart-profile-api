@@ -137,7 +137,7 @@ smartProfileRouter.put(
             userUpdateReqData?.onboardingData &&
             Object.keys(userUpdateReqData?.onboardingData || {})?.length > 0
           ) {
-            smartProfile.extendedPublicData[clientAppId] = userUpdateReqData.onboardingData;
+            smartProfile.extendedPublicData[clientAppId] ={ onboardingData: userUpdateReqData.onboardingData};
             onBoardingAvailable = true;
           }
 

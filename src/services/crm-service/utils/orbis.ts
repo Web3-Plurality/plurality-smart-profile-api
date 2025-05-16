@@ -106,7 +106,7 @@ export async function insertProfileType(profileName: string, description: string
   console.log('Insert statement runs:', insertStatement.runs);
 }
 
-export async function updateProfileType(streamId: string, profileName: string, description: string) {
+export async function updateProfileType(streamId: string, profileName: string, description: string, platformNeeded: string) {
   // This will perform a shallow merge before updating the document
   // { ...oldContent, ...newContent }
   if (!orbisdb) {
@@ -116,6 +116,7 @@ export async function updateProfileType(streamId: string, profileName: string, d
   const updateStatement = await orbisdb.update(streamId).set({
     profile_name: profileName,
     description: description,
+    platforms: platformNeeded,
   });
   /* eslint-enable */
   try {
@@ -123,6 +124,7 @@ export async function updateProfileType(streamId: string, profileName: string, d
     return result;
   } catch (error) {
     console.log(error);
+    return error;
   }
 }
 

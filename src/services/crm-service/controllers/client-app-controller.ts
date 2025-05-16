@@ -47,7 +47,7 @@ clientAppRouter.post('/', verifyStytchJWT, async (req: Request, res: Response) =
       },
       onboardingConfig = null,
       showRoulette = true,
-      platformNeeded = [], // [ 'Twitter', Instagram}]
+      platformNeeded = [],
     } = req.body;
 
     // Create authentication object
@@ -168,50 +168,117 @@ clientAppRouter.put('/:id', verifyStytchJWT, async (req: Request, res: Response)
             "bearerAuth": []
     }] */
   try {
-    const { streamId, logo, domains, profileName, profileDescription } = req.body;
+    const {
+      profileName,
+      profileDescription,
+      streamId,
+      appName,
+      logos = { light: '', dark: '' },
+      domains,
+      authOptions = {
+        email: true,
+        gmail: false,
+        metamask: false,
+      },
+      onboardingConfig = null,
+      showRoulette = true,
+      platformNeeded = [],
+    } = req.body;
     const clientAppid = req.params.id;
-
-    // Orbis
-    await initializeOrbis();
-    const isConnected = await connectOrbisDidPkh();
-    if (!isConnected) {
-      Logger.error('Something went wrong with the orbis');
-      res.status(500).send('Internal Server Error');
-    }
-
-    // update in orbis
-    await updateProfileType(streamId, profileName, profileDescription);
-
-    // Upload an image
-    let uploadResult;
-    if (logo && isBase64ImageDataUrl(logo)) {
-      uploadResult = await cloudinary.uploader.upload(logo).catch((error) => {
-        console.log(error);
-      });
-    }
-
     // check customer exist already
     const clientApp = await clientAppRepository.findOne({
       where: {
         id: clientAppid,
       },
     });
-
     if (!clientApp) {
       return res.status(404).json({
         message: `clientApp of id ${clientAppid} does not exist`,
       });
     }
+    // check if universal profile is selected
+    const universalProfile = await universalProfileRepository.findOne({
+      where: {
+        streamId: streamId,
+      },
+    });
 
-    // updated data
-    const updateData = {
-      logo: uploadResult?.secure_url ? uploadResult?.secure_url : clientApp?.logo,
-      domains: JSON.stringify(domains),
+    if (!universalProfile?.streamId) {
+      // custom profile work flow
+      try {
+        if (!profileDescription || !profileName) {
+          Logger.error(`Profile name or description not found`);
+          return res.status(400).json({ error: 'Profile name or description not found' });
+        }
+
+        await initializeOrbis();
+        const isConnected = await connectOrbisDidPkh();
+        if (!isConnected) {
+          Logger.error('Something went wrong with the orbis');
+          res.status(500).send('Internal Server Error');
+        }
+        if (showRoulette && !platformNeeded?.length) {
+          Logger.error(`Platform needed not found`);
+          return res.status(400).json({ error: 'Platform needed not found' });
+        }
+        const platforms = platformNeeded.map((platform: string) => {
+          return { platform, authentication: true };
+        });
+        // update in orbis
+        await updateProfileType(streamId, profileName, profileDescription, JSON.stringify(platforms));
+      } catch (error) {
+        Logger.error(`Error updating profile type: ${JSON.stringify(error)}`);
+        return res.status(400).json({ error: 'Profile type stream id not found' });
+      }
+    }
+
+    // Upload an image
+    const uploadResult = { light: '', dark: '' };
+    if (isBase64ImageDataUrl(logos?.light)) {
+      const lightUploadResult = await cloudinary.uploader.upload(logos?.light).catch((error) => {
+        console.log(error);
+      });
+      uploadResult.light = lightUploadResult?.secure_url || '';
+    } else {
+      uploadResult.light = logos?.light;
+    }
+    if (isBase64ImageDataUrl(logos?.dark)) {
+      const darkUploadResult = await cloudinary.uploader.upload(logos?.dark).catch((error) => {
+        console.log(error);
+      });
+      uploadResult.dark = darkUploadResult?.secure_url || '';
+    } else {
+      uploadResult.dark = logos?.dark;
+    }
+    // Generate credentials
+    const clientAppSecret = crypto.randomBytes(32).toString('hex');
+    const hashedSecret = crypto.createHash('sha256').update(clientAppSecret).digest('hex');
+    // Create authentication object
+    const authentication = {
+      email: authOptions?.email,
+      gmail: authOptions?.gmail,
+      wallet: authOptions?.metamask,
     };
-    await clientAppRepository.update({ id: clientAppid }, updateData);
+    // update into clientApp
+    const updateData = {
+      appName: appName,
+      streamId: streamId,
+      logos: uploadResult,
+      domains: JSON.stringify(domains),
+      clientAppSecret: hashedSecret,
+      authentication: authentication,
+      onboardingConfig: onboardingConfig,
+      showRoulette: showRoulette,
+    };
+    const updatedClientApp = await clientAppRepository.update({ id: clientAppid }, updateData);
     Logger.info(`clientApp updated: ${clientAppid}`);
     return res.status(200).json({
       message: 'clientApp updated',
+      data: {
+        clientAppId: updatedClientApp?.id,
+        clientAppSecret: clientAppSecret,
+        clientApp: updatedClientApp,
+      },
     });
   } catch (error: any) {
     Logger.error(`Fatal error due to unknown reason: ${JSON.stringify(error)}`);
