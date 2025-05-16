@@ -137,7 +137,7 @@ smartProfileRouter.put(
             userUpdateReqData?.onboardingData &&
             Object.keys(userUpdateReqData?.onboardingData || {})?.length > 0
           ) {
-            smartProfile.extendedPublicData[clientAppId] ={ onboardingData: userUpdateReqData.onboardingData};
+            smartProfile.extendedPublicData[clientAppId] = { onboardingData: userUpdateReqData.onboardingData };
             onBoardingAvailable = true;
           }
 
@@ -308,13 +308,11 @@ smartProfileRouter.post(
             process.env.PUBLIC_SCHEMA_UID || '',
             process.env.PRIVATE_SCHEMA_UID || '',
           );
-          return res
-            .status(200)
-            .json({
-              success: true,
-              smartProfile: attestedSmartProfile,
-              message: `smart profile registered against cliantApp ID: ${clientAppId}`,
-            });
+          return res.status(200).json({
+            success: true,
+            smartProfile: attestedSmartProfile,
+            message: `smart profile registered against cliantApp ID: ${clientAppId}`,
+          });
         } else {
           // if profile map exists in database we return the smart profile based on the map
           Logger.info(`Profile map already found in database`);
@@ -395,13 +393,11 @@ smartProfileRouter.post(
 
           await smartProfileMapRepository.save(newSmartProfileMap);
           Logger.info(`New smart profile created for user id: ${id} against clientAppId: ${clientAppId}`);
-          return res
-            .status(200)
-            .json({
-              success: true,
-              smartProfile: reqSmartProfile,
-              message: `smart profile registered against cliantApp ID: ${clientAppId}`,
-            });
+          return res.status(200).json({
+            success: true,
+            smartProfile: reqSmartProfile,
+            message: `smart profile registered against cliantApp ID: ${clientAppId}`,
+          });
         } else {
           Logger.error(`smart profile Map and smart profile already exist against cliantApp ID: ${clientAppId}`);
           // should we send 200 or 400?

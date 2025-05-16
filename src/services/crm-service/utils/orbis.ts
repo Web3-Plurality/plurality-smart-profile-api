@@ -106,7 +106,12 @@ export async function insertProfileType(profileName: string, description: string
   console.log('Insert statement runs:', insertStatement.runs);
 }
 
-export async function updateProfileType(streamId: string, profileName: string, description: string, platformNeeded: string) {
+export async function updateProfileType(
+  streamId: string,
+  profileName: string,
+  description: string,
+  platformNeeded: string,
+) {
   // This will perform a shallow merge before updating the document
   // { ...oldContent, ...newContent }
   if (!orbisdb) {

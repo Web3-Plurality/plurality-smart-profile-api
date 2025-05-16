@@ -275,9 +275,8 @@ clientAppRouter.put('/:id', verifyStytchJWT, async (req: Request, res: Response)
     return res.status(200).json({
       message: 'clientApp updated',
       data: {
-        clientAppId: updatedClientApp?.id,
+        clientAppId: clientAppid,
         clientAppSecret: clientAppSecret,
-        clientApp: updatedClientApp,
       },
     });
   } catch (error: any) {
