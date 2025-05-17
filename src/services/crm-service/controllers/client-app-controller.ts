@@ -35,8 +35,8 @@ clientAppRouter.post('/', verifyStytchJWT, async (req: Request, res: Response) =
       profileName,
       profileDescription,
       appName,
-      isUniversalProfileSelected,
-      universalProfileName,
+      // isUniversalProfileSelected,
+      // universalProfileName,
       logos = { light: '', dark: '' },
       domains,
       clientId,
@@ -48,6 +48,7 @@ clientAppRouter.post('/', verifyStytchJWT, async (req: Request, res: Response) =
       onboardingConfig = null,
       showRoulette = true,
       platformNeeded = [],
+      streamId,
     } = req.body;
 
     // Create authentication object
@@ -60,20 +61,20 @@ clientAppRouter.post('/', verifyStytchJWT, async (req: Request, res: Response) =
     const incentiveType = IncentiveType.points;
     const appType = AppType.login;
     const links: any = [];
-    let streamId = '';
+    let newStreamId = '';
 
     // if universal profile is selected, then we need to get the stream id from the universal profile
-    if (isUniversalProfileSelected) {
+    if (streamId) {
       const universalProfile = await universalProfileRepository.findOne({
         where: {
-          name: universalProfileName,
+          streamId: streamId,
         },
       });
-      if (!universalProfile?.streamId) {
-        Logger.error(`Profile type stream id not found: ${universalProfileName}`);
+      if (!universalProfile) {
+        Logger.error(`Profile type stream id not found: ${streamId}`);
         return res.status(400).json({ error: 'Profile type stream id not found' });
       }
-      streamId = universalProfile?.streamId;
+      newStreamId = universalProfile?.streamId;
       Logger.info(`Profile type stream id found: ${streamId}`);
     } else {
       // if universal profile is not selected, then we need to create a new profile
@@ -100,13 +101,13 @@ clientAppRouter.post('/', verifyStytchJWT, async (req: Request, res: Response) =
           return { platform, authentication: true };
         });
         const result = await insertProfileType(profileName, profileDescription, JSON.stringify(platforms));
-        streamId = result?.id || '';
-        Logger.info(`Profile type stream id created: ${streamId}`);
+        newStreamId = result?.id || '';
+        Logger.info(`Profile type stream id created: ${newStreamId}`);
       } else {
         // if showRoulette is false, then we need to create a new profile without platform connection
         const result = await insertProfileType(profileName, profileDescription, '');
-        streamId = result?.id || '';
-        Logger.info(`Profile type stream id created: ${streamId}`);
+        newStreamId = result?.id || '';
+        Logger.info(`Profile type stream id created: ${newStreamId}`);
       }
     }
 
@@ -128,11 +129,11 @@ clientAppRouter.post('/', verifyStytchJWT, async (req: Request, res: Response) =
     // Generate credentials
     const clientAppSecret = crypto.randomBytes(32).toString('hex');
     const hashedSecret = crypto.createHash('sha256').update(clientAppSecret).digest('hex');
-
+    if (newStreamId) {
     // Insert into clientApp
     const newClientApp = clientAppRepository.create({
       appName: appName,
-      streamId: streamId,
+      streamId: newStreamId,
       logos: uploadResult,
       links: JSON.stringify(links),
       domains: JSON.stringify(domains),
@@ -155,7 +156,13 @@ clientAppRouter.post('/', verifyStytchJWT, async (req: Request, res: Response) =
         customOnboarding: newClientApp.onboardingConfig,
         authentication: newClientApp.authentication,
       },
-    });
+      });
+    } else {
+      Logger.error(`Something went wrong with the orbis stream id creation`);
+      return res.status(500).json({
+        message: 'Something went wrong with the orbis stream id creation',
+      });
+    }
   } catch (error: any) {
     Logger.error(`Fatal error due to unknown reason: ${JSON.stringify(error)}`);
     return res.status(500).json({ error: 'An error occurred while processing your request' });
