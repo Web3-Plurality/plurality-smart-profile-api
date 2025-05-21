@@ -231,23 +231,8 @@
     },
     "/user/smart-profile/": {
       "put": {
-        "tags": [
-          "Users"
-        ],
         "description": "",
-        "parameters": [
-          {
-            "name": "x-profile-type-stream-id",
-            "in": "header",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
         "responses": {
-          "200": {
-            "description": "OK"
-          },
           "400": {
             "description": "Bad Request"
           },
@@ -256,31 +241,6 @@
           },
           "403": {
             "description": "Forbidden"
-          },
-          "404": {
-            "description": "Not Found"
-          },
-          "500": {
-            "description": "Internal Server Error"
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "data": {
-                    "example": "any"
-                  }
-                }
-              }
-            }
           }
         }
       },
@@ -292,6 +252,13 @@
         "parameters": [
           {
             "name": "x-profile-type-stream-id",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "x-client-app-id",
             "in": "header",
             "schema": {
               "type": "string"
@@ -345,6 +312,13 @@
         "parameters": [
           {
             "name": "x-profile-type-stream-id",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "x-client-app-id",
             "in": "header",
             "schema": {
               "type": "string"
@@ -1007,7 +981,53 @@
         }
       }
     },
-    "/crm/client-app/rotate-secret/{id}": {},
+    "/crm/client-app/platforms": {
+      "post": {
+        "tags": [
+          "Client App"
+        ],
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "example": "any"
+                  },
+                  "isEnabled": {
+                    "example": "any"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Client App"
+        ],
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
     "/crm/client-app/universal-profile": {
       "get": {
         "tags": [
@@ -1024,6 +1044,7 @@
         }
       }
     },
+    "/crm/client-app/rotate-secret/{id}": {},
     "/crm/client/login": {},
     "/crm/client/authenticate": {},
     "/crm/client/": {}

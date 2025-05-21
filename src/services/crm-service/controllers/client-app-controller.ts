@@ -292,19 +292,15 @@ clientAppRouter.put('/:id', verifyStytchJWT, async (req: Request, res: Response)
   }
 });
 
-
-clientAppRouter.get('/platforms', async (req: Request, res: Response) => {
+clientAppRouter.post('/platforms', async (req: Request, res: Response) => {
   // #swagger.tags = ['Client App']
   try {
-    const platforms = await platformRepository.find({
-      order: {
-        name: 'ASC',
-      },
-    });
-
+    const { name, isEnabled } = req.body;
+    const platform = platformRepository.create({ name, isEnabled });
+    await platformRepository.save(platform);
     return res.status(200).json({
       success: true,
-      data: { platforms },
+      message: 'Platform created successfully',
     });
   } catch (error: any) {
     Logger.error(`Error fetching platforms: ${JSON.stringify(error)}`);
@@ -315,6 +311,33 @@ clientAppRouter.get('/platforms', async (req: Request, res: Response) => {
   }
 });
 
+
+clientAppRouter.get('/platforms', async (req: Request, res: Response) => {
+  // #swagger.tags = ['Client App']
+  try {
+    const platforms = await platformRepository.find({
+      select:{name: true},
+      order: {
+        name: 'ASC',
+      },
+    });
+
+    const pl = platforms.map((platform) => {
+      return platform.name;
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: { platforms: pl },
+    });
+  } catch (error: any) {
+    Logger.error(`Error fetching platforms: ${JSON.stringify(error)}`);
+    return res.status(500).json({
+      success: false,
+      error: 'An error occurred while fetching platforms',
+    });
+  }
+});
 
 clientAppRouter.get('/universal-profile', async (req: Request, res: Response) => {
   // #swagger.tags = ['Client App']

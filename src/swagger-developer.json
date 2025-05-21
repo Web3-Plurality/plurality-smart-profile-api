@@ -32,6 +32,9 @@
           "200": {
             "description": "OK"
           },
+          "400": {
+            "description": "Bad Request"
+          },
           "401": {
             "description": "Unauthorized"
           },
@@ -50,40 +53,25 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "profileName": {
+                  "email": {
                     "example": "any"
                   },
-                  "profileDescription": {
+                  "gmail": {
                     "example": "any"
                   },
-                  "profileTypeStreamId": {
-                    "example": "any"
-                  },
-                  "img": {
-                    "example": "any"
-                  },
-                  "domains": {
-                    "example": "any"
-                  },
-                  "clientId": {
-                    "example": "any"
-                  },
-                  "emailAuth": {
-                    "example": "any"
-                  },
-                  "gmailAuth": {
-                    "example": "any"
-                  },
-                  "walletAuth": {
+                  "metamask": {
                     "example": "any"
                   },
                   "onboardingConfig": {
                     "example": "any"
                   },
-                  "platformConnection": {
+                  "showRoulette": {
                     "example": "any"
                   },
                   "platformNeeded": {
+                    "example": "any"
+                  },
+                  "streamId": {
                     "example": "any"
                   }
                 }
@@ -113,6 +101,9 @@
           "200": {
             "description": "OK"
           },
+          "400": {
+            "description": "Bad Request"
+          },
           "401": {
             "description": "Unauthorized"
           },
@@ -134,19 +125,22 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "streamId": {
+                  "email": {
                     "example": "any"
                   },
-                  "img": {
+                  "gmail": {
                     "example": "any"
                   },
-                  "domains": {
+                  "metamask": {
                     "example": "any"
                   },
-                  "profileName": {
+                  "onboardingConfig": {
                     "example": "any"
                   },
-                  "profileDescription": {
+                  "showRoulette": {
+                    "example": "any"
+                  },
+                  "platformNeeded": {
                     "example": "any"
                   }
                 }

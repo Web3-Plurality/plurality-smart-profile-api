@@ -1,7 +1,5 @@
 import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
 
-
-
 @Entity('platforms')
 export class Platform {
   @PrimaryGeneratedColumn('uuid')
