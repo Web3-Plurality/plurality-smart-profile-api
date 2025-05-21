@@ -42,5 +42,4 @@ export class SmartProfileMapDev {
     clientAppId: string;
     onboardingData: Record<string, any>;
   };
-
 }

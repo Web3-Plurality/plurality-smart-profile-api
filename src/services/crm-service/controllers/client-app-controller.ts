@@ -11,11 +11,13 @@ import { ClientApp } from '../entity/client-app';
 import { isBase64ImageDataUrl } from '../utils/helper';
 import { ClientAppDev } from '../entity/client-app-dev';
 import { UniversalProfile, UniversalProfileType } from '../entity/universal-profile';
+import { Platform } from '../entity/platforms';
 
 export const clientAppRouter = express.Router();
 dotenv.config();
 const clientAppRepository = AppDataSource.getRepository(ClientAppDev);
 const universalProfileRepository = AppDataSource.getRepository(UniversalProfile);
+const platformRepository = AppDataSource.getRepository(Platform);
 
 /* eslint-disable */
 cloudinary.config({
@@ -35,8 +37,6 @@ clientAppRouter.post('/', verifyStytchJWT, async (req: Request, res: Response) =
       profileName,
       profileDescription,
       appName,
-      // isUniversalProfileSelected,
-      // universalProfileName,
       logos = { light: '', dark: '' },
       domains,
       clientId,
@@ -130,32 +130,32 @@ clientAppRouter.post('/', verifyStytchJWT, async (req: Request, res: Response) =
     const clientAppSecret = crypto.randomBytes(32).toString('hex');
     const hashedSecret = crypto.createHash('sha256').update(clientAppSecret).digest('hex');
     if (newStreamId) {
-    // Insert into clientApp
-    const newClientApp = clientAppRepository.create({
-      appName: appName,
-      streamId: newStreamId,
-      logos: uploadResult,
-      links: JSON.stringify(links),
-      domains: JSON.stringify(domains),
-      appType: appType,
-      incentiveType: incentiveType,
-      clientAppSecret: hashedSecret,
-      client: { id: clientId },
-      authentication: authentication,
-      onboardingConfig: onboardingConfig,
-      showRoulette: showRoulette,
-    });
-    await clientAppRepository.save(newClientApp);
-    Logger.info(`clientApp created: ${newClientApp.id}`);
+      // Insert into clientApp
+      const newClientApp = clientAppRepository.create({
+        appName: appName,
+        streamId: newStreamId,
+        logos: uploadResult,
+        links: JSON.stringify(links),
+        domains: JSON.stringify(domains),
+        appType: appType,
+        incentiveType: incentiveType,
+        clientAppSecret: hashedSecret,
+        client: { id: clientId },
+        authentication: authentication,
+        onboardingConfig: onboardingConfig,
+        showRoulette: showRoulette,
+      });
+      await clientAppRepository.save(newClientApp);
+      Logger.info(`clientApp created: ${newClientApp.id}`);
 
-    return res.status(200).json({
-      message: 'clientApp created',
-      data: {
-        clientAppId: newClientApp?.id,
-        clientAppSecret: clientAppSecret,
-        customOnboarding: newClientApp.onboardingConfig,
-        authentication: newClientApp.authentication,
-      },
+      return res.status(200).json({
+        message: 'clientApp created',
+        data: {
+          clientAppId: newClientApp?.id,
+          clientAppSecret: clientAppSecret,
+          customOnboarding: newClientApp.onboardingConfig,
+          authentication: newClientApp.authentication,
+        },
       });
     } else {
       Logger.error(`Something went wrong with the orbis stream id creation`);
@@ -291,6 +291,30 @@ clientAppRouter.put('/:id', verifyStytchJWT, async (req: Request, res: Response)
     return res.status(500).json({ error: 'An error occurred while processing your request' });
   }
 });
+
+
+clientAppRouter.get('/platforms', async (req: Request, res: Response) => {
+  // #swagger.tags = ['Client App']
+  try {
+    const platforms = await platformRepository.find({
+      order: {
+        name: 'ASC',
+      },
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: { platforms },
+    });
+  } catch (error: any) {
+    Logger.error(`Error fetching platforms: ${JSON.stringify(error)}`);
+    return res.status(500).json({
+      success: false,
+      error: 'An error occurred while fetching platforms',
+    });
+  }
+});
+
 
 clientAppRouter.get('/universal-profile', async (req: Request, res: Response) => {
   // #swagger.tags = ['Client App']
