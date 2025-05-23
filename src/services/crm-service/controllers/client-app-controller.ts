@@ -311,15 +311,17 @@ clientAppRouter.post('/platforms', async (req: Request, res: Response) => {
   }
 });
 
-
 clientAppRouter.get('/platforms', async (req: Request, res: Response) => {
   // #swagger.tags = ['Client App']
   try {
     const platforms = await platformRepository.find({
-      select:{name: true},
+      select: { name: true },
       order: {
         name: 'ASC',
       },
+      where:{
+        isEnabled: true
+      }
     });
 
     const pl = platforms.map((platform) => {
