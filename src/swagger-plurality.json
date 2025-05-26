@@ -231,6 +231,20 @@
     },
     "/user/smart-profile/": {
       "put": {
+        "description": "",
+        "responses": {
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          }
+        }
+      },
+      "post": {
         "tags": [
           "Users"
         ],
@@ -238,6 +252,13 @@
         "parameters": [
           {
             "name": "x-profile-type-stream-id",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "x-client-app-id",
             "in": "header",
             "schema": {
               "type": "string"
@@ -257,9 +278,6 @@
           "403": {
             "description": "Forbidden"
           },
-          "404": {
-            "description": "Not Found"
-          },
           "500": {
             "description": "Internal Server Error"
           }
@@ -275,7 +293,7 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "data": {
+                  "smartProfile": {
                     "example": "any"
                   }
                 }
@@ -283,7 +301,9 @@
             }
           }
         }
-      },
+      }
+    },
+    "/user/smart-profile/exchange-profile": {
       "post": {
         "tags": [
           "Users"
@@ -292,6 +312,13 @@
         "parameters": [
           {
             "name": "x-profile-type-stream-id",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "x-client-app-id",
             "in": "header",
             "schema": {
               "type": "string"
@@ -947,6 +974,69 @@
           },
           "400": {
             "description": "Bad Request"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/crm/client-app/platforms": {
+      "post": {
+        "tags": [
+          "Client App"
+        ],
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "example": "any"
+                  },
+                  "isEnabled": {
+                    "example": "any"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Client App"
+        ],
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/crm/client-app/universal-profile": {
+      "get": {
+        "tags": [
+          "Client App"
+        ],
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "OK"
           },
           "500": {
             "description": "Internal Server Error"

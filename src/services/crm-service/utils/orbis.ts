@@ -74,7 +74,7 @@ export async function connectOrbisDidPkh() {
 }
 
 // Function to insert a profile type
-export async function insertProfileType(profileName: string, description: string) {
+export async function insertProfileType(profileName: string, description: string, platformNeeded = '') {
   if (!orbisdb) {
     throw new Error('OrbisDB is not initialized. Call initializeOrbisDB first.');
   }
@@ -83,8 +83,7 @@ export async function insertProfileType(profileName: string, description: string
     .insert(data.models.profile_type_model || '')
     .value({
       profile_name: profileName,
-      platforms:
-        '[{"platform":"Twitter","authentication":true},{"platform":"TikTok","authentication":true},{"platform":"Roblox","authentication":true},{"platform":"Snapchat","authentication":true},{"platform":"Fortnite","authentication":true}]',
+      platforms: platformNeeded,
       version: '1.0',
       description: description,
     })
@@ -107,7 +106,12 @@ export async function insertProfileType(profileName: string, description: string
   console.log('Insert statement runs:', insertStatement.runs);
 }
 
-export async function updateProfileType(streamId: string, profileName: string, description: string) {
+export async function updateProfileType(
+  streamId: string,
+  profileName: string,
+  description: string,
+  platformNeeded: string,
+) {
   // This will perform a shallow merge before updating the document
   // { ...oldContent, ...newContent }
   if (!orbisdb) {
@@ -117,6 +121,7 @@ export async function updateProfileType(streamId: string, profileName: string, d
   const updateStatement = await orbisdb.update(streamId).set({
     profile_name: profileName,
     description: description,
+    platforms: platformNeeded,
   });
   /* eslint-enable */
   try {
@@ -124,6 +129,7 @@ export async function updateProfileType(streamId: string, profileName: string, d
     return result;
   } catch (error) {
     console.log(error);
+    return error;
   }
 }
 

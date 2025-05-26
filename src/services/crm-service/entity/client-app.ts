@@ -1,4 +1,4 @@
-import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
 import { Client } from './client';
 
 export enum AppType {
@@ -11,6 +11,12 @@ export enum IncentiveType {
   stars = 'STARS',
 }
 
+export enum QuestionType {
+  simpleQuestion = 'SIMPLE_QUESTION',
+  multiChoiceQuestion = 'MULTICHOICE_QUESTION',
+  categoryQuestion = 'CATEGORY_QUESTION',
+}
+
 @Entity({ name: 'client_apps' })
 export class ClientApp {
   @PrimaryGeneratedColumn('uuid')
@@ -21,7 +27,43 @@ export class ClientApp {
   streamId: string;
 
   @Column({ nullable: true })
-  logo: string;
+  appName: string;
+
+  @Column({ type: 'jsonb', nullable: true, default: { light: '', dark: '' } })
+  logos: {
+    light: string;
+    dark: string;
+  };
+
+  @Column({
+    type: 'jsonb',
+    nullable: true,
+    default: {
+      email: true,
+      gmail: false,
+      wallet: false,
+    },
+  })
+  authentication: {
+    email: boolean;
+    gmail: boolean;
+    wallet: boolean;
+  };
+
+  @Column({ type: 'jsonb', nullable: true })
+  onboardingConfig: {
+    customOnboarding: boolean;
+    questions: Array<{
+      type: QuestionType;
+      question: string;
+      supportingText?: string;
+      options?: Array<string>;
+      tagGroups?: Array<{
+        category: string;
+        tags: Array<string>;
+      }>;
+    }>;
+  };
 
   @Column({ nullable: true })
   links: string;
@@ -36,7 +78,10 @@ export class ClientApp {
   appType: string;
 
   @Column({ nullable: false, default: '' })
-  clientSecret: string;
+  clientAppSecret: string;
+
+  @Column({ nullable: true, default: false })
+  showRoulette: boolean;
 
   // Foreign key relationship with Client
   @ManyToOne(() => Client, (client) => client.apps, {

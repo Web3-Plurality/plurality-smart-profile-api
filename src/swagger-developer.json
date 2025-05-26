@@ -32,6 +32,9 @@
           "200": {
             "description": "OK"
           },
+          "400": {
+            "description": "Bad Request"
+          },
           "401": {
             "description": "Unauthorized"
           },
@@ -50,19 +53,25 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "profileName": {
+                  "email": {
                     "example": "any"
                   },
-                  "profileDescription": {
+                  "gmail": {
                     "example": "any"
                   },
-                  "img": {
+                  "metamask": {
                     "example": "any"
                   },
-                  "domains": {
+                  "onboardingConfig": {
                     "example": "any"
                   },
-                  "clientId": {
+                  "showRoulette": {
+                    "example": "any"
+                  },
+                  "platformNeeded": {
+                    "example": "any"
+                  },
+                  "streamId": {
                     "example": "any"
                   }
                 }
@@ -92,6 +101,9 @@
           "200": {
             "description": "OK"
           },
+          "400": {
+            "description": "Bad Request"
+          },
           "401": {
             "description": "Unauthorized"
           },
@@ -113,19 +125,22 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "streamId": {
+                  "email": {
                     "example": "any"
                   },
-                  "img": {
+                  "gmail": {
                     "example": "any"
                   },
-                  "domains": {
+                  "metamask": {
                     "example": "any"
                   },
-                  "profileName": {
+                  "onboardingConfig": {
                     "example": "any"
                   },
-                  "profileDescription": {
+                  "showRoulette": {
+                    "example": "any"
+                  },
+                  "platformNeeded": {
                     "example": "any"
                   }
                 }

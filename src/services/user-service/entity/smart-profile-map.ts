@@ -36,4 +36,10 @@ export class SmartProfileMap {
 
   @Column({ type: 'varchar', length: 300, nullable: true })
   bio: string;
+
+  @Column({ type: 'jsonb', nullable: true })
+  userOnboardingMap: {
+    clientAppId: string;
+    onboardingData: Record<string, any>;
+  };
 }

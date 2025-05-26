@@ -35,7 +35,7 @@ export const isClientAppAuthenticated = async (req: Request, res: Response, next
   }
   // verify secret
   const hashedSecret = crypto.createHash('sha256').update(clientSecret).digest('hex');
-  if (hashedSecret !== clientApp?.clientSecret) {
+  if (hashedSecret !== clientApp?.clientAppSecret) {
     return res.status(401).json({ error: 'Invalid Client Secret' });
   }
 
