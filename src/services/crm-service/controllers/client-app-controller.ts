@@ -318,9 +318,9 @@ clientAppRouter.get('/platforms', async (req: Request, res: Response) => {
       order: {
         name: 'ASC',
       },
-      where:{
-        isEnabled: true
-      }
+      where: {
+        isEnabled: true,
+      },
     });
 
     const pl = platforms.map((platform) => {
