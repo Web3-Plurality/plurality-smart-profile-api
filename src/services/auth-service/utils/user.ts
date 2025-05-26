@@ -1,11 +1,10 @@
 import { AppDataSource } from '../../../data-source';
 import Logger from '../../../lib/logger';
 import { ClientApp } from '../../crm-service/entity/client-app';
-import { ClientAppDev } from '../../crm-service/entity/client-app-dev';
 import { UserSession } from '../entity/user-session';
 
 const userSessionRepository = AppDataSource.getRepository(UserSession);
-const clientAppRepository = AppDataSource.getRepository(ClientAppDev);
+const clientAppRepository = AppDataSource.getRepository(ClientApp);
 
 export const AddUserSession = async (userId: string, clientAppId: string) => {
   try {

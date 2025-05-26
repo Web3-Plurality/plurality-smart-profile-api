@@ -8,7 +8,7 @@ import { faker } from '@faker-js/faker';
 import { memoryStoreProfile } from '../../../utils/global';
 import { calculateSocialScore } from '../utils/score';
 import { plainToInstance } from 'class-transformer';
-// import { SmartProfileMap } from '../entity/smart-profile-map';
+import { SmartProfileMap } from '../entity/smart-profile-map';
 import { EarlyUser } from '../entity/early-user';
 import { isAuthenticated, isValidAttestation } from '../middlewares/auth-middleware';
 import { User } from '../entity/user';
@@ -20,11 +20,10 @@ import {
 } from '@plurality-network/smart-profile-utils';
 import { createPrompt, USER_ONBOARDING_INSIGHTS_PROMPT } from '../../oauth-service/utils/ai-prompts';
 import { analyze } from '../../oauth-service/utils/groq';
-import { SmartProfileMapDev } from '../entity/smart-profile-map-dev';
 
 export const smartProfileRouter = express.Router();
 dotenv.config();
-const smartProfileMapRepository = AppDataSource.getRepository(SmartProfileMapDev);
+const smartProfileMapRepository = AppDataSource.getRepository(SmartProfileMap);
 const earlyUserRepository = AppDataSource.getRepository(EarlyUser);
 const userRepository = AppDataSource.getRepository(User);
 

@@ -1,6 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
-import { ClientAppDev } from '../../crm-service/entity/client-app-dev';
-import { Client } from '../../crm-service/entity/client';
+import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
 
 interface ConnectedProfiles {
   platformName: string;
@@ -38,4 +36,10 @@ export class SmartProfileMap {
 
   @Column({ type: 'varchar', length: 300, nullable: true })
   bio: string;
+
+  @Column({ type: 'jsonb', nullable: true })
+  userOnboardingMap: {
+    clientAppId: string;
+    onboardingData: Record<string, any>;
+  };
 }

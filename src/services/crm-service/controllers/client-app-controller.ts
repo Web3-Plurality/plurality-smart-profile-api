@@ -3,19 +3,18 @@ import * as dotenv from 'dotenv';
 import { AppDataSource } from '../../../data-source';
 import Logger from '../../../lib/logger';
 import { v2 as cloudinary } from 'cloudinary';
-import { AppType, IncentiveType } from '../entity/client-app-dev';
+import { AppType, IncentiveType } from '../entity/client-app';
 import { verifyStytchJWT } from '../middlewares/auth-middleware';
 import crypto from 'crypto';
 import { connectOrbisDidPkh, initializeOrbis, insertProfileType, updateProfileType } from '../utils/orbis';
-import { ClientApp } from '../entity/client-app';
 import { isBase64ImageDataUrl } from '../utils/helper';
-import { ClientAppDev } from '../entity/client-app-dev';
+import { ClientApp } from '../entity/client-app';
 import { UniversalProfile, UniversalProfileType } from '../entity/universal-profile';
 import { Platform } from '../entity/platforms';
 
 export const clientAppRouter = express.Router();
 dotenv.config();
-const clientAppRepository = AppDataSource.getRepository(ClientAppDev);
+const clientAppRepository = AppDataSource.getRepository(ClientApp);
 const universalProfileRepository = AppDataSource.getRepository(UniversalProfile);
 const platformRepository = AppDataSource.getRepository(Platform);
 
