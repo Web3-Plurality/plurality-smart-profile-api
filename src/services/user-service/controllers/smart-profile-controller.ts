@@ -146,10 +146,13 @@ smartProfileRouter.put(
           if (onBoardingAvailable) {
             updatedUser = {
               ...updatedUser,
-              userOnboardingMap: {
-                clientAppId: clientAppId,
-                onboardingData: userUpdateReqData?.onboardingData,
-              },
+              userOnboardingMap: [
+                ...(Array.isArray(existingUser?.userOnboardingMap) ? existingUser?.userOnboardingMap : []),
+                {
+                  clientAppId: clientAppId,
+                  onboardingData: userUpdateReqData?.onboardingData,
+                },
+              ],
             };
           }
 
