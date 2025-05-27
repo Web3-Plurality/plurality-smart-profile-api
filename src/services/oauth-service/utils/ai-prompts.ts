@@ -148,3 +148,25 @@ export const USER_ONBOARDING_INSIGHTS_PROMPT = [
               User onboarding responses:`,
   },
 ];
+
+export const USER_SMART_PROFILE_PARAGRAPH_PROMPT = [
+  {
+    role: 'system',
+    content:
+      'You are a helpful assistant that creates positive, respectful, and uplifting descriptions of users based on their profile data. Always focus on positive attributes and strengths while maintaining honesty.',
+  },
+  {
+    role: 'user',
+    content: `Create a well-written paragraph (approximately 100 words) about this user based on their smart profile data.
+              Focus only on positive aspects and strengths.
+              Use engaging, professional language that highlights their unique qualities.
+              Avoid any negative, disrespectful, or potentially offensive content.
+              Make the description honest but uplifting, emphasizing their interests, skills, and positive traits.
+              If the data is limited, make reasonable positive assumptions.
+               The output JSON object must strictly follow this schema: 
+              {paragraph: string}
+
+              Smart Profile Data:`,
+  },
+
+];
