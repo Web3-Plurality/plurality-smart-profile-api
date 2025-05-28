@@ -1,5 +1,5 @@
 import express, { Request, Response } from 'express';
-import { isClientAppAuthenticated, isValidUserJwt } from '../middlewares/auth-middleware';
+import { isAuthenticated, isClientAppAuthenticated, isValidUserJwt } from '../middlewares/auth-middleware';
 import Logger from '../../../lib/logger';
 import { AppDataSource } from '../../../data-source';
 import { User } from '../entity/user';
@@ -53,8 +53,8 @@ function extractAnalysisData(smartProfile: SmartProfile): any {
   return {
     username: smartProfile.username,
     bio: smartProfile.bio,
-    connectedPlatforms: smartProfile.connectedPlatforms,
-    scores: smartProfile.scores,
+    // connectedPlatforms: smartProfile.connectedPlatforms,
+    // scores: smartProfile.scores,
     interests: [
       ...(smartProfile.privateData.claims.interests || []),
       ...(smartProfile.privateData.attestedCred.interests || []),
@@ -76,6 +76,7 @@ function extractAnalysisData(smartProfile: SmartProfile): any {
 
 userRouter.post(
   '/analyse',
+  isAuthenticated,
   [
     body('smartProfile').custom((value) => {
       // Ensure the object is an instance of SmartProfile

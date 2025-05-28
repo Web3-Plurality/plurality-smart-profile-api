@@ -157,11 +157,11 @@ export const USER_SMART_PROFILE_PARAGRAPH_PROMPT = [
   },
   {
     role: 'user',
-    content: `Create a well-written paragraph (maximum 65 words and minimum 50 words) about this user based on their smart profile data.
-              Focus only on positive aspects and strengths.
-              Use engaging, professional language that highlights their unique qualities.
+    content: `Create a well-written paragraph (maximum 65 words and minimum 50 words) about you based on your smart profile data.
+              Focus only on your positive aspects and strengths.
+              Use engaging, professional language that highlights your unique qualities.
               Avoid any negative, disrespectful, or potentially offensive content.
-              Make the description honest but uplifting, emphasizing their interests, skills, and positive traits.
+              Make the description honest but uplifting, emphasizing your interests, skills, and positive traits.
               If the data is limited, make reasonable positive assumptions.
                The output JSON object must strictly follow this schema: 
               {paragraph: string}
