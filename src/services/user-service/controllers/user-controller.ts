@@ -55,48 +55,63 @@ function extractAnalysisData(smartProfile: SmartProfile): any {
     bio: smartProfile.bio,
     connectedPlatforms: smartProfile.connectedPlatforms,
     scores: smartProfile.scores,
-    interests: [...(smartProfile.privateData.claims.interests || []), ...(smartProfile.privateData.attestedCred.interests || [])],
-    reputationTags: [...(smartProfile.privateData.claims.reputationTags || []), ...(smartProfile.privateData.attestedCred.reputationTags || [])],
-    badges: [...(smartProfile.privateData.claims.badges || []), ...(smartProfile.privateData.attestedCred.badges || [])],
-    collections: [...(smartProfile.privateData.claims.collections || []), ...(smartProfile.privateData.attestedCred.collections || [])],
-
+    interests: [
+      ...(smartProfile.privateData.claims.interests || []),
+      ...(smartProfile.privateData.attestedCred.interests || []),
+    ],
+    reputationTags: [
+      ...(smartProfile.privateData.claims.reputationTags || []),
+      ...(smartProfile.privateData.attestedCred.reputationTags || []),
+    ],
+    badges: [
+      ...(smartProfile.privateData.claims.badges || []),
+      ...(smartProfile.privateData.attestedCred.badges || []),
+    ],
+    collections: [
+      ...(smartProfile.privateData.claims.collections || []),
+      ...(smartProfile.privateData.attestedCred.collections || []),
+    ],
   };
 }
 
-userRouter.post('/analyse',[
-  body('smartProfile').custom((value) => {
-    // Ensure the object is an instance of SmartProfile
-    if (!(plainToInstance(SmartProfile, JSON.parse(JSON.stringify(value))) instanceof SmartProfile)) {
-      throw new Error('smartProfile must be an instance of SmartProfile');
-    }
-    return true;
-  }),
-], async (req: Request, res: Response) => {
+userRouter.post(
+  '/analyse',
+  [
+    body('smartProfile').custom((value) => {
+      // Ensure the object is an instance of SmartProfile
+      if (!(plainToInstance(SmartProfile, JSON.parse(JSON.stringify(value))) instanceof SmartProfile)) {
+        throw new Error('smartProfile must be an instance of SmartProfile');
+      }
+      return true;
+    }),
+  ],
+  async (req: Request, res: Response) => {
     // #swagger.tags = ['Users']
-  const { smartProfile: reqSmartProfile } = req.body;
+    const { smartProfile: reqSmartProfile } = req.body;
 
-  if (Object.keys(reqSmartProfile).length === 0) {
-    return res.status(400).json({ error: 'smartProfile is required' });
-  }
-  Logger.info(`Analyzing smart profile`);
-  const smartProfile = normalizeSmartProfile(plainToInstance(SmartProfile, reqSmartProfile));
-  
-  try {
-    // Extract only relevant fields from smart profile for analysis
-    const relevantData = extractAnalysisData(smartProfile);
-    
-    // Prepare the prompt with only relevant smart profile data
-    const prompt = createPrompt(USER_SMART_PROFILE_PARAGRAPH_PROMPT, JSON.stringify(relevantData));
-    console.log(prompt);
-    // Analyze the smart profile with Groq
-    const result = await analyze(prompt);
-    
-    return res.status(200).json({
-      success: true,
-      paragraph: result?.paragraph || "Could not generate a paragraph at this time.",
-    });
-  } catch (error) {
-    Logger.error('Error analyzing smart profile:', error);
-    return res.status(500).json({ error: 'Failed to analyze smart profile' });
-  }
-});
+    if (Object.keys(reqSmartProfile).length === 0) {
+      return res.status(400).json({ error: 'smartProfile is required' });
+    }
+    Logger.info(`Analyzing smart profile`);
+    const smartProfile = normalizeSmartProfile(plainToInstance(SmartProfile, reqSmartProfile));
+
+    try {
+      // Extract only relevant fields from smart profile for analysis
+      const relevantData = extractAnalysisData(smartProfile);
+
+      // Prepare the prompt with only relevant smart profile data
+      const prompt = createPrompt(USER_SMART_PROFILE_PARAGRAPH_PROMPT, JSON.stringify(relevantData));
+      console.log(prompt);
+      // Analyze the smart profile with Groq
+      const result = await analyze(prompt);
+
+      return res.status(200).json({
+        success: true,
+        paragraph: result?.paragraph || 'Could not generate a paragraph at this time.',
+      });
+    } catch (error) {
+      Logger.error('Error analyzing smart profile:', error);
+      return res.status(500).json({ error: 'Failed to analyze smart profile' });
+    }
+  },
+);
