@@ -157,7 +157,7 @@ export const USER_SMART_PROFILE_PARAGRAPH_PROMPT = [
   },
   {
     role: 'user',
-    content: `Create a well-written paragraph (maximum 65 words and minimum 50 words) about you based on your smart profile data.
+    content: `Create a well-written paragraph (maximum 65 words and minimum 50 words) about the user in second person language based on given smart profile data.
               Focus only on your positive aspects and strengths.
               Use engaging, professional language that highlights your unique qualities.
               Avoid any negative, disrespectful, or potentially offensive content.
