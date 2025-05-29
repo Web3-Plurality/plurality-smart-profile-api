@@ -156,8 +156,8 @@ smartProfileRouter.put(
                 userOnboardingMap: [
                   ...(Array.isArray(existingUser?.userOnboardingMap) ? existingUser?.userOnboardingMap : []),
                   {
-                  clientAppId: clientAppId,
-                  onboardingData: userUpdateReqData?.onboardingData,
+                    clientAppId: clientAppId,
+                    onboardingData: userUpdateReqData?.onboardingData,
                   },
                 ],
               };
@@ -167,15 +167,17 @@ smartProfileRouter.put(
               updatedUser = {
                 ...updatedUser,
                 userOnboardingMap: [
-                  ...(Array.isArray(existingUser?.userOnboardingMap) ? existingUser?.userOnboardingMap : []).map(item => {
-                    if (item.clientAppId === clientAppId) {
-                      return {
-                        ...item,
-                        onboardingData: userUpdateReqData?.onboardingData
-                      };
-                    }
-                    return item;
-                  }),
+                  ...(Array.isArray(existingUser?.userOnboardingMap) ? existingUser?.userOnboardingMap : []).map(
+                    (item) => {
+                      if (item.clientAppId === clientAppId) {
+                        return {
+                          ...item,
+                          onboardingData: userUpdateReqData?.onboardingData,
+                        };
+                      }
+                      return item;
+                    },
+                  ),
                 ],
               };
             }
@@ -230,7 +232,6 @@ smartProfileRouter.put(
     }
   },
 );
-
 
 // body => { smartProfile: SmartProfile }
 // header => { Authorization: Bearer token. x-profile-type-stream-id }
