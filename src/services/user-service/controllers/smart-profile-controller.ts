@@ -144,12 +144,13 @@ smartProfileRouter.put(
           };
 
           if (onBoardingAvailable) {
-            // check if the onboarding data is already present in the userOnboardingMap
-            const onboardingData = existingUser?.userOnboardingMap?.find(
-              (item: any) => item.clientAppId === clientAppId,
-            );
-
-            if (!onboardingData) {
+            // check if the onboarding data for this client is already present in the userOnboardingMap
+            const previousOnboardingData = Array.isArray(existingUser?.userOnboardingMap)
+              ? existingUser.userOnboardingMap.find((item) => item.clientAppId === clientAppId)
+              : undefined;
+            // if onboarding data for this client is not present then we add it
+            // this is the first time onboarding data is being added for this client
+            if (!previousOnboardingData) {
               updatedUser = {
                 ...updatedUser,
                 userOnboardingMap: [
@@ -157,25 +158,27 @@ smartProfileRouter.put(
                   {
                   clientAppId: clientAppId,
                   onboardingData: userUpdateReqData?.onboardingData,
-                },
-              ],
-            };
-          }
-          else {
-            updatedUser = {
-              ...updatedUser,
-              userOnboardingMap: [
-                ...(Array.isArray(existingUser?.userOnboardingMap) ? existingUser?.userOnboardingMap : []).map(item => {
-                  if (item.clientAppId === clientAppId) {
-                    return {
-                      ...item,
-                      onboardingData: userUpdateReqData?.onboardingData
-                    };
-                  }
-                  return item;
-                }),
-              ],
-            };
+                  },
+                ],
+              };
+            }
+            // if onboarding data is already present for this client then we overwrite it
+            else {
+              updatedUser = {
+                ...updatedUser,
+                userOnboardingMap: [
+                  ...(Array.isArray(existingUser?.userOnboardingMap) ? existingUser?.userOnboardingMap : []).map(item => {
+                    if (item.clientAppId === clientAppId) {
+                      return {
+                        ...item,
+                        onboardingData: userUpdateReqData?.onboardingData
+                      };
+                    }
+                    return item;
+                  }),
+                ],
+              };
+            }
           }
           // Update the existing profile
           await smartProfileMapRepository.update(
@@ -189,7 +192,6 @@ smartProfileRouter.put(
               id: req?.user?.id,
             },
           });
-
           // get insights from user onboarding Questions
           if (onBoardingAvailable) {
             Logger.info(`Analyzing user onboarding insights`, userUpdateReqData?.onboardingData);
@@ -221,7 +223,7 @@ smartProfileRouter.put(
         Logger.info(`This user with this profile does not exist!`);
         return res.status(404).json({ exists: false });
       }
-    } }catch (e) {
+    } catch (e) {
       // If an error occurs during the database query, return an error response
       Logger.error(`Fatal error due to unknown reason: ${JSON.stringify(e)}`);
       return res.status(500).json({ error: 'An error occurred while processing your request' });
