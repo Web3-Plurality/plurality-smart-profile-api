@@ -88,6 +88,9 @@ userRouter.post(
   ],
   async (req: Request, res: Response) => {
     // #swagger.tags = ['Users']
+    /* #swagger.security = [{
+            "bearerAuth": []
+    }] */
     const { smartProfile: reqSmartProfile } = req.body;
 
     if (Object.keys(reqSmartProfile).length === 0) {
