@@ -144,15 +144,44 @@ smartProfileRouter.put(
           };
 
           if (onBoardingAvailable) {
-            updatedUser = {
-              ...updatedUser,
-              userOnboardingMap: {
-                clientAppId: clientAppId,
-                onboardingData: userUpdateReqData?.onboardingData,
-              },
-            };
+            // check if the onboarding data for this client is already present in the userOnboardingMap
+            const previousOnboardingData = Array.isArray(existingUser?.userOnboardingMap)
+              ? existingUser.userOnboardingMap.find((item) => item.clientAppId === clientAppId)
+              : undefined;
+            // if onboarding data for this client is not present then we add it
+            // this is the first time onboarding data is being added for this client
+            if (!previousOnboardingData) {
+              updatedUser = {
+                ...updatedUser,
+                userOnboardingMap: [
+                  ...(Array.isArray(existingUser?.userOnboardingMap) ? existingUser?.userOnboardingMap : []),
+                  {
+                    clientAppId: clientAppId,
+                    onboardingData: userUpdateReqData?.onboardingData,
+                  },
+                ],
+              };
+            }
+            // if onboarding data is already present for this client then we overwrite it
+            else {
+              updatedUser = {
+                ...updatedUser,
+                userOnboardingMap: [
+                  ...(Array.isArray(existingUser?.userOnboardingMap) ? existingUser?.userOnboardingMap : []).map(
+                    (item) => {
+                      if (item.clientAppId === clientAppId) {
+                        return {
+                          ...item,
+                          onboardingData: userUpdateReqData?.onboardingData,
+                        };
+                      }
+                      return item;
+                    },
+                  ),
+                ],
+              };
+            }
           }
-
           // Update the existing profile
           await smartProfileMapRepository.update(
             { id: existingUser.id, profileTypeStreamId: profileTypeStreamId },
@@ -165,7 +194,6 @@ smartProfileRouter.put(
               id: req?.user?.id,
             },
           });
-
           // get insights from user onboarding Questions
           if (onBoardingAvailable) {
             Logger.info(`Analyzing user onboarding insights`, userUpdateReqData?.onboardingData);
