@@ -136,7 +136,7 @@ authGoogleRouter.post('/event', hasValidEventHeader, hasValidAccessTokenHeader, 
       // this is stytch workflow so we need to send a event to client to redirect via stytch
       const emailId = memoryStoreToken.get(req?.accessTokenID);
       serverSentEventResponse.write(`data: {"message":"received", "app":"google", "emailId":"${emailId}"}\n\n`);
-      Logger.info(` Server Side Event has been sent successfully`);
+      Logger.info(`Server Side Event has been sent successfully`);
       memoryStoreSSE.delete(req?.sseID);
       memoryStoreSSE.delete(req?.accessTokenID);
       return res.status(200).json({ message: 'success' });
