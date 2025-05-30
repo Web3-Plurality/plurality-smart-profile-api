@@ -47,7 +47,6 @@ userRouter.post('/validate', isValidUserJwt, isClientAppAuthenticated, async (re
   }
 });
 
-
 userRouter.post(
   '/analyse',
   isAuthenticated,

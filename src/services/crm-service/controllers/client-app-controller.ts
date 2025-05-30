@@ -385,8 +385,9 @@ clientAppRouter.get('/:id', async (req: Request, res: Response) => {
     if (domains?.includes(origin)) {
       Logger.info(`clientApp fetched: ${clientAppId}`);
       // for only light theme for now
+      const { clientAppSecret, ...rest } = data;
       const clientApp = {
-        ...data,
+        ...rest,
         logo: data?.logos?.light || data?.logos?.dark,
       };
       return res.status(200).json({ data: clientApp });
