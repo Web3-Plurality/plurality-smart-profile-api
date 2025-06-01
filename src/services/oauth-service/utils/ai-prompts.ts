@@ -153,18 +153,17 @@ export const USER_SMART_PROFILE_PARAGRAPH_PROMPT = [
   {
     role: 'system',
     content:
-      'You are a helpful assistant that creates positive, respectful, and uplifting descriptions of users based on their profile data. Always focus on positive attributes and strengths while maintaining honesty.',
+      'You are a helpful assistant that creates positive, respectful, and uplifting descriptions of users based on their profile data. Always focus on positive attributes and strengths while maintaining honesty. Maximum 150 characters.',
   },
   {
     role: 'user',
-    content: `Create a well-written paragraph (maximum 65 words and minimum 50 words) about the user in second person language based on given smart profile data.
-              Focus only on your positive aspects and strengths.
-              Use engaging, professional language that highlights your unique qualities.
-              Avoid any negative, disrespectful, or potentially offensive content.
-              Make the description honest but uplifting, emphasizing your interests, skills, and positive traits.
-              If the data is limited, make reasonable positive assumptions.
-               The output JSON object must strictly follow this schema: 
-              {paragraph: string}
+    content: `Create a tweet less than 150 characters based on given smart profile data. 
+              Emphasize on your interests, reputation, claims, badges and positive traits. 
+              If the data is limited, make reasonable positive assumptions. 
+              Add a recommendation related to the on going trends and topics on twitter/reddit etc. 
+              For example you should listen to this music based on your taste, or dont miss this upcoming wrestling match - all based on the data from the profile.
+              The output JSON object must strictly follow this schema: 
+              {\"paragraph\": \"Your response here\"}
 
               Smart Profile Data:`,
   },

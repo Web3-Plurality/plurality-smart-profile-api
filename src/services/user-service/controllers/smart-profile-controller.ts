@@ -48,7 +48,7 @@ smartProfileRouter.put(
   isValidAttestation,
   [
     body('data.username').optional().trim().isLength({ max: 50 }),
-    body('data.bio').optional().trim().isLength({ max: 300 }),
+    body('data.bio').optional().trim().isLength({ max: 3000 }),
     body('smartProfile').custom((value) => {
       if (Object.keys(value).length === 0) {
         throw new Error('smartProfile must not be empty');

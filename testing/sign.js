@@ -8,7 +8,7 @@ const privateKey = process.env.PRIVATE_KEY;
 const wallet = new ethers.Wallet(privateKey);
 
 // The message you want to sign
-const nonce = "1FdDD2WwEcYTsvWbD";
+const nonce = "0NeGxcsLBAI7cF3PH";
 const address="0x843c97F8A229C7dF8667b6C0867f4c1732685707"
 const statement="I am the owner of this address"
 const domain = "localhost";
