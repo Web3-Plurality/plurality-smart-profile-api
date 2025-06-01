@@ -34,7 +34,7 @@ export class SmartProfileMap {
   @Column({ type: 'varchar', nullable: true })
   avatar: string;
 
-  @Column({ type: 'varchar', length: 300, nullable: true })
+  @Column({ type: 'varchar', length: 3000, nullable: true })
   bio: string;
 
   @Column({ type: 'jsonb', nullable: true })

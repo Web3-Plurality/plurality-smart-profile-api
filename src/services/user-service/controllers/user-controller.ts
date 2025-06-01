@@ -8,7 +8,7 @@ import { plainToInstance } from 'class-transformer';
 import { normalizeSmartProfile, SmartProfile } from '@plurality-network/smart-profile-utils';
 import { body } from 'express-validator';
 import { createPrompt, USER_SMART_PROFILE_PARAGRAPH_PROMPT } from '../../oauth-service/utils/ai-prompts';
-import { analyze } from '../../oauth-service/utils/groq';
+import { analyze, analyzeLlama70b } from '../../oauth-service/utils/groq';
 import { extractAnalysisData } from '../utils/helper';
 const userRepository = AppDataSource.getRepository(User);
 const userSessionRepository = AppDataSource.getRepository(UserSession);
@@ -80,7 +80,7 @@ userRouter.post(
       const prompt = createPrompt(USER_SMART_PROFILE_PARAGRAPH_PROMPT, JSON.stringify(relevantData));
       console.log(prompt);
       // Analyze the smart profile with Groq
-      const result = await analyze(prompt);
+      const result = await analyzeLlama70b(prompt);
 
       return res.status(200).json({
         success: true,
