@@ -1,4 +1,5 @@
-export function createPrompt(prompt: any, content: any) {
+export function createPrompt(basePrompt: any, content: any) {
+  const prompt = JSON.parse(JSON.stringify(basePrompt)); // deep copy
   if (typeof content === 'object') {
     const concatenatedCaptions = content.map((item: any) => item.caption).join(' ');
     prompt[1].content += '\n' + concatenatedCaptions;
