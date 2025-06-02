@@ -158,8 +158,8 @@ export const USER_SMART_PROFILE_PARAGRAPH_PROMPT = [
   },
   {
     role: 'user',
-    content: `Create a tweet less than 150 characters based on given smart profile data.Dont add '@' to the username.
-              Emphasize on your interests, reputation, claims, badges and positive traits. 
+    content: `Create a tweet less than 150 characters based on given smart profile data.Dont add the username.
+              Emphasize on best thing about the person based on the profile data. Apply MBTI personality types and Gallup StrengthsFinder insights concepts. 
               If the data is limited, make reasonable positive assumptions. 
               Add a recommendation related to the on going trends and topics on twitter/reddit etc. 
               For example you should listen to this music based on your taste, or dont miss this upcoming wrestling match - all based on the data from the profile.
