@@ -79,13 +79,20 @@ userRouter.post(
       // Prepare the prompt with only relevant smart profile data
       const prompt = createPrompt(USER_SMART_PROFILE_PARAGRAPH_PROMPT, JSON.stringify(relevantData));
       console.log(prompt);
-      // Analyze the smart profile with Groq
-      const result = await analyzeLlama70b(prompt);
-
-      return res.status(200).json({
-        success: true,
-        paragraph: result?.paragraph || 'Could not generate a paragraph at this time.',
-      });
+      const MAX_RETRIES = 3; // Maximum number of retries
+      for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+        try {
+          // Analyze the smart profile with Groq
+          const result = await analyzeLlama70b(prompt);
+          return res.status(200).json({
+            success: true,
+            paragraph: result?.paragraph || 'Could not generate a paragraph at this time.',
+          });
+        } catch (error) {
+          console.error(`Attempt ${attempt} failed. Retrying in 5 minutes...`, error);
+        }
+      }
+      throw new Error(`All ${MAX_RETRIES} attempts failed.}`);
     } catch (error) {
       Logger.error('Error analyzing smart profile:', error);
       return res.status(500).json({ error: 'Failed to analyze smart profile' });

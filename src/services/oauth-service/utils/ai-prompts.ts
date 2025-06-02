@@ -1,4 +1,5 @@
-export function createPrompt(prompt: any, content: any) {
+export function createPrompt(basePrompt: any, content: any) {
+  const prompt = JSON.parse(JSON.stringify(basePrompt)); // deep copy
   if (typeof content === 'object') {
     const concatenatedCaptions = content.map((item: any) => item.caption).join(' ');
     prompt[1].content += '\n' + concatenatedCaptions;
@@ -157,7 +158,7 @@ export const USER_SMART_PROFILE_PARAGRAPH_PROMPT = [
   },
   {
     role: 'user',
-    content: `Create a tweet less than 150 characters based on given smart profile data. 
+    content: `Create a tweet less than 150 characters based on given smart profile data.Dont add '@' to the username.
               Emphasize on your interests, reputation, claims, badges and positive traits. 
               If the data is limited, make reasonable positive assumptions. 
               Add a recommendation related to the on going trends and topics on twitter/reddit etc. 
