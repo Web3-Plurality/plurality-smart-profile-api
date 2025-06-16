@@ -33,6 +33,9 @@ import { sseRouter } from './services/oauth-service/controllers/sse-controller';
 // crm service routers
 import { clientRouter } from './services/crm-service/controllers/client-controller';
 import { clientAppRouter } from './services/crm-service/controllers/client-app-controller';
+// orbis-map service routers
+import { profileTypeRouter } from './services/orbis-map-service/controller/profile-type-controller';
+import { smartProfileOrbisRouter } from './services/orbis-map-service/controller/smart-profile-controller';
 // Lit SDK
 import * as LitJsSdk from '@lit-protocol/lit-node-client';
 import { LitNetwork } from '@lit-protocol/constants';
@@ -73,6 +76,10 @@ app.use('/register-event', sseRouter);
 // crm service router
 app.use('/crm/client-app', clientAppRouter);
 app.use('/crm/client', clientRouter);
+
+// orbis-map service router
+app.use('/orbis-map/profile-types', profileTypeRouter);
+app.use('/orbis-map/smart-profiles', smartProfileOrbisRouter);
 
 // swagger router
 app.use('/docs-wallet', swaggerUi.serve, (req: any, res: any, next: any) =>
