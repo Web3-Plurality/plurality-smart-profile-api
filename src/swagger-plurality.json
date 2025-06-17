@@ -1281,6 +1281,9 @@
                   },
                   "privateData": {
                     "example": "any"
+                  },
+                  "userDid": {
+                    "example": "any"
                   }
                 }
               }
@@ -1398,6 +1401,9 @@
                   },
                   "privateData": {
                     "example": "any"
+                  },
+                  "userDid": {
+                    "example": "any"
                   }
                 }
               }
@@ -1413,6 +1419,46 @@
         "parameters": [
           {
             "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/orbis-map/smart-profiles/by-mapping/{profileTypeId}/{userDid}": {
+      "get": {
+        "tags": [
+          "Smart Profile Orbis"
+        ],
+        "description": "",
+        "parameters": [
+          {
+            "name": "profileTypeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userDid",
             "in": "path",
             "required": true,
             "schema": {

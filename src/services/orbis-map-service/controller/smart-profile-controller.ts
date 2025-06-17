@@ -1,6 +1,7 @@
 import express, { Request, Response } from 'express';
 import { AppDataSource } from '../../../data-source';
 import { SmartProfileOrbis } from '../entity/smart-profile';
+import { ProfileTypeSmartProfileMap } from '../entity/profile-type-smart-profile-map';
 import Logger from '../../../lib/logger';
 import * as dotenv from 'dotenv';
 
@@ -10,6 +11,8 @@ export const smartProfileOrbisRouter = express.Router();
 
 // Get the SmartProfileOrbis repository
 const smartProfileOrbisRepository = AppDataSource.getRepository(SmartProfileOrbis);
+// Get the ProfileTypeSmartProfileMap repository
+const profileTypeSmartProfileMapRepository = AppDataSource.getRepository(ProfileTypeSmartProfileMap);
 
 // POST /smart-profiles - Insert a new smart profile
 smartProfileOrbisRouter.post('/', async (req: Request, res: Response) => {
@@ -26,6 +29,7 @@ smartProfileOrbisRouter.post('/', async (req: Request, res: Response) => {
       extendedPublicData,
       attestation,
       privateData,
+      userDid,
     } = req.body;
 
     // Create new smart profile
@@ -45,12 +49,52 @@ smartProfileOrbisRouter.post('/', async (req: Request, res: Response) => {
     // Save to database
     const savedSmartProfile = await smartProfileOrbisRepository.save(newSmartProfile);
 
+    // Create mapping entry if userDid and profileTypeStreamId are provided
+    let mappingCreated = false;
+    if (userDid && profileTypeStreamId) {
+      try {
+        // Check if mapping already exists
+        const existingMapping = await profileTypeSmartProfileMapRepository.findOne({
+          where: {
+            userDid: userDid,
+            profileTypeId: profileTypeStreamId,
+          },
+        });
+
+        if (!existingMapping) {
+          // Create new mapping
+          const newMapping = profileTypeSmartProfileMapRepository.create({
+            userDid: userDid,
+            profileTypeId: profileTypeStreamId,
+            smartProfileId: savedSmartProfile.id,
+          });
+
+          await profileTypeSmartProfileMapRepository.save(newMapping);
+          mappingCreated = true;
+          Logger.info(`Profile mapping created for userDid: ${userDid}, profileTypeId: ${profileTypeStreamId}, smartProfileId: ${savedSmartProfile.id}`);
+        } else {
+          Logger.info(`Profile mapping already exists for userDid: ${userDid}, profileTypeId: ${profileTypeStreamId}`);
+        }
+      } catch (mappingError: any) {
+        Logger.error(`Error creating profile mapping: ${JSON.stringify(mappingError)}`);
+        // Don't fail the entire request if mapping creation fails
+      }
+    }
+
     Logger.info(`Smart profile created successfully with ID: ${savedSmartProfile.id}`);
 
     return res.status(201).json({
       success: true,
       message: 'Smart profile created successfully',
       data: savedSmartProfile,
+      mappingCreated: mappingCreated,
+      ...(userDid && profileTypeStreamId && {
+        mapping: {
+          userDid: userDid,
+          profileTypeId: profileTypeStreamId,
+          smartProfileId: savedSmartProfile.id,
+        }
+      }),
     });
   } catch (error: any) {
     Logger.error(`Error creating smart profile: ${JSON.stringify(error)}`);
@@ -247,6 +291,72 @@ smartProfileOrbisRouter.delete('/:id', async (req: Request, res: Response) => {
     Logger.error(`Error deleting smart profile: ${JSON.stringify(error)}`);
     return res.status(500).json({
       error: 'An error occurred while deleting the smart profile',
+    });
+  }
+});
+
+// GET /smart-profiles/by-mapping/:profileTypeId/:userDid - Get smart profile by userDid and profileTypeId
+smartProfileOrbisRouter.get('/by-mapping/:profileTypeId/:userDid', async (req: Request, res: Response) => {
+  // #swagger.tags = ['Smart Profile Orbis']
+  try {
+    const { profileTypeId, userDid } = req.params;
+
+    // Validate UUID format for profileTypeId
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(profileTypeId)) {
+      return res.status(400).json({
+        error: 'Invalid profileTypeId format. Please provide a valid UUID.',
+      });
+    }
+
+    // Validate userDid is provided
+    if (!userDid || userDid.trim() === '') {
+      return res.status(400).json({
+        error: 'userDid is required and cannot be empty.',
+      });
+    }
+
+    // Find the mapping between userDid and profileTypeId
+    const profileMapping = await profileTypeSmartProfileMapRepository.findOne({
+      where: {
+        userDid: userDid,
+        profileTypeId: profileTypeId,
+      },
+      relations: ['smartProfile'], // Include the related smart profile
+    });
+
+    if (!profileMapping) {
+      return res.status(404).json({
+        error: 'No smart profile mapping found for the provided userDid and profileTypeId',
+      });
+    }
+
+    // If mapping exists, get the smart profile
+    const smartProfile = await smartProfileOrbisRepository.findOne({
+      where: { id: profileMapping.smartProfileId },
+    });
+
+    if (!smartProfile) {
+      return res.status(404).json({
+        error: 'Smart profile not found despite mapping existing',
+      });
+    }
+
+    Logger.info(`Retrieved smart profile via mapping - userDid: ${userDid}, profileTypeId: ${profileTypeId}, smartProfileId: ${smartProfile.id}`);
+
+    return res.status(200).json({
+      success: true,
+      data: smartProfile,
+      mapping: {
+        userDid: profileMapping.userDid,
+        profileTypeId: profileMapping.profileTypeId,
+        smartProfileId: profileMapping.smartProfileId,
+      },
+    });
+  } catch (error: any) {
+    Logger.error(`Error retrieving smart profile by mapping: ${JSON.stringify(error)}`);
+    return res.status(500).json({
+      error: 'An error occurred while retrieving the smart profile by mapping',
     });
   }
 });
