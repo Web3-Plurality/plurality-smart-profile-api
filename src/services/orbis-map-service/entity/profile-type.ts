@@ -16,4 +16,4 @@ export class ProfileTypeOrbis {
 
   @Column({ nullable: true, default: '1.0' })
   version: string;
-} 
+}
