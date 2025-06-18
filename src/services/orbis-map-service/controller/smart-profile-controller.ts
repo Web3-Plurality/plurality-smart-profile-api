@@ -37,13 +37,13 @@ smartProfileOrbisRouter.post('/', async (req: Request, res: Response) => {
       username: username || '',
       avatar: avatar || '',
       bio: bio || '',
-      scores: scores || '',
-      connectedPlatforms: connectedPlatforms || '',
+      scores: JSON.stringify(scores) || '',
+      connectedPlatforms: JSON.stringify(connectedPlatforms) || '',
       profileTypeStreamId: profileTypeStreamId || '',
       version: version || '2.0',
-      extendedPublicData: extendedPublicData || '',
-      attestation: attestation || '',
-      privateData: privateData || '',
+      extendedPublicData: JSON.stringify(extendedPublicData) || '',
+      attestation: JSON.stringify(attestation) || '',
+      privateData: JSON.stringify(privateData) || '',
     });
 
     // Save to database
@@ -71,7 +71,9 @@ smartProfileOrbisRouter.post('/', async (req: Request, res: Response) => {
 
           await profileTypeSmartProfileMapRepository.save(newMapping);
           mappingCreated = true;
-          Logger.info(`Profile mapping created for userDid: ${userDid}, profileTypeId: ${profileTypeStreamId}, smartProfileId: ${savedSmartProfile.id}`);
+          Logger.info(
+            `Profile mapping created for userDid: ${userDid}, profileTypeId: ${profileTypeStreamId}, smartProfileId: ${savedSmartProfile.id}`,
+          );
         } else {
           Logger.info(`Profile mapping already exists for userDid: ${userDid}, profileTypeId: ${profileTypeStreamId}`);
         }
@@ -88,13 +90,14 @@ smartProfileOrbisRouter.post('/', async (req: Request, res: Response) => {
       message: 'Smart profile created successfully',
       data: savedSmartProfile,
       mappingCreated: mappingCreated,
-      ...(userDid && profileTypeStreamId && {
-        mapping: {
-          userDid: userDid,
-          profileTypeId: profileTypeStreamId,
-          smartProfileId: savedSmartProfile.id,
-        }
-      }),
+      ...(userDid &&
+        profileTypeStreamId && {
+          mapping: {
+            userDid: userDid,
+            profileTypeId: profileTypeStreamId,
+            smartProfileId: savedSmartProfile.id,
+          },
+        }),
     });
   } catch (error: any) {
     Logger.error(`Error creating smart profile: ${JSON.stringify(error)}`);
@@ -342,7 +345,9 @@ smartProfileOrbisRouter.get('/by-mapping/:profileTypeId/:userDid', async (req: R
       });
     }
 
-    Logger.info(`Retrieved smart profile via mapping - userDid: ${userDid}, profileTypeId: ${profileTypeId}, smartProfileId: ${smartProfile.id}`);
+    Logger.info(
+      `Retrieved smart profile via mapping - userDid: ${userDid}, profileTypeId: ${profileTypeId}, smartProfileId: ${smartProfile.id}`,
+    );
 
     return res.status(200).json({
       success: true,

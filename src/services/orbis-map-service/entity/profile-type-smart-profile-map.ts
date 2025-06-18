@@ -1,4 +1,13 @@
-import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn, CreateDateColumn, UpdateDateColumn, PrimaryColumn } from 'typeorm';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  ManyToOne,
+  JoinColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+  PrimaryColumn,
+} from 'typeorm';
 import { SmartProfileOrbis } from './smart-profile';
 import { ProfileTypeOrbis } from './profile-type';
 
@@ -23,5 +32,4 @@ export class ProfileTypeSmartProfileMap {
   @ManyToOne(() => ProfileTypeOrbis)
   @JoinColumn({ name: 'profileTypeId' })
   profileType: ProfileTypeOrbis;
-
 }
