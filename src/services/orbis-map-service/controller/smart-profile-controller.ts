@@ -186,7 +186,6 @@ smartProfileOrbisRouter.put('/:id', async (req: Request, res: Response) => {
       extendedPublicData,
       attestation,
       privateData,
-      userDid,
     } = req.body;
 
     // Validate UUID format
@@ -213,14 +212,14 @@ smartProfileOrbisRouter.put('/:id', async (req: Request, res: Response) => {
     if (username !== undefined) updateData.username = username;
     if (avatar !== undefined) updateData.avatar = avatar;
     if (bio !== undefined) updateData.bio = bio;
-    if (scores !== undefined) updateData.scores = scores;
-    if (connectedPlatforms !== undefined) updateData.connectedPlatforms = connectedPlatforms;
+    if (scores !== undefined) updateData.scores = JSON.stringify(scores);
+    if (connectedPlatforms !== undefined) updateData.connectedPlatforms = JSON.stringify(connectedPlatforms);
     if (profileTypeStreamId !== undefined) updateData.profileTypeStreamId = profileTypeStreamId;
     if (version !== undefined) updateData.version = version;
-    if (extendedPublicData !== undefined) updateData.extendedPublicData = extendedPublicData;
-    if (attestation !== undefined) updateData.attestation = attestation;
-    if (privateData !== undefined) updateData.privateData = privateData;
-    if (userDid !== undefined) updateData.userDid = userDid;
+    if (extendedPublicData !== undefined) updateData.extendedPublicData = JSON.stringify(extendedPublicData);
+    if (attestation !== undefined) updateData.attestation = JSON.stringify(attestation);
+    if (privateData !== undefined) updateData.privateData = JSON.stringify(privateData);
+
     // Update the smart profile
     const updateResult = await smartProfileOrbisRepository.update(id, updateData);
 
