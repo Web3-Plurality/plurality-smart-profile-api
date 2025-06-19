@@ -328,8 +328,10 @@ smartProfileOrbisRouter.get('/by-mapping/:profileTypeId/:userDid', async (req: R
     });
 
     if (!profileMapping) {
-      return res.status(404).json({
-        error: 'No smart profile mapping found for the provided userDid and profileTypeId',
+      return res.status(200).json({
+        success: true,
+        newUser: true,
+        message: 'No smart profile mapping found for the provided userDid and profileTypeId',
       });
     }
 
@@ -350,6 +352,7 @@ smartProfileOrbisRouter.get('/by-mapping/:profileTypeId/:userDid', async (req: R
 
     return res.status(200).json({
       success: true,
+      newUser: false,
       data: smartProfile,
       mapping: {
         userDid: profileMapping.userDid,
