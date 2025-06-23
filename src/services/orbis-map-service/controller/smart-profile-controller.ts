@@ -52,11 +52,12 @@ smartProfileOrbisRouter.post('/', isAuthenticated, async (req: Request, res: Res
     const savedSmartProfile = await smartProfileOrbisRepository.save(newSmartProfile);
 
     Logger.info(`Smart profile created successfully with ID: ${savedSmartProfile.id}`);
+    const { userId: id, ...smartProfileData } = savedSmartProfile;
 
     return res.status(201).json({
       success: true,
       message: 'Smart profile created successfully',
-      data: savedSmartProfile,
+      data: smartProfileData,
     });
   } catch (error: any) {
     Logger.error(`Error creating smart profile: ${JSON.stringify(error)}`);
@@ -221,7 +222,7 @@ smartProfileOrbisRouter.get('/by-mapping/:profileTypeId/:userId', async (req: Re
       `Retrieved smart profile via mapping - userId: ${userId}, profileTypeId: ${profileTypeId}, smartProfileId: ${smartProfile.id}`,
     );
 
-    const { userId, ...smartProfileData } = smartProfile;
+    const { userId: id, ...smartProfileData } = smartProfile;
     return res.status(200).json({
       success: true,
       newUser: false,
