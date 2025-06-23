@@ -12,8 +12,8 @@ export const smartProfileOrbisRouter = express.Router();
 
 // Get the SmartProfileOrbis repository
 const smartProfileOrbisRepository = AppDataSource.getRepository(SmartProfileOrbis);
-// Get the ProfileTypeSmartProfileMap repository
-const profileTypeSmartProfileMapRepository = AppDataSource.getRepository(ProfileTypeSmartProfileMap);
+// // Get the ProfileTypeSmartProfileMap repository
+// const profileTypeSmartProfileMapRepository = AppDataSource.getRepository(ProfileTypeSmartProfileMap);
 
 // POST /smart-profiles - Insert a new smart profile
 smartProfileOrbisRouter.post('/', isAuthenticated, async (req: Request, res: Response) => {
@@ -30,9 +30,9 @@ smartProfileOrbisRouter.post('/', isAuthenticated, async (req: Request, res: Res
       extendedPublicData,
       attestation,
       privateData,
-      userDid,
     } = req.body;
 
+    const userId = req.user?.id;
     // Create new smart profile
     const newSmartProfile = smartProfileOrbisRepository.create({
       username: username || '',
@@ -45,44 +45,11 @@ smartProfileOrbisRouter.post('/', isAuthenticated, async (req: Request, res: Res
       extendedPublicData: JSON.stringify(extendedPublicData) || '',
       attestation: JSON.stringify(attestation) || '',
       privateData: JSON.stringify(privateData) || '',
+      userId: userId
     });
 
     // Save to database
     const savedSmartProfile = await smartProfileOrbisRepository.save(newSmartProfile);
-
-    // Create mapping entry if userDid and profileTypeStreamId are provided
-    let mappingCreated = false;
-    if (userDid && profileTypeStreamId) {
-      try {
-        // Check if mapping already exists
-        const existingMapping = await profileTypeSmartProfileMapRepository.findOne({
-          where: {
-            userDid: userDid,
-            profileTypeId: profileTypeStreamId,
-          },
-        });
-
-        if (!existingMapping) {
-          // Create new mapping
-          const newMapping = profileTypeSmartProfileMapRepository.create({
-            userDid: userDid,
-            profileTypeId: profileTypeStreamId,
-            smartProfileId: savedSmartProfile.id,
-          });
-
-          await profileTypeSmartProfileMapRepository.save(newMapping);
-          mappingCreated = true;
-          Logger.info(
-            `Profile mapping created for userDid: ${userDid}, profileTypeId: ${profileTypeStreamId}, smartProfileId: ${savedSmartProfile.id}`,
-          );
-        } else {
-          Logger.info(`Profile mapping already exists for userDid: ${userDid}, profileTypeId: ${profileTypeStreamId}`);
-        }
-      } catch (mappingError: any) {
-        Logger.error(`Error creating profile mapping: ${JSON.stringify(mappingError)}`);
-        // Don't fail the entire request if mapping creation fails
-      }
-    }
 
     Logger.info(`Smart profile created successfully with ID: ${savedSmartProfile.id}`);
 
@@ -90,15 +57,6 @@ smartProfileOrbisRouter.post('/', isAuthenticated, async (req: Request, res: Res
       success: true,
       message: 'Smart profile created successfully',
       data: savedSmartProfile,
-      mappingCreated: mappingCreated,
-      ...(userDid &&
-        profileTypeStreamId && {
-          mapping: {
-            userDid: userDid,
-            profileTypeId: profileTypeStreamId,
-            smartProfileId: savedSmartProfile.id,
-          },
-        }),
     });
   } catch (error: any) {
     Logger.error(`Error creating smart profile: ${JSON.stringify(error)}`);
@@ -109,42 +67,42 @@ smartProfileOrbisRouter.post('/', isAuthenticated, async (req: Request, res: Res
 });
 
 // GET /smart-profiles/:id - Get a specific smart profile by ID
-smartProfileOrbisRouter.get('/:id', async (req: Request, res: Response) => {
-  // #swagger.tags = ['Smart Profile Orbis']
-  try {
-    const { id } = req.params;
+// smartProfileOrbisRouter.get('/:id', async (req: Request, res: Response) => {
+//   // #swagger.tags = ['Smart Profile Orbis']
+//   try {
+//     const { id } = req.params;
 
-    // Validate UUID format
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(id)) {
-      return res.status(400).json({
-        error: 'Invalid ID format. Please provide a valid UUID.',
-      });
-    }
+//     // Validate UUID format
+//     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+//     if (!uuidRegex.test(id)) {
+//       return res.status(400).json({
+//         error: 'Invalid ID format. Please provide a valid UUID.',
+//       });
+//     }
 
-    const smartProfile = await smartProfileOrbisRepository.findOne({
-      where: { id },
-    });
+//     const smartProfile = await smartProfileOrbisRepository.findOne({
+//       where: { id },
+//     });
 
-    if (!smartProfile) {
-      return res.status(404).json({
-        error: 'Smart profile not found',
-      });
-    }
+//     if (!smartProfile) {
+//       return res.status(404).json({
+//         error: 'Smart profile not found',
+//       });
+//     }
 
-    Logger.info(`Retrieved smart profile with ID: ${id}`);
+//     Logger.info(`Retrieved smart profile with ID: ${id}`);
 
-    return res.status(200).json({
-      success: true,
-      data: smartProfile,
-    });
-  } catch (error: any) {
-    Logger.error(`Error retrieving smart profile: ${JSON.stringify(error)}`);
-    return res.status(500).json({
-      error: 'An error occurred while retrieving the smart profile',
-    });
-  }
-});
+//     return res.status(200).json({
+//       success: true,
+//       data: smartProfile,
+//     });
+//   } catch (error: any) {
+//     Logger.error(`Error retrieving smart profile: ${JSON.stringify(error)}`);
+//     return res.status(500).json({
+//       error: 'An error occurred while retrieving the smart profile',
+//     });
+//   }
+// });
 
 // PUT /smart-profiles/:id - Update a specific smart profile
 smartProfileOrbisRouter.put('/:id', isAuthenticated, async (req: Request, res: Response) => {
@@ -226,10 +184,10 @@ smartProfileOrbisRouter.put('/:id', isAuthenticated, async (req: Request, res: R
 });
 
 // GET /smart-profiles/by-mapping/:profileTypeId/:userDid - Get smart profile by userDid and profileTypeId
-smartProfileOrbisRouter.get('/by-mapping/:profileTypeId/:userDid', async (req: Request, res: Response) => {
+smartProfileOrbisRouter.get('/by-mapping/:profileTypeId/:userId', async (req: Request, res: Response) => {
   // #swagger.tags = ['Smart Profile Orbis']
   try {
-    const { profileTypeId, userDid } = req.params;
+    const { profileTypeId, userId } = req.params;
 
     // Validate UUID format for profileTypeId
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -240,32 +198,15 @@ smartProfileOrbisRouter.get('/by-mapping/:profileTypeId/:userDid', async (req: R
     }
 
     // Validate userDid is provided
-    if (!userDid || userDid.trim() === '') {
+      if (!userId || userId.trim() === '') {
       return res.status(400).json({
-        error: 'userDid is required and cannot be empty.',
-      });
-    }
-
-    // Find the mapping between userDid and profileTypeId
-    const profileMapping = await profileTypeSmartProfileMapRepository.findOne({
-      where: {
-        userDid: userDid,
-        profileTypeId: profileTypeId,
-      },
-      relations: ['smartProfile'], // Include the related smart profile
-    });
-
-    if (!profileMapping) {
-      return res.status(200).json({
-        success: true,
-        newUser: true,
-        message: 'No smart profile mapping found for the provided userDid and profileTypeId',
+        error: 'userId is required and cannot be empty.',
       });
     }
 
     // If mapping exists, get the smart profile
     const smartProfile = await smartProfileOrbisRepository.findOne({
-      where: { id: profileMapping.smartProfileId },
+      where: { userId: userId, profileTypeStreamId: profileTypeId },
     });
 
     if (!smartProfile) {
@@ -275,18 +216,13 @@ smartProfileOrbisRouter.get('/by-mapping/:profileTypeId/:userDid', async (req: R
     }
 
     Logger.info(
-      `Retrieved smart profile via mapping - userDid: ${userDid}, profileTypeId: ${profileTypeId}, smartProfileId: ${smartProfile.id}`,
+      `Retrieved smart profile via mapping - userId: ${userId}, profileTypeId: ${profileTypeId}, smartProfileId: ${smartProfile.id}`,
     );
 
     return res.status(200).json({
       success: true,
       newUser: false,
       data: smartProfile,
-      mapping: {
-        userDid: profileMapping.userDid,
-        profileTypeId: profileMapping.profileTypeId,
-        smartProfileId: profileMapping.smartProfileId,
-      },
     });
   } catch (error: any) {
     Logger.error(`Error retrieving smart profile by mapping: ${JSON.stringify(error)}`);
@@ -295,51 +231,3 @@ smartProfileOrbisRouter.get('/by-mapping/:profileTypeId/:userDid', async (req: R
     });
   }
 });
-
-// // DELETE /smart-profiles/:id - Delete a specific smart profile
-// smartProfileOrbisRouter.delete('/:id', async (req: Request, res: Response) => {
-//   // #swagger.tags = ['Smart Profile Orbis']
-//   try {
-//     const { id } = req.params;
-
-//     // Validate UUID format
-//     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-//     if (!uuidRegex.test(id)) {
-//       return res.status(400).json({
-//         error: 'Invalid ID format. Please provide a valid UUID.',
-//       });
-//     }
-
-//     // Check if smart profile exists
-//     const existingSmartProfile = await smartProfileOrbisRepository.findOne({
-//       where: { id },
-//     });
-
-//     if (!existingSmartProfile) {
-//       return res.status(404).json({
-//         error: 'Smart profile not found',
-//       });
-//     }
-
-//     // Delete the smart profile
-//     const deleteResult = await smartProfileOrbisRepository.delete(id);
-
-//     if (deleteResult.affected === 0) {
-//       return res.status(404).json({
-//         error: 'Smart profile not found',
-//       });
-//     }
-
-//     Logger.info(`Smart profile deleted successfully with ID: ${id}`);
-
-//     return res.status(200).json({
-//       success: true,
-//       message: 'Smart profile deleted successfully',
-//     });
-//   } catch (error: any) {
-//     Logger.error(`Error deleting smart profile: ${JSON.stringify(error)}`);
-//     return res.status(500).json({
-//       error: 'An error occurred while deleting the smart profile',
-//     });
-//   }
-// });
