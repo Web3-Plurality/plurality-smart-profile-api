@@ -3,6 +3,7 @@ import { AppDataSource } from '../../../data-source';
 import { ProfileTypeOrbis } from '../entity/profile-type';
 import Logger from '../../../lib/logger';
 import * as dotenv from 'dotenv';
+import { isAuthenticated } from '../../user-service/middlewares/auth-middleware';
 
 dotenv.config();
 
@@ -11,47 +12,7 @@ export const profileTypeRouter = express.Router();
 // Get the ProfileType repository
 const profileTypeRepository = AppDataSource.getRepository(ProfileTypeOrbis);
 
-// POST /profile-types - Insert a new profile type
-profileTypeRouter.post('/', async (req: Request, res: Response) => {
-  // #swagger.tags = ['Profile Type']
-  try {
-    const { profileName, description, platforms, version = '1.0' } = req.body;
-
-    // Validate required fields
-    if (!profileName || !description) {
-      return res.status(400).json({
-        error: 'Missing required fields: profileName and description are required',
-      });
-    }
-
-    // Create new profile type
-    const newProfileType = profileTypeRepository.create({
-      profileName,
-      description,
-      platforms: JSON.stringify(platforms) || '',
-      version: version,
-    });
-
-    // Save to database
-    const savedProfileType = await profileTypeRepository.save(newProfileType);
-
-    Logger.info(`Profile type created successfully with ID: ${savedProfileType.id}`);
-
-    return res.status(201).json({
-      success: true,
-      message: 'Profile type created successfully',
-      data: savedProfileType,
-    });
-  } catch (error: any) {
-    Logger.error(`Error creating profile type: ${JSON.stringify(error)}`);
-    return res.status(500).json({
-      error: 'An error occurred while creating the profile type',
-    });
-  }
-});
-
-// GET /profile-types - Get all profile types
-profileTypeRouter.get('/', async (req: Request, res: Response) => {
+profileTypeRouter.get('/', isAuthenticated, async (req: Request, res: Response) => {
   // #swagger.tags = ['Profile Type']
   try {
     const profileTypes = await profileTypeRepository.find({
@@ -76,7 +37,7 @@ profileTypeRouter.get('/', async (req: Request, res: Response) => {
 });
 
 // GET /profile-types/:id - Get a specific profile type by ID
-profileTypeRouter.get('/:id', async (req: Request, res: Response) => {
+profileTypeRouter.get('/:id', isAuthenticated, async (req: Request, res: Response) => {
   // #swagger.tags = ['Profile Type']
   try {
     const { id } = req.params;
@@ -113,117 +74,4 @@ profileTypeRouter.get('/:id', async (req: Request, res: Response) => {
   }
 });
 
-// PUT /profile-types/:id - Update a specific profile type
-profileTypeRouter.put('/:id', async (req: Request, res: Response) => {
-  // #swagger.tags = ['Profile Type']
-  try {
-    const { id } = req.params;
-    const { profileName, description, platforms, version } = req.body;
 
-    // Validate UUID format
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(id)) {
-      return res.status(400).json({
-        error: 'Invalid ID format. Please provide a valid UUID.',
-      });
-    }
-
-    // Check if profile type exists
-    const existingProfileType = await profileTypeRepository.findOne({
-      where: { id },
-    });
-
-    if (!existingProfileType) {
-      return res.status(404).json({
-        error: 'Profile type not found',
-      });
-    }
-
-    // Validate required fields
-    if (!profileName || !description) {
-      return res.status(400).json({
-        error: 'Missing required fields: profileName and description are required',
-      });
-    }
-
-    // Update the profile type
-    const updateResult = await profileTypeRepository.update(id, {
-      profileName,
-      description,
-      platforms: JSON.stringify(platforms) || existingProfileType.platforms,
-      version: version || existingProfileType.version,
-    });
-
-    if (updateResult.affected === 0) {
-      return res.status(404).json({
-        error: 'Profile type not found or no changes made',
-      });
-    }
-
-    // Fetch the updated profile type
-    const updatedProfileType = await profileTypeRepository.findOne({
-      where: { id },
-    });
-
-    Logger.info(`Profile type updated successfully with ID: ${id}`);
-
-    return res.status(200).json({
-      success: true,
-      message: 'Profile type updated successfully',
-      data: updatedProfileType,
-    });
-  } catch (error: any) {
-    Logger.error(`Error updating profile type: ${JSON.stringify(error)}`);
-    return res.status(500).json({
-      error: 'An error occurred while updating the profile type',
-    });
-  }
-});
-
-// DELETE /profile-types/:id - Delete a specific profile type
-profileTypeRouter.delete('/:id', async (req: Request, res: Response) => {
-  // #swagger.tags = ['Profile Type']
-  try {
-    const { id } = req.params;
-
-    // Validate UUID format
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(id)) {
-      return res.status(400).json({
-        error: 'Invalid ID format. Please provide a valid UUID.',
-      });
-    }
-
-    // Check if profile type exists
-    const existingProfileType = await profileTypeRepository.findOne({
-      where: { id },
-    });
-
-    if (!existingProfileType) {
-      return res.status(404).json({
-        error: 'Profile type not found',
-      });
-    }
-
-    // Delete the profile type
-    const deleteResult = await profileTypeRepository.delete(id);
-
-    if (deleteResult.affected === 0) {
-      return res.status(404).json({
-        error: 'Profile type not found',
-      });
-    }
-
-    Logger.info(`Profile type deleted successfully with ID: ${id}`);
-
-    return res.status(200).json({
-      success: true,
-      message: 'Profile type deleted successfully',
-    });
-  } catch (error: any) {
-    Logger.error(`Error deleting profile type: ${JSON.stringify(error)}`);
-    return res.status(500).json({
-      error: 'An error occurred while deleting the profile type',
-    });
-  }
-});

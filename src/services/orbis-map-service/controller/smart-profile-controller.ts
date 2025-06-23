@@ -4,6 +4,7 @@ import { SmartProfileOrbis } from '../entity/smart-profile';
 import { ProfileTypeSmartProfileMap } from '../entity/profile-type-smart-profile-map';
 import Logger from '../../../lib/logger';
 import * as dotenv from 'dotenv';
+import { isAuthenticated } from '../../user-service/middlewares/auth-middleware';
 
 dotenv.config();
 
@@ -15,7 +16,7 @@ const smartProfileOrbisRepository = AppDataSource.getRepository(SmartProfileOrbi
 const profileTypeSmartProfileMapRepository = AppDataSource.getRepository(ProfileTypeSmartProfileMap);
 
 // POST /smart-profiles - Insert a new smart profile
-smartProfileOrbisRouter.post('/', async (req: Request, res: Response) => {
+smartProfileOrbisRouter.post('/', isAuthenticated, async (req: Request, res: Response) => {
   // #swagger.tags = ['Smart Profile Orbis']
   try {
     const {
@@ -107,30 +108,6 @@ smartProfileOrbisRouter.post('/', async (req: Request, res: Response) => {
   }
 });
 
-// GET /smart-profiles - Get all smart profiles
-smartProfileOrbisRouter.get('/', async (req: Request, res: Response) => {
-  // #swagger.tags = ['Smart Profile Orbis']
-  try {
-    const smartProfiles = await smartProfileOrbisRepository.find({
-      order: {
-        username: 'ASC',
-      },
-    });
-
-    Logger.info(`Retrieved ${smartProfiles.length} smart profiles`);
-
-    return res.status(200).json({
-      success: true,
-      data: smartProfiles,
-      count: smartProfiles.length,
-    });
-  } catch (error: any) {
-    Logger.error(`Error retrieving smart profiles: ${JSON.stringify(error)}`);
-    return res.status(500).json({
-      error: 'An error occurred while retrieving smart profiles',
-    });
-  }
-});
 
 // GET /smart-profiles/:id - Get a specific smart profile by ID
 smartProfileOrbisRouter.get('/:id', async (req: Request, res: Response) => {
@@ -171,7 +148,7 @@ smartProfileOrbisRouter.get('/:id', async (req: Request, res: Response) => {
 });
 
 // PUT /smart-profiles/:id - Update a specific smart profile
-smartProfileOrbisRouter.put('/:id', async (req: Request, res: Response) => {
+smartProfileOrbisRouter.put('/:id', isAuthenticated, async (req: Request, res: Response) => {
   // #swagger.tags = ['Smart Profile Orbis']
   try {
     const { id } = req.params;
@@ -249,54 +226,6 @@ smartProfileOrbisRouter.put('/:id', async (req: Request, res: Response) => {
   }
 });
 
-// DELETE /smart-profiles/:id - Delete a specific smart profile
-smartProfileOrbisRouter.delete('/:id', async (req: Request, res: Response) => {
-  // #swagger.tags = ['Smart Profile Orbis']
-  try {
-    const { id } = req.params;
-
-    // Validate UUID format
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(id)) {
-      return res.status(400).json({
-        error: 'Invalid ID format. Please provide a valid UUID.',
-      });
-    }
-
-    // Check if smart profile exists
-    const existingSmartProfile = await smartProfileOrbisRepository.findOne({
-      where: { id },
-    });
-
-    if (!existingSmartProfile) {
-      return res.status(404).json({
-        error: 'Smart profile not found',
-      });
-    }
-
-    // Delete the smart profile
-    const deleteResult = await smartProfileOrbisRepository.delete(id);
-
-    if (deleteResult.affected === 0) {
-      return res.status(404).json({
-        error: 'Smart profile not found',
-      });
-    }
-
-    Logger.info(`Smart profile deleted successfully with ID: ${id}`);
-
-    return res.status(200).json({
-      success: true,
-      message: 'Smart profile deleted successfully',
-    });
-  } catch (error: any) {
-    Logger.error(`Error deleting smart profile: ${JSON.stringify(error)}`);
-    return res.status(500).json({
-      error: 'An error occurred while deleting the smart profile',
-    });
-  }
-});
-
 // GET /smart-profiles/by-mapping/:profileTypeId/:userDid - Get smart profile by userDid and profileTypeId
 smartProfileOrbisRouter.get('/by-mapping/:profileTypeId/:userDid', async (req: Request, res: Response) => {
   // #swagger.tags = ['Smart Profile Orbis']
@@ -367,3 +296,53 @@ smartProfileOrbisRouter.get('/by-mapping/:profileTypeId/:userDid', async (req: R
     });
   }
 });
+
+// // DELETE /smart-profiles/:id - Delete a specific smart profile
+// smartProfileOrbisRouter.delete('/:id', async (req: Request, res: Response) => {
+//   // #swagger.tags = ['Smart Profile Orbis']
+//   try {
+//     const { id } = req.params;
+
+//     // Validate UUID format
+//     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+//     if (!uuidRegex.test(id)) {
+//       return res.status(400).json({
+//         error: 'Invalid ID format. Please provide a valid UUID.',
+//       });
+//     }
+
+//     // Check if smart profile exists
+//     const existingSmartProfile = await smartProfileOrbisRepository.findOne({
+//       where: { id },
+//     });
+
+//     if (!existingSmartProfile) {
+//       return res.status(404).json({
+//         error: 'Smart profile not found',
+//       });
+//     }
+
+//     // Delete the smart profile
+//     const deleteResult = await smartProfileOrbisRepository.delete(id);
+
+//     if (deleteResult.affected === 0) {
+//       return res.status(404).json({
+//         error: 'Smart profile not found',
+//       });
+//     }
+
+//     Logger.info(`Smart profile deleted successfully with ID: ${id}`);
+
+//     return res.status(200).json({
+//       success: true,
+//       message: 'Smart profile deleted successfully',
+//     });
+//   } catch (error: any) {
+//     Logger.error(`Error deleting smart profile: ${JSON.stringify(error)}`);
+//     return res.status(500).json({
+//       error: 'An error occurred while deleting the smart profile',
+//     });
+//   }
+// });
+
+

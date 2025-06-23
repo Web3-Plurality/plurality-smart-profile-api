@@ -6,10 +6,10 @@ import { v2 as cloudinary } from 'cloudinary';
 import { AppType, IncentiveType } from '../entity/client-app';
 import { verifyStytchJWT } from '../middlewares/auth-middleware';
 import crypto from 'crypto';
-import { connectOrbisDidPkh, initializeOrbis, insertProfileType, updateProfileType } from '../utils/orbis';
+import { insertProfileType, updateProfileType } from '../utils/orbis-map';
 import { isBase64ImageDataUrl } from '../utils/helper';
 import { ClientApp } from '../entity/client-app';
-import { UniversalProfile, UniversalProfileType } from '../entity/universal-profile';
+import { UniversalProfile } from '../entity/universal-profile';
 import { Platform } from '../entity/platforms';
 
 export const clientAppRouter = express.Router();
@@ -80,13 +80,6 @@ clientAppRouter.post('/', verifyStytchJWT, async (req: Request, res: Response) =
       if (!profileDescription || !profileName) {
         Logger.error(`Profile name or description not found`);
         return res.status(400).json({ error: 'Profile name or description not found' });
-      }
-      // Orbis
-      await initializeOrbis();
-      const isConnected = await connectOrbisDidPkh();
-      if (!isConnected) {
-        Logger.error('Something went wrong with the orbis');
-        res.status(500).send('Internal Server Error');
       }
 
       // if showRoulette is true and platformNeeded is not found, then we need to return an error
@@ -217,12 +210,6 @@ clientAppRouter.put('/:id', verifyStytchJWT, async (req: Request, res: Response)
           return res.status(400).json({ error: 'Profile name or description not found' });
         }
 
-        await initializeOrbis();
-        const isConnected = await connectOrbisDidPkh();
-        if (!isConnected) {
-          Logger.error('Something went wrong with the orbis');
-          res.status(500).send('Internal Server Error');
-        }
         if (showRoulette && !platformNeeded?.length) {
           Logger.error(`Platform needed not found`);
           return res.status(400).json({ error: 'Platform needed not found' });

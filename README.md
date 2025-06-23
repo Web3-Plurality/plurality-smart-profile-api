@@ -29,8 +29,3 @@ As per later env it should be
 ```sudo nano /etc/hosts```
 2. Find the line that starts with 127.0.0.1 and modify it as follows:
 ```127.0.0.1 app.plurality.local```
-
-### Notes
-Our main app id : 9a4e2a19-42e6-4b75-8710-1246439eb1db
-stream id:
-kjzl6kcym7w8y5e4o0467pkvp693wogi90amrj8gzfr77k7tcngdzm4qrliz50m
