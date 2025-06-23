@@ -45,7 +45,7 @@ smartProfileOrbisRouter.post('/', isAuthenticated, async (req: Request, res: Res
       extendedPublicData: JSON.stringify(extendedPublicData) || '',
       attestation: JSON.stringify(attestation) || '',
       privateData: JSON.stringify(privateData) || '',
-      userId: userId
+      userId: userId,
     });
 
     // Save to database
@@ -198,7 +198,7 @@ smartProfileOrbisRouter.get('/by-mapping/:profileTypeId/:userId', async (req: Re
     }
 
     // Validate userDid is provided
-      if (!userId || userId.trim() === '') {
+    if (!userId || userId.trim() === '') {
       return res.status(400).json({
         error: 'userId is required and cannot be empty.',
       });
@@ -210,8 +210,10 @@ smartProfileOrbisRouter.get('/by-mapping/:profileTypeId/:userId', async (req: Re
     });
 
     if (!smartProfile) {
-      return res.status(404).json({
-        error: 'Smart profile not found despite mapping existing',
+      return res.status(200).json({
+        success: true,
+        newUser: true,
+        message: 'No smart profile found for the provided userId and profileTypeId',
       });
     }
 
@@ -219,10 +221,11 @@ smartProfileOrbisRouter.get('/by-mapping/:profileTypeId/:userId', async (req: Re
       `Retrieved smart profile via mapping - userId: ${userId}, profileTypeId: ${profileTypeId}, smartProfileId: ${smartProfile.id}`,
     );
 
+    const { userId, ...smartProfileData } = smartProfile;
     return res.status(200).json({
       success: true,
       newUser: false,
-      data: smartProfile,
+      data: smartProfileData,
     });
   } catch (error: any) {
     Logger.error(`Error retrieving smart profile by mapping: ${JSON.stringify(error)}`);

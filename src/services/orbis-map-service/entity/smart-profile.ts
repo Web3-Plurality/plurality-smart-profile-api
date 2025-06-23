@@ -4,10 +4,10 @@ import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
 export class SmartProfileOrbis {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
-  
+
   @Column({ nullable: true })
   userId: string;
-  
+
   @Column({ nullable: true })
   username: string;
 
