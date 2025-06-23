@@ -108,7 +108,6 @@ smartProfileOrbisRouter.post('/', isAuthenticated, async (req: Request, res: Res
   }
 });
 
-
 // GET /smart-profiles/:id - Get a specific smart profile by ID
 smartProfileOrbisRouter.get('/:id', async (req: Request, res: Response) => {
   // #swagger.tags = ['Smart Profile Orbis']
@@ -344,5 +343,3 @@ smartProfileOrbisRouter.get('/by-mapping/:profileTypeId/:userDid', async (req: R
 //     });
 //   }
 // });
-
-

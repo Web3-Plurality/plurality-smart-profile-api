@@ -37,7 +37,7 @@ profileTypeRouter.get('/', isAuthenticated, async (req: Request, res: Response) 
 });
 
 // GET /profile-types/:id - Get a specific profile type by ID
-profileTypeRouter.get('/:id', isAuthenticated, async (req: Request, res: Response) => {
+profileTypeRouter.get('/:id', async (req: Request, res: Response) => {
   // #swagger.tags = ['Profile Type']
   try {
     const { id } = req.params;
@@ -73,5 +73,3 @@ profileTypeRouter.get('/:id', isAuthenticated, async (req: Request, res: Respons
     });
   }
 });
-
-
