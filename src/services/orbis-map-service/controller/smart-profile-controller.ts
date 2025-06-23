@@ -169,11 +169,11 @@ smartProfileOrbisRouter.put('/:id', isAuthenticated, async (req: Request, res: R
     });
 
     Logger.info(`Smart profile updated successfully with ID: ${id}`);
-
+    const { userId, ...smartProfileData } = updatedSmartProfile;
     return res.status(200).json({
       success: true,
       message: 'Smart profile updated successfully',
-      data: updatedSmartProfile,
+      data: smartProfileData,
     });
   } catch (error: any) {
     Logger.error(`Error updating smart profile: ${JSON.stringify(error)}`);
