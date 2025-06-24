@@ -19,7 +19,6 @@ export class UniversalProfile {
   })
   name: UniversalProfileType;
 
-  @Column({  nullable: false })
+  @Column({ nullable: false })
   streamId: string;
-  
 }

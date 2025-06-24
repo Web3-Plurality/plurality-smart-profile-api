@@ -174,9 +174,8 @@ smartProfileOrbisRouter.put('/:id', isAuthenticated, async (req: Request, res: R
         success: true,
         message: 'Smart profile updated successfully',
         data: smartProfileData,
-    });
-    }
-    else {
+      });
+    } else {
       return res.status(404).json({
         error: 'Error updating smart profile, please try again',
       });
