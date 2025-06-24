@@ -1,6 +1,6 @@
 import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
 
-@Entity({ name: 'smart_profiles_orbis' })
+@Entity({ name: 'orbis_smart_profiles' })
 export class SmartProfileOrbis {
   @PrimaryGeneratedColumn('uuid')
   id!: string;

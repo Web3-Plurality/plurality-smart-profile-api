@@ -1,6 +1,6 @@
 import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
 
-@Entity({ name: 'profile_types_orbis' })
+@Entity({ name: 'orbis_profile_types' })
 export class ProfileTypeOrbis {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
@@ -11,7 +11,7 @@ export class ProfileTypeOrbis {
   @Column({ nullable: false })
   description: string;
 
-  @Column({ nullable: true, default: '' }) // we will see latter that if we can make this array of objess
+  @Column({ nullable: true, default: '' }) // we will see latter that if we can make this array of objects
   platforms: string;
 
   @Column({ nullable: true, default: '1.0' })

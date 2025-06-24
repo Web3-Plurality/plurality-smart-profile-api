@@ -1,5 +1,5 @@
 import { AppDataSource } from '../../../data-source';
-import { ProfileTypeOrbis } from '../../orbis-map-service/entity/profile-type';
+import { ProfileTypeOrbis } from '../entity/profile-type';
 import Logger from '../../../lib/logger';
 
 const profileTypeRepository = AppDataSource.getRepository(ProfileTypeOrbis);

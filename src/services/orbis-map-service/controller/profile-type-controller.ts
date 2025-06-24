@@ -12,29 +12,29 @@ export const profileTypeRouter = express.Router();
 // Get the ProfileType repository
 const profileTypeRepository = AppDataSource.getRepository(ProfileTypeOrbis);
 
-profileTypeRouter.get('/', isAuthenticated, async (req: Request, res: Response) => {
-  // #swagger.tags = ['Profile Type']
-  try {
-    const profileTypes = await profileTypeRepository.find({
-      order: {
-        profileName: 'ASC',
-      },
-    });
+// profileTypeRouter.get('/', isAuthenticated, async (req: Request, res: Response) => {
+//   // #swagger.tags = ['Profile Type']
+//   try {
+//     const profileTypes = await profileTypeRepository.find({
+//       order: {
+//         profileName: 'ASC',
+//       },
+//     });
 
-    Logger.info(`Retrieved ${profileTypes.length} profile types`);
+//     Logger.info(`Retrieved ${profileTypes.length} profile types`);
 
-    return res.status(200).json({
-      success: true,
-      data: profileTypes,
-      count: profileTypes.length,
-    });
-  } catch (error: any) {
-    Logger.error(`Error retrieving profile types: ${JSON.stringify(error)}`);
-    return res.status(500).json({
-      error: 'An error occurred while retrieving profile types',
-    });
-  }
-});
+//     return res.status(200).json({
+//       success: true,
+//       data: profileTypes,
+//       count: profileTypes.length,
+//     });
+//   } catch (error: any) {
+//     Logger.error(`Error retrieving profile types: ${JSON.stringify(error)}`);
+//     return res.status(500).json({
+//       error: 'An error occurred while retrieving profile types',
+//     });
+//   }
+// });
 
 // GET /profile-types/:id - Get a specific profile type by ID
 profileTypeRouter.get('/:id', async (req: Request, res: Response) => {

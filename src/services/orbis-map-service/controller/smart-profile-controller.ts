@@ -1,7 +1,6 @@
 import express, { Request, Response } from 'express';
 import { AppDataSource } from '../../../data-source';
 import { SmartProfileOrbis } from '../entity/smart-profile';
-import { ProfileTypeSmartProfileMap } from '../entity/profile-type-smart-profile-map';
 import Logger from '../../../lib/logger';
 import * as dotenv from 'dotenv';
 import { isAuthenticated } from '../../user-service/middlewares/auth-middleware';
@@ -168,14 +167,20 @@ smartProfileOrbisRouter.put('/:id', isAuthenticated, async (req: Request, res: R
     const updatedSmartProfile = await smartProfileOrbisRepository.findOne({
       where: { id },
     });
-
-    Logger.info(`Smart profile updated successfully with ID: ${id}`);
-    const { userId, ...smartProfileData } = updatedSmartProfile;
-    return res.status(200).json({
-      success: true,
-      message: 'Smart profile updated successfully',
-      data: smartProfileData,
+    if (updatedSmartProfile) {
+      Logger.info(`Smart profile updated successfully with ID: ${id}`);
+      const { userId, ...smartProfileData } = updatedSmartProfile;
+      return res.status(200).json({
+        success: true,
+        message: 'Smart profile updated successfully',
+        data: smartProfileData,
     });
+    }
+    else {
+      return res.status(404).json({
+        error: 'Error updating smart profile, please try again',
+      });
+    }
   } catch (error: any) {
     Logger.error(`Error updating smart profile: ${JSON.stringify(error)}`);
     return res.status(500).json({

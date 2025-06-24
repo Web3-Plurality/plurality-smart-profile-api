@@ -6,7 +6,7 @@ import { v2 as cloudinary } from 'cloudinary';
 import { AppType, IncentiveType } from '../entity/client-app';
 import { verifyStytchJWT } from '../middlewares/auth-middleware';
 import crypto from 'crypto';
-import { insertProfileType, updateProfileType } from '../utils/orbis-map';
+import { insertProfileType, updateProfileType } from '../../orbis-map-service/utils/orbis-map';
 import { isBase64ImageDataUrl } from '../utils/helper';
 import { ClientApp } from '../entity/client-app';
 import { UniversalProfile } from '../entity/universal-profile';
