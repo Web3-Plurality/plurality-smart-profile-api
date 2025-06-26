@@ -92,12 +92,12 @@ clientAppRouter.post('/', verifyStytchJWT, async (req: Request, res: Response) =
         const platforms = platformNeeded.map((platform: string) => {
           return { platform, authentication: true };
         });
-        const result = await insertProfileType(profileName, profileDescription, JSON.stringify(platforms));
+        const result = await insertProfileType(profileName, profileDescription, platforms);
         newStreamId = result?.id || '';
         Logger.info(`Profile type stream id created: ${newStreamId}`);
       } else {
         // if showRoulette is false, then we need to create a new profile without platform connection
-        const result = await insertProfileType(profileName, profileDescription, '[]');
+        const result = await insertProfileType(profileName, profileDescription, []);
         newStreamId = result?.id || '';
         Logger.info(`Profile type stream id created: ${newStreamId}`);
       }
@@ -218,7 +218,7 @@ clientAppRouter.put('/:id', verifyStytchJWT, async (req: Request, res: Response)
           return { platform, authentication: true };
         });
         // update in orbis
-        await updateProfileType(streamId, profileName, profileDescription, JSON.stringify(platforms));
+        await updateProfileType(streamId, profileName, profileDescription, platforms);
       } catch (error) {
         Logger.error(`Error updating profile type: ${JSON.stringify(error)}`);
         return res.status(400).json({ error: 'Profile type stream id not found' });

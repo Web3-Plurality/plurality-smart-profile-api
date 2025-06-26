@@ -4,14 +4,14 @@ import Logger from '../../../lib/logger';
 
 const profileTypeRepository = AppDataSource.getRepository(ProfileTypeOrbis);
 
-export const insertProfileType = async (profileName: string, description: string, platformNeeded = '') => {
+export const insertProfileType = async (profileName: string, description: string, platformNeeded = []) => {
   // #swagger.tags = ['Profile Type']
   try {
     // Create new profile type
     const newProfileType = profileTypeRepository.create({
       profileName,
       description,
-      platforms: JSON.stringify(platformNeeded) || '',
+      platforms: JSON.stringify(platformNeeded),
       version: '1.0',
     });
 
@@ -26,12 +26,12 @@ export const insertProfileType = async (profileName: string, description: string
   }
 };
 
-export async function updateProfileType(id: string, profileName: string, description: string, platformNeeded: string) {
+export async function updateProfileType(id: string, profileName: string, description: string, platformNeeded=[]) {
   try {
     const updateResult = await profileTypeRepository.update(id, {
       profileName,
       description,
-      platforms: platformNeeded,
+      platforms: JSON.stringify(platformNeeded),
       version: '1.0',
     });
     return updateResult;
