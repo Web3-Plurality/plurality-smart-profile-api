@@ -97,7 +97,7 @@ clientAppRouter.post('/', verifyStytchJWT, async (req: Request, res: Response) =
         Logger.info(`Profile type stream id created: ${newStreamId}`);
       } else {
         // if showRoulette is false, then we need to create a new profile without platform connection
-        const result = await insertProfileType(profileName, profileDescription, '');
+        const result = await insertProfileType(profileName, profileDescription, '[]');
         newStreamId = result?.id || '';
         Logger.info(`Profile type stream id created: ${newStreamId}`);
       }
