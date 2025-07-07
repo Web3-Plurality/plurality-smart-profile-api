@@ -37,6 +37,8 @@ import { clientAppRouter } from './services/crm-service/controllers/client-app-c
 import * as LitJsSdk from '@lit-protocol/lit-node-client';
 import { LitNetwork } from '@lit-protocol/constants';
 import { userRouter } from './services/user-service/controllers/user-controller';
+// Pimlico proxy
+import { createProxyMiddleware } from 'http-proxy-middleware';
 
 dotenv.config();
 
@@ -84,6 +86,28 @@ app.use('/docs-developer', swaggerUi.serve, (req: any, res: any, next: any) =>
 app.use('/docs-client', swaggerUi.serve, (req: any, res: any, next: any) =>
   swaggerUi.setup(swaggerDocumentForClient)(req, res, next),
 );
+
+// TODO make this block of code into a seperate file
+const pimlicoUrl = `https://api.pimlico.io/v2/11155111/rpc?apikey=${process.env.PIMLICO_API_KEY}`
+app.use('/api/proxy', createProxyMiddleware({
+  target: pimlicoUrl,
+  changeOrigin: true,
+  secure: false,
+  pathRewrite: {
+    '^/api/proxy': '',
+  },
+  onProxyReq: (proxyReq, req) => {
+    if (req.body) {
+      const bodyData = JSON.stringify(req.body);
+      proxyReq.setHeader('Content-Type', 'application/json');
+      proxyReq.setHeader('Content-Length', Buffer.byteLength(bodyData));
+      proxyReq.write(bodyData);
+    }
+  },
+  onError(err, req, res) {
+    res.status(500).json({ error: 'Proxy error', detail: err.message });
+  }
+}));
 
 try {
   app.locals.litNodeClient = new LitJsSdk.LitNodeClientNodeJs({
