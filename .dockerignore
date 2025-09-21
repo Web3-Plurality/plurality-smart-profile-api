@@ -1,4 +1,11 @@
 node_modules
-certificates
+local-certificates
 logs
 *.log
+.github
+*.env
+.husky
+.vscode
+dist
+testing
+
