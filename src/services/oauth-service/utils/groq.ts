@@ -37,7 +37,7 @@ export async function analyzeLlama70b(prompt: any) {
 async function getGroqChatCompletion(prompt: any) {
   return groq.chat.completions.create({
     messages: prompt,
-    model: 'llama3-8b-8192',
+    model: 'llama-3.1-8b-instant',
     temperature: 0.5,
     stream: false,
     // eslint-disable-next-line
@@ -51,7 +51,7 @@ async function getGroqChatCompletion(prompt: any) {
 async function getGroqChatCompletionLlama70b(prompt: any) {
   return groq.chat.completions.create({
     messages: prompt,
-    model: 'llama3-70b-8192',
+    model: 'llama-3.1-8b-instant',
     temperature: 0.5,
     stream: false,
     // eslint-disable-next-line
