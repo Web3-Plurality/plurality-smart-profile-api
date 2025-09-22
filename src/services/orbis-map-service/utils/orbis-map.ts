@@ -26,7 +26,7 @@ export const insertProfileType = async (profileName: string, description: string
   }
 };
 
-export async function updateProfileType(id: string, profileName: string, description: string, platformNeeded=[]) {
+export async function updateProfileType(id: string, profileName: string, description: string, platformNeeded = []) {
   try {
     const updateResult = await profileTypeRepository.update(id, {
       profileName,
