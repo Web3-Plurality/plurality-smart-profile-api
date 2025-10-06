@@ -151,7 +151,7 @@ authGoogleRouter.post('/event', hasValidEventHeader, hasValidAccessTokenHeader, 
         expiresIn: '1d',
       });
       serverSentEventResponse.write(
-        `data: {"message":"received", "app":"google", "googleJwtToken":"${tokenObj?.googleJwtToken}", "token": "${token}"}\n\n`,
+        `data: {"message":"received", "app":"google", "googleJwtToken":"${tokenObj?.googleJwtToken}", "userId": "${tokenObj?.userId}", "token": "${token}"}\n\n`,
       );
       Logger.info(` Server Side Event has been sent successfully`);
       memoryStoreSSE.delete(req?.sseID);
