@@ -137,6 +137,8 @@ authGoogleRouter.post('/event', hasValidEventHeader, hasValidAccessTokenHeader, 
       const emailId = memoryStoreToken.get(req?.accessTokenID);
       serverSentEventResponse.write(`data: {"message":"received", "app":"google", "emailId":"${emailId}"}\n\n`);
       Logger.info(`Server Side Event has been sent successfully`);
+      const connection = memoryStoreSSE.get(req?.sseID);
+      connection.end();
       memoryStoreSSE.delete(req?.sseID);
       memoryStoreSSE.delete(req?.accessTokenID);
       return res.status(200).json({ message: 'success' });

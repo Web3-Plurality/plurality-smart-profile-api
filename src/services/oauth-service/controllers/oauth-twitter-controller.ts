@@ -100,6 +100,8 @@ twitterRouter.post(
         `data: {"message":"received", "app":"${TWITTER_APP}", "auth":"${req?.accessTokenID}"}\n\n`,
       );
       Logger.info(`${TWITTER_APP}: Server Side Event has been sent successfully`);
+      const connection = memoryStoreSSE.get(req?.sseID);
+      connection.end();
       memoryStoreSSE.delete(req?.sseID);
       return res.status(200).json({ app: TWITTER_APP, message: 'success' });
     } catch (error: any) {

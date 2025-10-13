@@ -102,6 +102,8 @@ robloxRouter.post(
         `data: {"message":"received", "app":"${ROBLOX_APP}", "auth":"${req?.accessTokenID}"}\n\n`,
       );
       Logger.info(`${ROBLOX_APP}: Server Side Event has been sent successfully`);
+      const connection = memoryStoreSSE.get(req?.sseID);
+      connection.end();
       memoryStoreSSE.delete(req?.sseID);
       return res.status(200).json({ app: ROBLOX_APP, message: 'success' });
     } catch (error: any) {

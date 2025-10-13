@@ -1061,147 +1061,8 @@
     "/crm/client/login": {},
     "/crm/client/authenticate": {},
     "/crm/client/": {},
-    "/orbis-map/profile-types/": {
-      "post": {
-        "tags": [
-          "Profile Type"
-        ],
-        "description": "",
-        "responses": {
-          "201": {
-            "description": "Created"
-          },
-          "400": {
-            "description": "Bad Request"
-          },
-          "500": {
-            "description": "Internal Server Error"
-          }
-        },
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "profileName": {
-                    "example": "any"
-                  },
-                  "description": {
-                    "example": "any"
-                  },
-                  "platforms": {
-                    "example": "any"
-                  },
-                  "version": {
-                    "example": "any"
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      "get": {
-        "tags": [
-          "Profile Type"
-        ],
-        "description": "",
-        "responses": {
-          "200": {
-            "description": "OK"
-          },
-          "500": {
-            "description": "Internal Server Error"
-          }
-        }
-      }
-    },
     "/orbis-map/profile-types/{id}": {
       "get": {
-        "tags": [
-          "Profile Type"
-        ],
-        "description": "",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          },
-          "400": {
-            "description": "Bad Request"
-          },
-          "404": {
-            "description": "Not Found"
-          },
-          "500": {
-            "description": "Internal Server Error"
-          }
-        }
-      },
-      "put": {
-        "tags": [
-          "Profile Type"
-        ],
-        "description": "",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          },
-          "400": {
-            "description": "Bad Request"
-          },
-          "404": {
-            "description": "Not Found"
-          },
-          "500": {
-            "description": "Internal Server Error"
-          }
-        },
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "profileName": {
-                    "example": "any"
-                  },
-                  "description": {
-                    "example": "any"
-                  },
-                  "platforms": {
-                    "example": "any"
-                  },
-                  "version": {
-                    "example": "any"
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
         "tags": [
           "Profile Type"
         ],
@@ -1242,6 +1103,12 @@
           "201": {
             "description": "Created"
           },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
           "500": {
             "description": "Internal Server Error"
           }
@@ -1281,62 +1148,15 @@
                   },
                   "privateData": {
                     "example": "any"
-                  },
-                  "userDid": {
-                    "example": "any"
                   }
                 }
               }
             }
           }
         }
-      },
-      "get": {
-        "tags": [
-          "Smart Profile Orbis"
-        ],
-        "description": "",
-        "responses": {
-          "200": {
-            "description": "OK"
-          },
-          "500": {
-            "description": "Internal Server Error"
-          }
-        }
       }
     },
     "/orbis-map/smart-profiles/{id}": {
-      "get": {
-        "tags": [
-          "Smart Profile Orbis"
-        ],
-        "description": "",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          },
-          "400": {
-            "description": "Bad Request"
-          },
-          "404": {
-            "description": "Not Found"
-          },
-          "500": {
-            "description": "Internal Server Error"
-          }
-        }
-      },
       "put": {
         "tags": [
           "Smart Profile Orbis"
@@ -1359,6 +1179,12 @@
           "400": {
             "description": "Bad Request"
           },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
           "404": {
             "description": "Not Found"
           },
@@ -1401,48 +1227,15 @@
                   },
                   "privateData": {
                     "example": "any"
-                  },
-                  "userDid": {
-                    "example": "any"
                   }
                 }
               }
             }
           }
         }
-      },
-      "delete": {
-        "tags": [
-          "Smart Profile Orbis"
-        ],
-        "description": "",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          },
-          "400": {
-            "description": "Bad Request"
-          },
-          "404": {
-            "description": "Not Found"
-          },
-          "500": {
-            "description": "Internal Server Error"
-          }
-        }
       }
     },
-    "/orbis-map/smart-profiles/by-mapping/{profileTypeId}/{userDid}": {
+    "/orbis-map/smart-profiles/by-mapping/{profileTypeId}/{userId}": {
       "get": {
         "tags": [
           "Smart Profile Orbis"
@@ -1458,7 +1251,7 @@
             }
           },
           {
-            "name": "userDid",
+            "name": "userId",
             "in": "path",
             "required": true,
             "schema": {
@@ -1472,9 +1265,6 @@
           },
           "400": {
             "description": "Bad Request"
-          },
-          "404": {
-            "description": "Not Found"
           },
           "500": {
             "description": "Internal Server Error"
