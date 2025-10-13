@@ -15,8 +15,6 @@ export const sseRouter = express.Router();
 //   res.write(`data: {"message":"Connection established", "id":"${sseID}"}\n\n`);
 // }
 
-
-
 export function initSSE(req: Request, res: Response) {
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache, no-transform');
@@ -28,10 +26,12 @@ export function initSSE(req: Request, res: Response) {
   res.write(`data: ${JSON.stringify({ message: 'Connection established', id: sseID })}\n\n`);
 
   const hb = setInterval(() => res.write(`: ping\n\n`), 15000); // heartbeat
-  req.on('close', () => { clearInterval(hb); memoryStoreSSE.delete(sseID); res.end(); });
+  req.on('close', () => {
+    clearInterval(hb);
+    memoryStoreSSE.delete(sseID);
+    res.end();
+  });
 }
-
-
 
 sseRouter.get('/', async (req: Request, res: Response) => {
   // #swagger.tags = ['SSE']
