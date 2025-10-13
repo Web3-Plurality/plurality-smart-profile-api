@@ -103,6 +103,8 @@ fortniteRouter.post(
         `data: {"message":"received", "app":"${FORTNITE_APP}", "auth":"${req?.accessTokenID}"}\n\n`,
       );
       Logger.info(`${FORTNITE_APP}: Server Side Event has been sent successfully`);
+      const connection = memoryStoreSSE.get(req?.sseID);
+      connection.end();
       memoryStoreSSE.delete(req?.sseID);
       return res.status(200).json({ app: FORTNITE_APP, message: 'success' });
     } catch (error: any) {

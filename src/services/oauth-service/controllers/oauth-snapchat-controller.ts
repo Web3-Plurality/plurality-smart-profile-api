@@ -100,6 +100,8 @@ snapchatRouter.post(
         `data: {"message":"received", "app":"${SNAPCHAT_APP}", "auth":"${req?.accessTokenID}"}\n\n`,
       );
       Logger.info(`${SNAPCHAT_APP}: Server Side Event has been sent successfully`);
+      const connection = memoryStoreSSE.get(req?.sseID);
+      connection.end();
       memoryStoreSSE.delete(req?.sseID);
       return res.status(200).json({ app: SNAPCHAT_APP, message: 'success' });
     } catch (error: any) {
