@@ -42,4 +42,22 @@ export class SmartProfileMap {
     clientAppId: string;
     onboardingData: Record<string, any>;
   };
+
+  @Column({ type: 'varchar', length: 66, nullable: true })
+  onchainAttestationUID?: string;
+
+  @Column({ type: 'varchar', length: 66, nullable: true })
+  privateAttestationUID?: string;
+
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  attestationChain?: string;
+
+  @Column({ type: 'varchar', length: 66, nullable: true })
+  attestationTxHash?: string;
+
+  @Column({ type: 'bigint', nullable: true })
+  attestationTimestamp?: number;
+
+  @Column({ type: 'text', nullable: true })
+  encryptedPrivateData?: string;
 }

@@ -52,25 +52,28 @@ export const isValidAddress = async (req: Request, res: Response, next: NextFunc
 
 export const isValidAttestation = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const pluralityAttestation = new PluralityAttestation({
-      signerPrivateKey: process.env.PUBLIC_DAPP_OWNER_WALLET_PRIVATE_KEY || '',
-      signerAddress: process.env.PUBLIC_DAPP_OWNER_WALLET_ADDRESS || '',
-      easContractAddress: process.env.EAS_CONTRACT_ADDRESS || '',
-      rpcProvider: process.env.EAS_BLOCKCHAIN_RPC || '',
-    });
     const smartProfile = normalizeSmartProfile(req?.body?.smartProfile);
     const existingUser = await AppDataSource.getRepository(User).findOne({
       where: {
         id: req?.user?.id,
       },
     });
+
+    // Verify on-chain attestation (Oasis Sapphire)
+    const pluralityAttestation = new PluralityAttestation({
+      signerPrivateKey: process.env.PUBLIC_DAPP_OWNER_WALLET_PRIVATE_KEY || '',
+      signerAddress: process.env.PUBLIC_DAPP_OWNER_WALLET_ADDRESS || '',
+      easContractAddress: process.env.SAPPHIRE_EAS_ADDRESS || '',
+      rpcProvider: process.env.SAPPHIRE_RPC || '',
+    });
+
     const isVerifiedSmartProfileAttestaion = await pluralityAttestation.verifySmartProfileAttestation(
       smartProfile,
       existingUser?.pkpAddress || '',
     );
+
     if (isVerifiedSmartProfileAttestaion) {
-      Logger.info('Attestation Checked');
-      //req.smartProfile=smartProfile;
+      Logger.info('Attestation Checked (on-chain)');
       return next();
     } else {
       Logger.error('Attestaion is not verified');

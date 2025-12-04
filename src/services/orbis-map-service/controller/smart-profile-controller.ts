@@ -1,9 +1,12 @@
 import express, { Request, Response } from 'express';
 import { AppDataSource } from '../../../data-source';
 import { SmartProfileOrbis } from '../entity/smart-profile';
+import { SmartProfileMap } from '../../user-service/entity/smart-profile-map';
+import { User } from '../../user-service/entity/user';
 import Logger from '../../../lib/logger';
 import * as dotenv from 'dotenv';
 import { isAuthenticated } from '../../user-service/middlewares/auth-middleware';
+import { PluralityAttestation } from '@plurality-network/smart-profile-utils';
 
 dotenv.config();
 
@@ -11,55 +14,33 @@ export const smartProfileOrbisRouter = express.Router();
 
 // Get the SmartProfileOrbis repository
 const smartProfileOrbisRepository = AppDataSource.getRepository(SmartProfileOrbis);
-// // Get the ProfileTypeSmartProfileMap repository
-// const profileTypeSmartProfileMapRepository = AppDataSource.getRepository(ProfileTypeSmartProfileMap);
+const smartProfileMapRepository = AppDataSource.getRepository(SmartProfileMap);
+
+// On-chain attestation instance (Oasis Sapphire)
+const pluralityAttestation = new PluralityAttestation({
+  signerPrivateKey: process.env.PUBLIC_DAPP_OWNER_WALLET_PRIVATE_KEY || '',
+  signerAddress: process.env.PUBLIC_DAPP_OWNER_WALLET_ADDRESS || '',
+  easContractAddress: process.env.SAPPHIRE_EAS_ADDRESS || '',
+  rpcProvider: process.env.SAPPHIRE_RPC || '',
+});
 
 // POST /smart-profiles - Insert a new smart profile
+// NOTE: This endpoint is deprecated. All profiles are now stored on-chain via attestations.
+// The orbis_smart_profiles table is kept for legacy data only.
 smartProfileOrbisRouter.post('/', isAuthenticated, async (req: Request, res: Response) => {
   // #swagger.tags = ['Smart Profile Orbis']
   try {
-    const {
-      username,
-      avatar,
-      bio,
-      scores,
-      connectedPlatforms,
-      profileTypeStreamId,
-      version,
-      extendedPublicData,
-      attestation,
-      privateData,
-    } = req.body;
-
-    const userId = req.user?.id;
-    // Create new smart profile
-    const newSmartProfile = smartProfileOrbisRepository.create({
-      username: username || '',
-      avatar: avatar || '',
-      bio: bio || '',
-      scores: JSON.stringify(scores) || '',
-      connectedPlatforms: JSON.stringify(connectedPlatforms) || '',
-      profileTypeStreamId: profileTypeStreamId || '',
-      version: version || '2.0',
-      extendedPublicData: JSON.stringify(extendedPublicData) || '',
-      attestation: JSON.stringify(attestation) || '',
-      privateData: JSON.stringify(privateData) || '',
-      userId: userId,
-    });
-
-    // Save to database
-    const savedSmartProfile = await smartProfileOrbisRepository.save(newSmartProfile);
-
-    Logger.info(`Smart profile created successfully with ID: ${savedSmartProfile.id}`);
-    const { userId: id, ...smartProfileData } = savedSmartProfile;
-
+    Logger.info(`On-chain mode: Skipping orbis_smart_profiles write, returning success response`);
     return res.status(201).json({
       success: true,
-      message: 'Smart profile created successfully',
-      data: smartProfileData,
+      message: 'Smart profile created successfully (on-chain mode)',
+      data: {
+        id: 'onchain',
+        ...req.body,
+      },
     });
   } catch (error: any) {
-    Logger.error(`Error creating smart profile: ${JSON.stringify(error)}`);
+    Logger.error(`Error in POST smart profile: ${JSON.stringify(error)}`);
     return res.status(500).json({
       error: 'An error occurred while creating the smart profile',
     });
@@ -105,83 +86,22 @@ smartProfileOrbisRouter.post('/', isAuthenticated, async (req: Request, res: Res
 // });
 
 // PUT /smart-profiles/:id - Update a specific smart profile
+// NOTE: This endpoint is deprecated. All profiles are now stored on-chain via attestations.
+// The orbis_smart_profiles table is kept for legacy data only.
 smartProfileOrbisRouter.put('/:id', isAuthenticated, async (req: Request, res: Response) => {
   // #swagger.tags = ['Smart Profile Orbis']
   try {
-    const { id } = req.params;
-    const {
-      username,
-      avatar,
-      bio,
-      scores,
-      connectedPlatforms,
-      profileTypeStreamId,
-      version,
-      extendedPublicData,
-      attestation,
-      privateData,
-    } = req.body;
-
-    // Validate UUID format
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(id)) {
-      return res.status(400).json({
-        error: 'Invalid ID format. Please provide a valid UUID.',
-      });
-    }
-
-    // Check if smart profile exists
-    const existingSmartProfile = await smartProfileOrbisRepository.findOne({
-      where: { id },
+    Logger.info(`On-chain mode: Skipping orbis_smart_profiles update, returning success response`);
+    return res.status(200).json({
+      success: true,
+      message: 'Smart profile updated successfully (on-chain mode)',
+      data: {
+        id: req.params.id,
+        ...req.body,
+      },
     });
-
-    if (!existingSmartProfile) {
-      return res.status(404).json({
-        error: 'Smart profile not found',
-      });
-    }
-
-    // Prepare update data (only include fields that are provided)
-    const updateData: any = {};
-    if (username !== undefined) updateData.username = username;
-    if (avatar !== undefined) updateData.avatar = avatar;
-    if (bio !== undefined) updateData.bio = bio;
-    if (scores !== undefined) updateData.scores = JSON.stringify(scores);
-    if (connectedPlatforms !== undefined) updateData.connectedPlatforms = JSON.stringify(connectedPlatforms);
-    if (profileTypeStreamId !== undefined) updateData.profileTypeStreamId = profileTypeStreamId;
-    if (version !== undefined) updateData.version = version;
-    if (extendedPublicData !== undefined) updateData.extendedPublicData = JSON.stringify(extendedPublicData);
-    if (attestation !== undefined) updateData.attestation = JSON.stringify(attestation);
-    if (privateData !== undefined) updateData.privateData = JSON.stringify(privateData);
-
-    // Update the smart profile
-    const updateResult = await smartProfileOrbisRepository.update(id, updateData);
-
-    if (updateResult.affected === 0) {
-      return res.status(404).json({
-        error: 'Smart profile not found or no changes made',
-      });
-    }
-
-    // Fetch the updated smart profile
-    const updatedSmartProfile = await smartProfileOrbisRepository.findOne({
-      where: { id },
-    });
-    if (updatedSmartProfile) {
-      Logger.info(`Smart profile updated successfully with ID: ${id}`);
-      const { userId, ...smartProfileData } = updatedSmartProfile;
-      return res.status(200).json({
-        success: true,
-        message: 'Smart profile updated successfully',
-        data: smartProfileData,
-      });
-    } else {
-      return res.status(404).json({
-        error: 'Error updating smart profile, please try again',
-      });
-    }
   } catch (error: any) {
-    Logger.error(`Error updating smart profile: ${JSON.stringify(error)}`);
+    Logger.error(`Error in PUT smart profile: ${JSON.stringify(error)}`);
     return res.status(500).json({
       error: 'An error occurred while updating the smart profile',
     });
@@ -209,12 +129,12 @@ smartProfileOrbisRouter.get('/by-mapping/:profileTypeId/:userId', async (req: Re
       });
     }
 
-    // If mapping exists, get the smart profile
-    const smartProfile = await smartProfileOrbisRepository.findOne({
+    // Look up attestation UIDs from smart_profile_map
+    const profileMapping = await smartProfileMapRepository.findOne({
       where: { userId: userId, profileTypeStreamId: profileTypeId },
     });
 
-    if (!smartProfile) {
+    if (!profileMapping) {
       return res.status(200).json({
         success: true,
         newUser: true,
@@ -222,18 +142,185 @@ smartProfileOrbisRouter.get('/by-mapping/:profileTypeId/:userId', async (req: Re
       });
     }
 
-    Logger.info(
-      `Retrieved smart profile via mapping - userId: ${userId}, profileTypeId: ${profileTypeId}, smartProfileId: ${smartProfile.id}`,
-    );
+    // If attestation UID exists, fetch profile from blockchain
+    if (profileMapping.onchainAttestationUID && profileMapping.privateAttestationUID) {
+      Logger.info(
+        `Profile exists on blockchain - fetching from chain using attestationUIDs: ` +
+          `onchain=${profileMapping.onchainAttestationUID}, private=${profileMapping.privateAttestationUID}`,
+      );
 
-    const { userId: id, ...smartProfileData } = smartProfile;
-    return res.status(200).json({
-      success: true,
-      newUser: false,
-      data: smartProfileData,
-    });
+      try {
+        // Fetch user's PKP address to verify attestation
+        const user = await AppDataSource.getRepository(User).findOne({
+          where: { id: userId },
+        });
+
+        if (!user || !user.pkpAddress) {
+          Logger.error(`User not found or missing PKP address for userId: ${userId}`);
+          return res.status(404).json({
+            success: false,
+            error: 'User not found or missing PKP address',
+          });
+        }
+
+        const pkpAddress = user.pkpAddress;
+
+        // Fetch and verify profile from blockchain
+        const { isValid, profile } = await pluralityAttestation.verifyAndReconstructProfile(
+          profileMapping.onchainAttestationUID,
+          profileMapping.privateAttestationUID,
+          pkpAddress,
+        );
+
+        if (!isValid || !profile) {
+          Logger.error(`Failed to verify or reconstruct profile from blockchain`);
+          return res.status(500).json({
+            success: false,
+            error: 'Failed to verify profile attestation from blockchain',
+          });
+        }
+
+        Logger.info(`Successfully fetched and verified profile from blockchain`);
+
+        // Fetch encrypted private data from smart_profile_map
+        // The client will decrypt this using their PKP
+        const profileMapData = await smartProfileMapRepository.findOne({
+          where: { userId: userId, profileTypeStreamId: profileTypeId },
+        });
+
+        const encryptedPrivateDataString = profileMapData?.encryptedPrivateData;
+
+        if (encryptedPrivateDataString) {
+          Logger.info(`Found encrypted private data, sending to client for decryption`);
+          // Parse the stringified JSON and send to client (same as orbis_smart_profiles.privateData)
+          const encryptedPrivateData = JSON.parse(encryptedPrivateDataString);
+          // Return profile with encrypted private data for client-side decryption
+          return res.status(200).json({
+            success: true,
+            newUser: false,
+            data: {
+              ...profile,
+              encryptedPrivateData,  // Client will decrypt this
+            },
+          });
+        }
+
+        // No encrypted private data - return profile with empty privateData
+        Logger.warn(`No encrypted private data found, returning profile with empty privateData`);
+        profile.privateData = {
+          attestedCred: {
+            interests: [],
+            reputationTags: [],
+            badges: [],
+            collections: [],
+            attestation: {},
+            salt: {
+              interests: '',
+              reputationTags: '',
+              badges: '',
+              collections: '',
+            },
+          },
+          attestedPlatformIds: {
+            connectedProfiles: [],
+            attestation: {},
+            salt: {},
+          },
+          linkedAddress: [],
+          extendedPrivateData: {},
+          claims: {
+            interests: [],
+            reputationTags: [],
+            badges: [],
+            collections: [],
+            analyzed: false,
+          },
+        };
+
+        return res.status(200).json({
+          success: true,
+          newUser: false,
+          data: profile,
+        });
+      } catch (error: any) {
+        Logger.error(`Error fetching profile from blockchain: ${error?.message || JSON.stringify(error)}`);
+
+        // Fallback to legacy table if blockchain fetch fails
+        Logger.warn(`Blockchain fetch failed, falling back to legacy table`);
+        const legacyProfile = await smartProfileOrbisRepository.findOne({
+          where: { userId: userId, profileTypeStreamId: profileTypeId },
+        });
+
+        if (legacyProfile) {
+          Logger.info(`Found profile in legacy table as fallback`);
+          const { userId: id, ...smartProfileData } = legacyProfile;
+          return res.status(200).json({
+            success: true,
+            newUser: false,
+            data: smartProfileData,
+          });
+        }
+
+        return res.status(500).json({
+          success: false,
+          error: 'Failed to fetch profile from blockchain or legacy storage',
+          details: error?.message || 'Unknown error',
+        });
+      }
+    } else if (profileMapping.onchainAttestationUID) {
+      // Only onchain UID exists (no private UID) - old profile created before migration fix
+      // Fall back to legacy table
+      Logger.warn(
+        `Profile has onchain UID but missing private UID (old profile) - ` +
+        `attestationUID: ${profileMapping.onchainAttestationUID}, ` +
+        `falling back to legacy table`
+      );
+
+      const legacyProfile = await smartProfileOrbisRepository.findOne({
+        where: { userId: userId, profileTypeStreamId: profileTypeId },
+      });
+
+      if (legacyProfile) {
+        Logger.info(`Found old profile in legacy table`);
+        const { userId: id, ...smartProfileData } = legacyProfile;
+        return res.status(200).json({
+          success: true,
+          newUser: false,
+          data: smartProfileData,
+        });
+      }
+
+      // No legacy data - profile needs to be recreated
+      Logger.warn(`No legacy data found for incomplete attestation`);
+      return res.status(200).json({
+        success: true,
+        newUser: true,
+        message: 'Profile needs to be recreated. Please complete onboarding again.',
+      });
+    } else {
+      // Fallback: No attestation UIDs, try legacy orbis_smart_profiles table
+      Logger.info(`No attestation UIDs found, checking legacy table for userId: ${userId}`);
+      const smartProfile = await smartProfileOrbisRepository.findOne({
+        where: { userId: userId, profileTypeStreamId: profileTypeId },
+      });
+
+      if (!smartProfile) {
+        return res.status(200).json({
+          success: true,
+          newUser: true,
+          message: 'No smart profile found',
+        });
+      }
+
+      const { userId: id, ...smartProfileData } = smartProfile;
+      return res.status(200).json({
+        success: true,
+        newUser: false,
+        data: smartProfileData,
+      });
+    }
   } catch (error: any) {
-    Logger.error(`Error retrieving smart profile by mapping: ${JSON.stringify(error)}`);
+    Logger.error(`Error retrieving smart profile by mapping: ${error?.message || JSON.stringify(error)}`);
     return res.status(500).json({
       error: 'An error occurred while retrieving the smart profile by mapping',
     });
