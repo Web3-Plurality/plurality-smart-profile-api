@@ -20,12 +20,110 @@ import {
 } from '@plurality-network/smart-profile-utils';
 import { createPrompt, USER_ONBOARDING_INSIGHTS_PROMPT } from '../../oauth-service/utils/ai-prompts';
 import { analyze } from '../../oauth-service/utils/groq';
+import { getPrepaidCreditService } from '../../crm-service/utils/prepaid-credit-service';
+import { CreditTransaction, TransactionType } from '../../crm-service/entity/client-credit';
+import { ethers } from 'ethers';
 
 export const smartProfileRouter = express.Router();
 dotenv.config();
 const smartProfileMapRepository = AppDataSource.getRepository(SmartProfileMap);
 const earlyUserRepository = AppDataSource.getRepository(EarlyUser);
 const userRepository = AppDataSource.getRepository(User);
+const creditTransactionRepository = AppDataSource.getRepository(CreditTransaction);
+
+// Initialize prepaid credit service
+const prepaidCreditService = getPrepaidCreditService();
+
+/**
+ * Helper function to check credits before attestation
+ * Returns hasSufficientCredits: true if ok, or an errorResponse if not
+ */
+async function checkCreditsBeforeAttestation(clientAppId: string): Promise<{
+  hasSufficientCredits: boolean;
+  estimatedCost: bigint;
+  errorResponse?: {
+    success: boolean;
+    error: string;
+    requiredCredits: string;
+    requiredCreditsROSE: string;
+    depositUrl: string;
+  };
+}> {
+  // Skip credit check if credit system is not enabled
+  if (!prepaidCreditService.isEnabled()) {
+    return { hasSufficientCredits: true, estimatedCost: BigInt(0) };
+  }
+
+  const estimatedGas = await prepaidCreditService.estimateAttestationGas();
+  const result = await prepaidCreditService.checkSufficientCredits(clientAppId, estimatedGas);
+
+  if (!result.hasSufficient) {
+    return {
+      hasSufficientCredits: false,
+      estimatedCost: result.totalCost,
+      errorResponse: {
+        success: false,
+        error: 'Insufficient attestation credits',
+        requiredCredits: result.totalCost.toString(),
+        requiredCreditsROSE: ethers.formatEther(result.totalCost),
+        depositUrl: '/crm/credits/contract-info',
+      },
+    };
+  }
+
+  return {
+    hasSufficientCredits: true,
+    estimatedCost: result.totalCost,
+  };
+}
+
+/**
+ * Helper function to deduct credits and log transaction after successful attestation
+ */
+async function deductCreditsAfterAttestation(
+  clientAppId: string,
+  attestationResult: {
+    publicAttestationUID: string;
+    privateAttestationUID: string;
+    totalGasCost: bigint;
+  },
+  userId?: string
+): Promise<void> {
+  // Skip if credit system is not enabled
+  if (!prepaidCreditService.isEnabled()) {
+    return;
+  }
+
+  try {
+    const deductionResult = await prepaidCreditService.deductCreditsForPair(
+      clientAppId,
+      attestationResult.totalGasCost,
+      attestationResult.publicAttestationUID,
+      attestationResult.privateAttestationUID
+    );
+
+    if (deductionResult.success) {
+      // Log the transaction
+      const transaction = creditTransactionRepository.create({
+        clientAppId: clientAppId,
+        type: TransactionType.DEDUCTION,
+        amountWei: deductionResult.totalDeducted.toString(),
+        gasCostWei: deductionResult.gasCost.toString(),
+        platformFeeWei: deductionResult.platformFee.toString(),
+        txHash: deductionResult.txHash,
+        attestationUID: attestationResult.publicAttestationUID,
+        privateAttestationUID: attestationResult.privateAttestationUID,
+        userId: userId,
+      });
+      await creditTransactionRepository.save(transaction);
+      Logger.info(`Credits deducted for attestation - clientApp: ${clientAppId}, amount: ${deductionResult.totalDeducted}`);
+    } else {
+      Logger.error(`Failed to deduct credits for clientApp: ${clientAppId}`);
+    }
+  } catch (error: any) {
+    Logger.error(`Error deducting credits: ${error.message}`);
+  }
+}
 
 /* eslint-disable */
 cloudinary.config({
@@ -180,6 +278,13 @@ smartProfileRouter.put(
               };
             }
           }
+          // Check credits BEFORE any DB updates (prevent partial state on failure)
+          const creditCheck = await checkCreditsBeforeAttestation(clientAppId);
+          if (!creditCheck.hasSufficientCredits) {
+            Logger.error(`Insufficient credits for profile update - client: ${clientAppId}`);
+            return res.status(402).json(creditCheck.errorResponse);
+          }
+
           // Update the existing profile (only if there's onboarding data to update)
           if (onBoardingAvailable && Object.keys(updatedUser).length > 0) {
             await smartProfileMapRepository.update(
@@ -208,12 +313,24 @@ smartProfileRouter.put(
             insights?.reputationTags?.length &&
               smartProfile.privateData.claims.reputationTags.push(...insights?.reputationTags);
           }
+
           // Create on-chain attestation on Oasis Sapphire
           const attestationResult = await pluralityAttestation.attestSmartProfileOnChain(
             smartProfile,
             user?.pkpAddress || '',
             process.env.SAPPHIRE_PUBLIC_SCHEMA_UID || '',
             process.env.SAPPHIRE_PRIVATE_SCHEMA_UID || '',
+          );
+
+          // Deduct credits after successful attestation
+          await deductCreditsAfterAttestation(
+            clientAppId,
+            {
+              publicAttestationUID: attestationResult.publicAttestationUID,
+              privateAttestationUID: attestationResult.privateAttestationUID,
+              totalGasCost: attestationResult.totalGasCost,
+            },
+            req?.user?.id
           );
 
           // Extract attestation UIDs and metadata from the on-chain attestation result
@@ -335,7 +452,14 @@ smartProfileRouter.post(
             earlyUser?.username ? 1000 : Number(process.env.DEFAULT_SOCIAL_SCORE),
           );
 
-          // Create profile mapping (profile data is in attestation, only store index)
+          // Check credits BEFORE creating profile mapping (prevent orphaned profiles)
+          const creditCheck = await checkCreditsBeforeAttestation(clientAppId);
+          if (!creditCheck.hasSufficientCredits) {
+            Logger.error(`Insufficient credits for profile creation - client: ${clientAppId}`);
+            return res.status(402).json(creditCheck.errorResponse);
+          }
+
+          // Create profile mapping (only after credit check passes)
           const newSmartProfileMap = await smartProfileMapRepository.create({
             profileTypeStreamId: profileTypeStreamId,
             userId: req?.user?.id,
@@ -343,6 +467,7 @@ smartProfileRouter.post(
 
           const savedProfileMap = await smartProfileMapRepository.save(newSmartProfileMap);
           Logger.info(`New smart profile created for user id: ${id} against clientAppId: ${clientAppId}`);
+
           // profile attestation
           const existingUser = await userRepository.findOne({
             where: {
@@ -358,7 +483,18 @@ smartProfileRouter.post(
             process.env.SAPPHIRE_PRIVATE_SCHEMA_UID || '',
           );
 
-          Logger.info(`On-chain attestation result: ${JSON.stringify(attestationResult)}`);
+          // Deduct credits after successful attestation
+          await deductCreditsAfterAttestation(
+            clientAppId,
+            {
+              publicAttestationUID: attestationResult.publicAttestationUID,
+              privateAttestationUID: attestationResult.privateAttestationUID,
+              totalGasCost: attestationResult.totalGasCost,
+            },
+            req?.user?.id
+          );
+
+          Logger.info(`On-chain attestation result: publicUID=${attestationResult.publicAttestationUID}, privateUID=${attestationResult.privateAttestationUID}, chainId=${attestationResult.chainId}, gasCost=${attestationResult.totalGasCost}`);
 
           // Save attestation UIDs to smart_profile_map
           // NOTE: Do NOT store privateData here - it's plain data from frontend
@@ -426,12 +562,30 @@ smartProfileRouter.post(
             where: { id: req?.user?.id },
           });
 
+          // Check credits before attestation
+          const creditCheckLegacy = await checkCreditsBeforeAttestation(clientAppId);
+          if (!creditCheckLegacy.hasSufficientCredits) {
+            Logger.error(`Insufficient credits for legacy migration - client: ${clientAppId}`);
+            return res.status(402).json(creditCheckLegacy.errorResponse);
+          }
+
           // Create on-chain attestation on Oasis Sapphire
           const attestationResult = await pluralityAttestation.attestSmartProfileOnChain(
             oldProfile,
             existingUser?.pkpAddress || '',
             process.env.SAPPHIRE_PUBLIC_SCHEMA_UID || '',
             process.env.SAPPHIRE_PRIVATE_SCHEMA_UID || '',
+          );
+
+          // Deduct credits after successful attestation
+          await deductCreditsAfterAttestation(
+            clientAppId,
+            {
+              publicAttestationUID: attestationResult.publicAttestationUID,
+              privateAttestationUID: attestationResult.privateAttestationUID,
+              totalGasCost: attestationResult.totalGasCost,
+            },
+            req?.user?.id
           );
 
           // Save attestation UIDs to smart_profile_map
@@ -561,6 +715,14 @@ smartProfileRouter.post(
             profileTypeStreamId: profileTypeStreamId,
           },
         });
+        // Check credits BEFORE any DB changes (prevent orphaned profiles)
+        const creditCheckPlatform = await checkCreditsBeforeAttestation(clientAppId);
+        if (!creditCheckPlatform.hasSufficientCredits) {
+          Logger.error(`Insufficient credits for platform connection - client: ${clientAppId}`);
+          memoryStoreProfile.delete(id);
+          return res.status(402).json(creditCheckPlatform.errorResponse);
+        }
+
         if (!profileMapping) {
           // there must be something wrong if this mapping does not exist, this is a corner case but we create the mapping
           Logger.info(`The older version of this profile was not found in profile mapping table, This is not normal`);
@@ -577,15 +739,20 @@ smartProfileRouter.post(
           Logger.info(`Smart profile found for user id: ${req?.user?.id}`);
         }
 
-        // Ensure scores is properly initialized as a Map (fix for "scores.map is not a function" error)
-        if (typeof smartProfile.scores === 'object' && !Array.isArray(smartProfile.scores)) {
-          // Convert scores object to Map if needed
-          if (!(smartProfile.scores instanceof Map)) {
-            const scoresMap = new Map();
-            Object.entries(smartProfile.scores).forEach(([key, value]) => {
-              scoresMap.set(key, value);
+        // Ensure scores is properly initialized as an array (fix for "scores.map is not a function" error)
+        // scores should be Score[] array, not Map or plain object
+        if (smartProfile.scores && !Array.isArray(smartProfile.scores)) {
+          // Convert object to array if it came as plain object from JSON
+          if (typeof smartProfile.scores === 'object') {
+            const scoresArray: { scoreType: string; scoreValue: number }[] = [];
+            Object.entries(smartProfile.scores).forEach(([key, value]: [string, any]) => {
+              if (value && typeof value === 'object' && 'scoreType' in value) {
+                scoresArray.push(value);
+              } else {
+                scoresArray.push({ scoreType: key, scoreValue: Number(value) || 0 });
+              }
             });
-            smartProfile.scores = scoresMap;
+            smartProfile.scores = scoresArray;
           }
         }
 
@@ -629,6 +796,17 @@ smartProfileRouter.post(
           existingUser?.pkpAddress || '',
           process.env.SAPPHIRE_PUBLIC_SCHEMA_UID || '',
           process.env.SAPPHIRE_PRIVATE_SCHEMA_UID || '',
+        );
+
+        // Deduct credits after successful attestation
+        await deductCreditsAfterAttestation(
+          clientAppId,
+          {
+            publicAttestationUID: attestationResult.publicAttestationUID,
+            privateAttestationUID: attestationResult.privateAttestationUID,
+            totalGasCost: attestationResult.totalGasCost,
+          },
+          req?.user?.id
         );
 
         Logger.info(`Platform connection attestation created - onchainUID: ${attestationResult.publicAttestationUID}`);

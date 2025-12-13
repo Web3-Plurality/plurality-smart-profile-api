@@ -33,6 +33,7 @@ import { sseRouter } from './services/oauth-service/controllers/sse-controller';
 // crm service routers
 import { clientRouter } from './services/crm-service/controllers/client-controller';
 import { clientAppRouter } from './services/crm-service/controllers/client-app-controller';
+import { creditRouter } from './services/crm-service/controllers/credit-controller';
 // orbis-map service routers
 import { profileTypeRouter } from './services/orbis-map-service/controller/profile-type-controller';
 import { smartProfileOrbisRouter } from './services/orbis-map-service/controller/smart-profile-controller';
@@ -76,6 +77,7 @@ app.use('/register-event', sseRouter);
 // crm service router
 app.use('/crm/client-app', clientAppRouter);
 app.use('/crm/client', clientRouter);
+app.use('/crm/credits', creditRouter);
 
 // orbis-map service router
 app.use('/orbis-map/profile-types', profileTypeRouter);
