@@ -24,10 +24,17 @@ const userRegisterViaWallet = async (address: string, clientAppId: string) => {
   });
   if (existingUser) {
     Logger.info(`This user already exists!`);
+    // Update metamaskAddress if not set (for existing users migrating from Lit)
+    if (!existingUser.metamaskAddress) {
+      existingUser.metamaskAddress = address;
+      await userRepository.save(existingUser);
+      Logger.info(`Updated metamaskAddress for existing user: ${address}`);
+    }
   } else {
     // If the user doesn't exist, insert a new row
     const newUser = await userRepository.create({
       authAddress: address,
+      metamaskAddress: address, // Set metamaskAddress for attestations
       subscribe: false,
       loginType: LoginType.metamask,
     });

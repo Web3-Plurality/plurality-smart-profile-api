@@ -150,26 +150,26 @@ smartProfileOrbisRouter.get('/by-mapping/:profileTypeId/:userId', async (req: Re
       );
 
       try {
-        // Fetch user's PKP address to verify attestation
+        // Fetch user's MetaMask address to verify attestation
         const user = await AppDataSource.getRepository(User).findOne({
           where: { id: userId },
         });
 
-        if (!user || !user.pkpAddress) {
-          Logger.error(`User not found or missing PKP address for userId: ${userId}`);
+        if (!user || !user.metamaskAddress) {
+          Logger.error(`User not found or missing MetaMask address for userId: ${userId}`);
           return res.status(404).json({
             success: false,
-            error: 'User not found or missing PKP address',
+            error: 'User not found or missing MetaMask address',
           });
         }
 
-        const pkpAddress = user.pkpAddress;
+        const metamaskAddress = user.metamaskAddress;
 
         // Fetch and verify profile from blockchain
         const { isValid, profile } = await pluralityAttestation.verifyAndReconstructProfile(
           profileMapping.onchainAttestationUID,
           profileMapping.privateAttestationUID,
-          pkpAddress,
+          metamaskAddress,
         );
 
         if (!isValid || !profile) {
@@ -183,7 +183,7 @@ smartProfileOrbisRouter.get('/by-mapping/:profileTypeId/:userId', async (req: Re
         Logger.info(`Successfully fetched and verified profile from blockchain`);
 
         // Fetch encrypted private data from smart_profile_map
-        // The client will decrypt this using their PKP
+        // The client will decrypt this using their MetaMask wallet
         const profileMapData = await smartProfileMapRepository.findOne({
           where: { userId: userId, profileTypeStreamId: profileTypeId },
         });

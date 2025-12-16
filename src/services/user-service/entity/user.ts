@@ -20,6 +20,9 @@ export class User {
   @Column({ nullable: true })
   pkpAddress: string;
 
+  @Column({ nullable: true })
+  metamaskAddress: string;
+
   @Column({ nullable: false, default: false })
   subscribe: boolean;
 

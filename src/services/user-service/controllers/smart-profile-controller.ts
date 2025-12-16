@@ -317,7 +317,7 @@ smartProfileRouter.put(
           // Create on-chain attestation on Oasis Sapphire
           const attestationResult = await pluralityAttestation.attestSmartProfileOnChain(
             smartProfile,
-            user?.pkpAddress || '',
+            user?.metamaskAddress || '',
             process.env.SAPPHIRE_PUBLIC_SCHEMA_UID || '',
             process.env.SAPPHIRE_PRIVATE_SCHEMA_UID || '',
           );
@@ -478,7 +478,7 @@ smartProfileRouter.post(
           // Create on-chain attestation on Oasis Sapphire
           const attestationResult = await pluralityAttestation.attestSmartProfileOnChain(
             newProfile,
-            existingUser?.pkpAddress || '',
+            existingUser?.metamaskAddress || '',
             process.env.SAPPHIRE_PUBLIC_SCHEMA_UID || '',
             process.env.SAPPHIRE_PRIVATE_SCHEMA_UID || '',
           );
@@ -572,7 +572,7 @@ smartProfileRouter.post(
           // Create on-chain attestation on Oasis Sapphire
           const attestationResult = await pluralityAttestation.attestSmartProfileOnChain(
             oldProfile,
-            existingUser?.pkpAddress || '',
+            existingUser?.metamaskAddress || '',
             process.env.SAPPHIRE_PUBLIC_SCHEMA_UID || '',
             process.env.SAPPHIRE_PRIVATE_SCHEMA_UID || '',
           );
@@ -793,7 +793,7 @@ smartProfileRouter.post(
         // Create on-chain attestation on Oasis Sapphire
         const attestationResult = await pluralityAttestation.attestSmartProfileOnChain(
           smartProfile,
-          existingUser?.pkpAddress || '',
+          existingUser?.metamaskAddress || '',
           process.env.SAPPHIRE_PUBLIC_SCHEMA_UID || '',
           process.env.SAPPHIRE_PRIVATE_SCHEMA_UID || '',
         );
