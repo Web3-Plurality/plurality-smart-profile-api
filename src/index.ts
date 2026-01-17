@@ -77,9 +77,9 @@ app.use('/crm/client-app', clientAppRouter);
 app.use('/crm/client', clientRouter);
 app.use('/crm/credits', creditRouter);
 
-// orbis-map service router
-app.use('/orbis-map/profile-types', profileTypeRouter);
-app.use('/orbis-map/smart-profiles', smartProfileOrbisRouter);
+// profile-map service router
+app.use('/profile-map/profile-types', profileTypeRouter);
+app.use('/profile-map/smart-profiles', smartProfileOrbisRouter);
 
 // swagger router
 app.use('/docs-wallet', swaggerUi.serve, (req: any, res: any, next: any) =>
