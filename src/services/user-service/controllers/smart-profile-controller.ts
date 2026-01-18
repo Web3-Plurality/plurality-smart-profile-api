@@ -199,7 +199,13 @@ smartProfileRouter.put(
       const clientAppId = req.headers['x-client-app-id'];
       const profileTypeStreamId = req.headers['x-profile-type-stream-id'];
       const userUpdateReqData = req.body.data ? JSON.parse(JSON.stringify(req.body.data)) : {};
-      const smartProfile = normalizeSmartProfile(req?.body?.smartProfile);
+
+      // Validate smartProfile is present in request body
+      if (!req?.body?.smartProfile) {
+        Logger.error(`smartProfile is missing from request body`);
+        return res.status(400).json({ success: false, error: 'smartProfile is required in request body' });
+      }
+      const smartProfile = normalizeSmartProfile(req.body.smartProfile);
       const id = req?.user?.id;
       // get from smartProfileMap
       const existingUser = await smartProfileMapRepository.findOne({
