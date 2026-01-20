@@ -64,7 +64,6 @@
     "@ethereum-attestation-service/eas-sdk": "^2.5.0",
     "@plurality-network/smart-profile-utils": "file:../plurality-smart-profile-utils/plurality-network-smart-profile-utils-1.1.0.tgz",
     "@superfaceai/passport-twitter-oauth2": "^1.2.3",
-    "@useorbis/db-sdk": "^0.0.60-alpha",
     "arweave": "^1.14.4",
     "axios": "^1.5.0",
     "class-transformer": "^0.5.1",

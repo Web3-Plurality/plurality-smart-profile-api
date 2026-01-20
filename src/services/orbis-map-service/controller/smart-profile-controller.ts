@@ -108,7 +108,7 @@ smartProfileOrbisRouter.put('/:id', isAuthenticated, async (req: Request, res: R
   }
 });
 
-// GET /smart-profiles/by-mapping/:profileTypeId/:userDid - Get smart profile by userDid and profileTypeId
+// GET /smart-profiles/by-mapping/:profileTypeId/:userId - Get smart profile by userId and profileTypeId
 smartProfileOrbisRouter.get('/by-mapping/:profileTypeId/:userId', async (req: Request, res: Response) => {
   // #swagger.tags = ['Smart Profile Orbis']
   try {
@@ -122,7 +122,7 @@ smartProfileOrbisRouter.get('/by-mapping/:profileTypeId/:userId', async (req: Re
       });
     }
 
-    // Validate userDid is provided
+    // Validate userId is provided
     if (!userId || userId.trim() === '') {
       return res.status(400).json({
         error: 'userId is required and cannot be empty.',
