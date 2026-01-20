@@ -150,9 +150,9 @@ clientAppRouter.post('/', verifyStytchJWT, async (req: Request, res: Response) =
         },
       });
     } else {
-      Logger.error(`Something went wrong with the orbis stream id creation`);
+      Logger.error(`Something went wrong with the profile type creation`);
       return res.status(500).json({
-        message: 'Something went wrong with the orbis stream id creation',
+        message: 'Something went wrong with the profile type creation',
       });
     }
   } catch (error: any) {

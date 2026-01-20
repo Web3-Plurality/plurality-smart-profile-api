@@ -1,4 +1,3 @@
-// import moment from 'moment';
 import { TwitterProfile } from '../entity/twitter';
 import puppeteer from 'puppeteer';
 import { analyze } from './groq';

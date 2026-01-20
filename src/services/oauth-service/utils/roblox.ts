@@ -1,6 +1,5 @@
 import puppeteer from 'puppeteer';
 import { RobloxProfile } from '../entity/roblox';
-// import moment from 'moment';
 
 export const scrapRoblox = async (url: string) => {
   // Launch a browser instance

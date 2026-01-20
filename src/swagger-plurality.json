@@ -1061,7 +1061,7 @@
     "/crm/client/login": {},
     "/crm/client/authenticate": {},
     "/crm/client/": {},
-    "/orbis-map/profile-types/{id}": {
+    "/profile-map/profile-types/{id}": {
       "get": {
         "tags": [
           "Profile Type"
@@ -1093,7 +1093,7 @@
         }
       }
     },
-    "/orbis-map/smart-profiles/": {
+    "/profile-map/smart-profiles/": {
       "post": {
         "tags": [
           "Smart Profile Orbis"
@@ -1156,7 +1156,7 @@
         }
       }
     },
-    "/orbis-map/smart-profiles/{id}": {
+    "/profile-map/smart-profiles/{id}": {
       "put": {
         "tags": [
           "Smart Profile Orbis"
@@ -1235,7 +1235,7 @@
         }
       }
     },
-    "/orbis-map/smart-profiles/by-mapping/{profileTypeId}/{userId}": {
+    "/profile-map/smart-profiles/by-mapping/{profileTypeId}/{userId}": {
       "get": {
         "tags": [
           "Smart Profile Orbis"
