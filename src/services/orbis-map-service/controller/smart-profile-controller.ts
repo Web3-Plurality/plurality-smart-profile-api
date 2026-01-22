@@ -6,7 +6,8 @@ import { User } from '../../user-service/entity/user';
 import Logger from '../../../lib/logger';
 import * as dotenv from 'dotenv';
 import { isAuthenticated } from '../../user-service/middlewares/auth-middleware';
-import { PluralityAttestation } from '@plurality-network/smart-profile-utils';
+import { PluralityAttestation, ProfilePrivateData } from '@plurality-network/smart-profile-utils';
+import { getSapphirePrivateStorage } from '../../sapphire-service/sapphire-private-storage';
 
 dotenv.config();
 
@@ -182,60 +183,33 @@ smartProfileOrbisRouter.get('/by-mapping/:profileTypeId/:userId', async (req: Re
 
         Logger.info(`Successfully fetched and verified profile from blockchain`);
 
-        // Fetch encrypted private data from smart_profile_map
-        // The client will decrypt this using their MetaMask wallet
-        const profileMapData = await smartProfileMapRepository.findOne({
-          where: { userId: userId, profileTypeStreamId: profileTypeId },
-        });
+        // Fetch private data from Sapphire confidential contract
+        const sapphireStorage = getSapphirePrivateStorage();
 
-        const encryptedPrivateDataString = profileMapData?.encryptedPrivateData;
+        if (sapphireStorage.isEnabled()) {
+          try {
+            const privateData = await sapphireStorage.retrieve(metamaskAddress);
 
-        if (encryptedPrivateDataString) {
-          Logger.info(`Found encrypted private data, sending to client for decryption`);
-          // Parse the stringified JSON and send to client (same as orbis_smart_profiles.privateData)
-          const encryptedPrivateData = JSON.parse(encryptedPrivateDataString);
-          // Return profile with encrypted private data for client-side decryption
-          return res.status(200).json({
-            success: true,
-            newUser: false,
-            data: {
-              ...profile,
-              encryptedPrivateData,  // Client will decrypt this
-            },
-          });
+            if (privateData) {
+              Logger.info(`Found private data in Sapphire for user: ${metamaskAddress}`);
+              // Return profile with private data from Sapphire (already decrypted)
+              return res.status(200).json({
+                success: true,
+                newUser: false,
+                data: {
+                  ...profile,
+                  privateData,  // Already plaintext from Sapphire
+                },
+              });
+            }
+          } catch (sapphireError: any) {
+            Logger.warn(`Sapphire retrieval failed, continuing with empty privateData: ${sapphireError.message}`);
+          }
         }
 
-        // No encrypted private data - return profile with empty privateData
-        Logger.warn(`No encrypted private data found, returning profile with empty privateData`);
-        profile.privateData = {
-          attestedCred: {
-            interests: [],
-            reputationTags: [],
-            badges: [],
-            collections: [],
-            attestation: {},
-            salt: {
-              interests: '',
-              reputationTags: '',
-              badges: '',
-              collections: '',
-            },
-          },
-          attestedPlatformIds: {
-            connectedProfiles: [],
-            attestation: {},
-            salt: {},
-          },
-          linkedAddress: [],
-          extendedPrivateData: {},
-          claims: {
-            interests: [],
-            reputationTags: [],
-            badges: [],
-            collections: [],
-            analyzed: false,
-          },
-        };
+        // No private data found - return profile with empty privateData
+        Logger.warn(`No private data found in Sapphire, returning profile with empty privateData`);
+        profile.privateData = new ProfilePrivateData();
 
         return res.status(200).json({
           success: true,

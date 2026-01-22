@@ -62,6 +62,8 @@
   "dependencies": {
     "@bundlr-network/client": "^0.11.17",
     "@ethereum-attestation-service/eas-sdk": "^2.5.0",
+    "@oasisprotocol/sapphire-ethers-v6": "^6.0.1",
+    "@oasisprotocol/sapphire-paratime": "^2.3.0",
     "@plurality-network/smart-profile-utils": "file:../plurality-smart-profile-utils/plurality-network-smart-profile-utils-1.1.0.tgz",
     "@superfaceai/passport-twitter-oauth2": "^1.2.3",
     "arweave": "^1.14.4",

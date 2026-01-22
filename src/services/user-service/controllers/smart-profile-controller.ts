@@ -23,6 +23,7 @@ import { analyze } from '../../oauth-service/utils/groq';
 import { getPrepaidCreditService } from '../../crm-service/utils/prepaid-credit-service';
 import { CreditTransaction, TransactionType } from '../../crm-service/entity/client-credit';
 import { ethers } from 'ethers';
+import { getSapphirePrivateStorage } from '../../sapphire-service/sapphire-private-storage';
 
 export const smartProfileRouter = express.Router();
 dotenv.config();
@@ -854,7 +855,7 @@ smartProfileRouter.post(
   },
 );
 
-// Store encrypted privateData (called by frontend after attestation succeeds)
+// Store privateData in Sapphire confidential contract (called by frontend after attestation succeeds)
 smartProfileRouter.post(
   '/store-private-data',
   isAuthenticated,
@@ -864,36 +865,59 @@ smartProfileRouter.post(
             "bearerAuth": []
     }] */
     try {
-      const { encryptedPrivateData } = req.body;
-      const profileTypeStreamId = req.headers['x-profile-type-stream-id'];
+      const { privateData } = req.body;
+      const clientAppId = req.headers['x-client-app-id'] as string;
 
-      if (!encryptedPrivateData) {
-        Logger.error(`Missing encryptedPrivateData in store-private-data request`);
-        return res.status(400).json({ error: 'Missing encryptedPrivateData' });
-      }
-      if (!profileTypeStreamId || typeof profileTypeStreamId !== 'string') {
-        Logger.error(`Missing profileTypeStreamId in store-private-data request`);
-        return res.status(400).json({ error: 'Missing profileTypeStreamId' });
+      if (!privateData) {
+        Logger.error(`Missing privateData in store-private-data request`);
+        return res.status(400).json({ error: 'Missing privateData' });
       }
 
-      const userId = req?.user?.id;
-      Logger.info(`Storing encrypted privateData for user: ${userId}, profileTypeStreamId: ${profileTypeStreamId}`);
+      // Fetch user from database to get metamaskAddress (JWT only contains id)
+      const existingUser = await userRepository.findOne({
+        where: { id: req?.user?.id },
+      });
 
-      const updateResult = await smartProfileMapRepository.update(
-        { userId: userId, profileTypeStreamId: profileTypeStreamId },
-        { encryptedPrivateData: JSON.stringify(encryptedPrivateData) }
-      );
-
-      if (updateResult.affected === 0) {
-        Logger.warn(`No profile found to update for user: ${userId}`);
-        return res.status(404).json({ error: 'Profile not found' });
+      if (!existingUser?.metamaskAddress) {
+        Logger.error(`User not found or missing metamaskAddress for user id: ${req?.user?.id}`);
+        return res.status(400).json({ error: 'User wallet address not found' });
       }
 
-      Logger.info(`Encrypted privateData stored successfully for user: ${userId}`);
-      return res.status(200).json({ success: true });
+      const userAddress = existingUser.metamaskAddress;
+
+      const sapphireStorage = getSapphirePrivateStorage();
+
+      // Check if Sapphire storage is enabled
+      if (!sapphireStorage.isEnabled()) {
+        Logger.error('Sapphire private storage not configured');
+        return res.status(503).json({ error: 'Private storage service unavailable' });
+      }
+
+      // Check credits before storing
+      if (clientAppId && prepaidCreditService.isEnabled()) {
+        const estimatedGas = await sapphireStorage.estimateStoreGas();
+        const creditCheck = await prepaidCreditService.checkSufficientCredits(clientAppId, estimatedGas);
+
+        if (!creditCheck.hasSufficient) {
+          Logger.warn(`Insufficient credits for client ${clientAppId}`);
+          return res.status(402).json({ error: 'Insufficient credits' });
+        }
+      }
+
+      // Store in Sapphire confidential contract
+      Logger.info(`Storing privateData in Sapphire for user: ${userAddress}`);
+      const { txHash, gasUsed } = await sapphireStorage.store(userAddress, privateData);
+
+      // Deduct credits after successful storage
+      if (clientAppId && prepaidCreditService.isEnabled()) {
+        await prepaidCreditService.deductCredits(clientAppId, gasUsed, txHash);
+      }
+
+      Logger.info(`Private data stored in Sapphire for user: ${userAddress}, txHash: ${txHash}`);
+      return res.status(200).json({ success: true, txHash });
     } catch (error: any) {
-      Logger.error(`Error storing encrypted private data: ${error?.message || JSON.stringify(error)}`);
-      return res.status(500).json({ error: 'Failed to store encrypted data' });
+      Logger.error(`Error storing private data in Sapphire: ${error?.message || JSON.stringify(error)}`);
+      return res.status(500).json({ error: 'Failed to store private data' });
     }
   }
 );

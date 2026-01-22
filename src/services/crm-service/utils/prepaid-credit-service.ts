@@ -261,6 +261,31 @@ export class PrepaidAttestationCreditService {
   }
 
   /**
+   * Estimate total gas cost for full operation including Sapphire private storage
+   * Includes: public attestation + private attestation + private data storage + deduction tx
+   */
+  async estimateFullOperationGas(): Promise<bigint> {
+    try {
+      // Gas units breakdown:
+      // - Public attestation: ~140k
+      // - Private attestation: ~140k
+      // - Private data storage (Sapphire): ~80k
+      // - Deduction tx: ~100k (with buffer)
+      const totalGasUnits = BigInt(460000);
+
+      // Get current gas price
+      const feeData = await this.provider.getFeeData();
+      const gasPrice = feeData.gasPrice || BigInt(100000000000); // 100 gwei default
+
+      return totalGasUnits * gasPrice;
+    } catch (error: any) {
+      Logger.error(`Error estimating full operation gas: ${error.message}`);
+      // Fallback: ~0.25 ROSE
+      return ethers.parseEther('0.25');
+    }
+  }
+
+  /**
    * Get minimum deposit amount
    */
   async getMinDeposit(): Promise<bigint> {
