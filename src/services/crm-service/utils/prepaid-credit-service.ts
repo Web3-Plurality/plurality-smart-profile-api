@@ -269,9 +269,9 @@ export class PrepaidAttestationCreditService {
       // Gas units breakdown:
       // - Public attestation: ~140k
       // - Private attestation: ~140k
-      // - Private data storage (Sapphire): ~80k
+      // - Private data storage (Sapphire): ~3M (bytes storage is expensive)
       // - Deduction tx: ~100k (with buffer)
-      const totalGasUnits = BigInt(460000);
+      const totalGasUnits = BigInt(3_380_000);
 
       // Get current gas price
       const feeData = await this.provider.getFeeData();
@@ -280,8 +280,8 @@ export class PrepaidAttestationCreditService {
       return totalGasUnits * gasPrice;
     } catch (error: any) {
       Logger.error(`Error estimating full operation gas: ${error.message}`);
-      // Fallback: ~0.25 ROSE
-      return ethers.parseEther('0.25');
+      // Fallback: ~0.5 ROSE
+      return ethers.parseEther('0.5');
     }
   }
 

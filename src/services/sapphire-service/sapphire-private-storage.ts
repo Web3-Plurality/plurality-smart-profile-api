@@ -12,6 +12,17 @@ const PRIVATE_STORAGE_ABI = [
 ];
 
 /**
+ * Gas limits for Sapphire transactions.
+ * ethers auto-estimation is unreliable on Sapphire because:
+ * - Each 32-byte storage slot costs ~20k gas for SSTORE
+ * - Overwriting existing bytes data clears old slots + writes new ones
+ * - Sapphire TEE adds overhead beyond standard EVM costs
+ * Unused gas is refunded, so generous limits are safe.
+ */
+const STORE_GAS_LIMIT = 15_000_000;
+const DELETE_GAS_LIMIT = 5_000_000;
+
+/**
  * Result from store/delete operations
  */
 export interface StorageResult {
@@ -22,9 +33,13 @@ export interface StorageResult {
 /**
  * Service for storing private data in Sapphire confidential contract
  * Data is automatically encrypted at rest by Sapphire TEE
+ *
+ * Note: The same backend wallet is used by PluralityAttestation and
+ * PrepaidCreditService. To avoid nonce conflicts on slow networks,
+ * this service waits for pending transactions to be mined before sending.
  */
 export class SapphirePrivateStorage {
-  private provider: any = null;
+  private provider: ethers.JsonRpcProvider | null = null;
   private contract: ethers.Contract | null = null;
   private signer: ethers.Wallet | null = null;
   private contractAddress: string;
@@ -67,6 +82,99 @@ export class SapphirePrivateStorage {
   }
 
   /**
+   * Wait until all pending transactions from this wallet are mined.
+   * Prevents nonce conflicts when other services (PluralityAttestation,
+   * PrepaidCreditService) have recently sent transactions from the same wallet.
+   */
+  private async waitForPendingTransactions(
+    maxWaitMs = 120_000,
+    pollIntervalMs = 3_000
+  ): Promise<void> {
+    if (!this.provider || !this.signer) return;
+
+    const address = await this.signer.getAddress();
+    const startTime = Date.now();
+
+    while (Date.now() - startTime < maxWaitMs) {
+      const latestNonce = await this.provider.getTransactionCount(address, 'latest');
+      const pendingNonce = await this.provider.getTransactionCount(address, 'pending');
+
+      if (pendingNonce <= latestNonce) {
+        Logger.info(
+          `No pending txs for ${address} (nonce: ${latestNonce})`
+        );
+        return;
+      }
+
+      Logger.info(
+        `Waiting for ${pendingNonce - latestNonce} pending tx(s) to be mined ` +
+        `for ${address} (latest: ${latestNonce}, pending: ${pendingNonce})`
+      );
+
+      await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
+    }
+
+    Logger.warn(
+      `Timed out waiting for pending txs after ${maxWaitMs}ms. Proceeding with 'pending' nonce.`
+    );
+  }
+
+  /**
+   * Send a contract transaction with explicit nonce management.
+   * Waits for pending txs from other services, then uses explicit nonce.
+   * Retries once on nonce conflict.
+   */
+  private async sendWithNonceManagement(
+    contractCall: (nonce: number) => Promise<ethers.ContractTransactionResponse>,
+    operationName: string
+  ): Promise<ethers.ContractTransactionReceipt> {
+    await this.waitForPendingTransactions();
+
+    const address = await this.signer!.getAddress();
+    const nonce = await this.provider!.getTransactionCount(address, 'pending');
+    Logger.info(`${operationName}: using nonce ${nonce} for ${address}`);
+
+    try {
+      const tx = await contractCall(nonce);
+      Logger.info(`${operationName}: tx submitted, hash=${tx.hash}, waiting for confirmation...`);
+      const receipt = await tx.wait();
+
+      if (!receipt || receipt.status === 0) {
+        throw new Error(`${operationName}: transaction reverted (status=0)`);
+      }
+
+      return receipt;
+    } catch (error: any) {
+      const errorMsg = (error.message || '').toLowerCase();
+      const isNonceError =
+        errorMsg.includes('nonce') ||
+        errorMsg.includes('replacement transaction underpriced') ||
+        errorMsg.includes('already known');
+
+      if (isNonceError) {
+        Logger.warn(`${operationName}: nonce conflict, waiting and retrying...`);
+
+        await this.waitForPendingTransactions();
+
+        const retryNonce = await this.provider!.getTransactionCount(address, 'pending');
+        Logger.info(`${operationName}: retrying with nonce ${retryNonce}`);
+
+        const tx = await contractCall(retryNonce);
+        Logger.info(`${operationName}: retry tx submitted, hash=${tx.hash}`);
+        const receipt = await tx.wait();
+
+        if (!receipt || receipt.status === 0) {
+          throw new Error(`${operationName}: transaction reverted on retry (status=0)`);
+        }
+
+        return receipt;
+      }
+
+      throw error;
+    }
+  }
+
+  /**
    * Check if the private storage system is enabled
    */
   isEnabled(): boolean {
@@ -89,8 +197,10 @@ export class SapphirePrivateStorage {
     try {
       const dataBytes = ethers.toUtf8Bytes(JSON.stringify(privateData));
 
-      const tx = await this.contract!.storePrivateData(userAddress, dataBytes);
-      const receipt = await tx.wait();
+      const receipt = await this.sendWithNonceManagement(
+        (nonce) => this.contract!.storePrivateData(userAddress, dataBytes, { nonce, gasLimit: STORE_GAS_LIMIT }),
+        'storePrivateData'
+      );
 
       const gasUsed = BigInt(receipt.gasUsed) * BigInt(receipt.gasPrice || 0);
 
@@ -149,8 +259,10 @@ export class SapphirePrivateStorage {
     await this.initialize();
 
     try {
-      const tx = await this.contract!.deletePrivateData(userAddress);
-      const receipt = await tx.wait();
+      const receipt = await this.sendWithNonceManagement(
+        (nonce) => this.contract!.deletePrivateData(userAddress, { nonce, gasLimit: DELETE_GAS_LIMIT }),
+        'deletePrivateData'
+      );
 
       const gasUsed = BigInt(receipt.gasUsed) * BigInt(receipt.gasPrice || 0);
 
@@ -196,8 +308,11 @@ export class SapphirePrivateStorage {
     await this.initialize();
 
     try {
-      // Typical store operation: ~80k gas units
-      const gasUnits = BigInt(80000);
+      // Store operations use significant gas on Sapphire:
+      // - Each 32-byte slot: ~20k gas for SSTORE
+      // - Typical private data (3-4 KB): ~3M gas units
+      // - Overwriting existing data adds slot clearing overhead
+      const gasUnits = BigInt(3_000_000);
 
       const feeData = await this.provider!.getFeeData();
       const gasPrice = feeData.gasPrice || BigInt(100000000000); // 100 gwei default
@@ -205,8 +320,8 @@ export class SapphirePrivateStorage {
       return gasUnits * gasPrice;
     } catch (error: any) {
       Logger.error(`Failed to estimate store gas: ${error.message}`);
-      // Fallback: ~0.008 ROSE
-      return ethers.parseEther('0.008');
+      // Fallback: ~0.3 ROSE
+      return ethers.parseEther('0.3');
     }
   }
 
@@ -218,8 +333,9 @@ export class SapphirePrivateStorage {
     await this.initialize();
 
     try {
-      // Typical delete operation: ~50k gas units
-      const gasUnits = BigInt(50000);
+      // Delete clears all storage slots for user's data
+      // Less expensive than store but still significant
+      const gasUnits = BigInt(1_000_000);
 
       const feeData = await this.provider!.getFeeData();
       const gasPrice = feeData.gasPrice || BigInt(100000000000);
@@ -227,7 +343,7 @@ export class SapphirePrivateStorage {
       return gasUnits * gasPrice;
     } catch (error: any) {
       Logger.error(`Failed to estimate delete gas: ${error.message}`);
-      return ethers.parseEther('0.005');
+      return ethers.parseEther('0.1');
     }
   }
 
