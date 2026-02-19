@@ -57,7 +57,4 @@ export class SmartProfileMap {
 
   @Column({ type: 'bigint', nullable: true })
   attestationTimestamp?: number;
-
-  @Column({ type: 'text', nullable: true })
-  encryptedPrivateData?: string;
 }
